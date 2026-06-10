@@ -30,7 +30,7 @@ Dự án được chia thành 3 dịch vụ chính:
    ```bash
    git clone [https://github.com/PhanPhong13112005/DMS-Solution-Base.git](https://github.com/PhanPhong13112005/DMS-Solution-Base.git)
 
-   '''
+  ```
    Cấu hình:
 
 Mở file DMS-Solution-Base.sln bằng Visual Studio 2022.
