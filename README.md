@@ -21,8 +21,8 @@ Dự án được chia thành 3 dịch vụ chính:
 | Module | Nhóm phụ trách |
 | :--- | :--- |
 | **Room & Building** | Nhóm 1 (Phan Lưu Phong, Trần Tiến Quang, Trần Văn Phong) |
-| **Student & Contract** | Nhóm 2 |
-| **Billing & Maintenance** | Nhóm 3 |
+| **Student & Contract** | Nhóm 2 (Lê Quang Thành, Nguyễn Trương Thuận, Nguyễn Thành Trung) |
+| **Billing & Maintenance** | Nhóm 3 (Trần Anh Tú, Lê Hồng Phi, Ngô Văn Quân) |
 
 ## 🚀 Hướng dẫn bắt đầu
 
