@@ -29,3 +29,16 @@ Dự án được chia thành 3 dịch vụ chính:
 1. **Clone repository**:
    ```bash
    git clone [https://github.com/PhanPhong13112005/DMS-Solution-Base.git](https://github.com/PhanPhong13112005/DMS-Solution-Base.git)
+
+   '''
+   Cấu hình:
+
+Mở file DMS-Solution-Base.sln bằng Visual Studio 2022.
+
+Cấu hình chuỗi kết nối (ConnectionStrings) trong file appsettings.json của từng Service.
+
+Chạy dự án:
+
+Đảm bảo SQL Server đã khởi chạy.
+
+Nhấn F5 để bắt đầu chạy các dịch vụ.
