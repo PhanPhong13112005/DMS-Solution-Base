@@ -53,19 +53,16 @@ git clone https://github.com/PhanPhong13112005/DMS-Solution-Base.git
 
 2. Cấu hình ban đầu
 Mở file DMS-Solution-Base.sln bằng Visual Studio 2022.
-
 Cấu hình chuỗi kết nối (ConnectionStrings) trong file appsettings.json của từng Service để trỏ về SQL Server của bạn.
 
 3. Chạy dự án
 Đảm bảo SQL Server đã khởi chạy.
-
 Để chạy cả 3 service cùng lúc: Chuột phải vào Solution -> Chọn Properties -> Startup Project -> Chọn Multiple startup projects và đặt hành động là Start cho cả 3 project.
-
 Nhấn F5 để bắt đầu.
-```
+
 
 ## 🌳 Quy tắc làm việc với Git (Quan trọng!)
-### Để tránh xung đột code, mỗi nhóm vui lòng tuân thủ quy trình sau:
+Để tránh xung đột code, mỗi nhóm vui lòng tuân thủ quy trình sau:
 
 1. Làm việc trên nhánh riêng:
 ```bash
