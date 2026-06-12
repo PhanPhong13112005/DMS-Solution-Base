@@ -1,5 +1,0 @@
-<Solution>
-  <Project Path="../BillingMaintenanceService/BillingMaintenanceService.csproj" />
-  <Project Path="../RoomBuildingService/RoomBuildingService.csproj" />
-  <Project Path="../StudentContractService/StudentContractService.csproj" />
-</Solution>
