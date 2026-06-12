@@ -66,7 +66,8 @@ Nhấn F5 để bắt đầu.
 
 ## 🌳 Quy tắc làm việc với Git (Quan trọng!)
 Để tránh xung đột code, mỗi nhóm vui lòng tuân thủ quy trình sau:
-1. Làm việc trên nhánh riêng:
+
+### 1. Làm việc trên nhánh riêng:
 ```bash
 git checkout -b feature/[tên-service-của-bạn]
 ```
