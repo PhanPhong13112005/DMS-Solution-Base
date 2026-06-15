@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation; // 1. BẮT BUỘC PHẢI CÓ THƯ VIỆN NÀY
 
 namespace RoomBuildingService.Models;
 
@@ -15,5 +17,7 @@ public partial class Bed
 
     public string? AssignedStudentId { get; set; }
 
-    public virtual Room Room { get; set; } = null!;
+    [JsonIgnore]
+    [ValidateNever] // 2. THÊM DÒNG NÀY ĐỂ CẤM .NET BẮT LỖI
+    public virtual Room? Room { get; set; } // 3. Thêm dấu ? và xóa "= null!;"
 }
