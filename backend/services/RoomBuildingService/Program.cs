@@ -28,7 +28,10 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var app = builder.Build();
+// ĐĂNG KÝ SERVICE NẰM Ở ĐÂY (TRƯỚC LỆNH BUILD)
+builder.Services.AddScoped<RoomBuildingService.Services.IRoomService, RoomBuildingService.Services.RoomService>();
+
+var app = builder.Build(); // <-- Lệnh này phải nằm sau
 
 // Mở giao diện Swagger UI khi chạy dưới quyền Development
 if (app.Environment.IsDevelopment())
