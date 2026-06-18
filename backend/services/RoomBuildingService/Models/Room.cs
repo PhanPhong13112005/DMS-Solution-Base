@@ -24,6 +24,7 @@ public partial class Room
     public virtual ICollection<Bed>? Beds { get; set; } = new List<Bed>();
 
     [JsonIgnore]
+    [ValidateNever]
     public virtual Building? Building { get; set; } = null!;
 
     [JsonIgnore]
