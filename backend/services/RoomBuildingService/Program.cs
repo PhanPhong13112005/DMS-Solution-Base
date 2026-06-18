@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RoomBuildingService.Data;
 using System.Text.Json.Serialization;
+using MassTransit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,17 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        // Cấu hình trỏ tới RabbitMQ đang chạy trên Docker của bạn
+        cfg.Host("localhost", "/", h => {
+            h.Username("guest");
+            h.Password("guest");
+        });
+    });
+});
 // ĐĂNG KÝ SERVICE NẰM Ở ĐÂY (TRƯỚC LỆNH BUILD)
 builder.Services.AddScoped<RoomBuildingService.Services.IRoomService, RoomBuildingService.Services.RoomService>();
 

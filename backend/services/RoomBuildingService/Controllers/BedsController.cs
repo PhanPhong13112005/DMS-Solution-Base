@@ -6,6 +6,8 @@ using RoomBuildingService.Services;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MassTransit;
+using RoomBuildingService.Events;
 
 namespace RoomBuildingService.Controllers
 {
@@ -15,12 +17,14 @@ namespace RoomBuildingService.Controllers
     {
         private readonly RoomDbContext _context;
         private readonly IRoomService _roomService;
+        private readonly IPublishEndpoint _publishEndpoint;
 
         // Tiêm DbContext và IRoomService vào Controller
-        public BedsController(RoomDbContext context, IRoomService roomService)
+        public BedsController(RoomDbContext context, IRoomService roomService, IPublishEndpoint publishEndpoint)
         {
             _context = context;
             _roomService = roomService;
+            _publishEndpoint = publishEndpoint;
         }
 
         // GET: api/Bed
@@ -110,10 +114,19 @@ namespace RoomBuildingService.Controllers
         [HttpPut("Assign/{id}")]
         public async Task<IActionResult> AssignBed(int id, [FromBody] AssignBedRequest request)
         {
+            // 1. Lưu xuống SQL Server của Nhóm 1
             var result = await _roomService.UpdateBedStatusAsync(id, request.IsAvailable, request.StudentId);
             if (!result) return NotFound(new { message = "Không tìm thấy giường." });
 
-            return Ok(new { message = "Đã cập nhật trạng thái giường thành công." });
+            // 2. BẮN SỰ KIỆN LÊN RABBITMQ ĐỂ BÁO CHO NHÓM 2, NHÓM 3
+            await _publishEndpoint.Publish(new BedAssignedEvent
+            {
+                BedId = id,
+                StudentId = request.StudentId,
+                IsAvailable = request.IsAvailable
+            });
+
+            return Ok(new { message = "Đã cập nhật giường và gửi thông báo lên hệ thống thành công!" });
         }
     }
 
