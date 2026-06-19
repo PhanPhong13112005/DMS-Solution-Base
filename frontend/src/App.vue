@@ -1,74 +1,62 @@
 <script setup lang="ts">
-import { ref, computed, watch, provide } from 'vue';
+import { ref, computed, watch, provide, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Building2, LogIn } from 'lucide-vue-next';
-import type { Room, MaintenanceRequest, Invoice, TransferRequest, BookingApplication, NewsArticle } from './types';
+
+// Types
+import type {
+  User,
+  Building,
+  Room,
+  Bed,
+  RoomAmenity,
+  Invoice,
+  MaintenanceRequest,
+  BookingApplication,
+  TransferRequest,
+  NewsArticle,
+} from './types';
+
+// Services
+import { roomBuildingApi } from './services/room-building.service';
+import { contractApi } from './services/contract.service';
+import { billingApi } from './services/billing.service';
+import { newsApi } from './services/api.service';
+
+// Composables
+import { useAppData, type AppData, type AppActions } from './composables/useAppData';
 
 const route = useRoute();
 const router = useRouter();
 
-// ============ GLOBAL STATE ============
-const loggedInUser = ref<any>({});
+// ============ GLOBAL STATE (Loading & Error) ============
+const isLoading = ref(true);
+const apiError = ref<string | null>(null);
 
-// Mock Data - Rooms
-const mockRooms = ref<Room[]>([
-  { 
-    id: '1', 
-    roomNumber: '101', 
-    building: 'Tòa B', 
-    capacity: 4, 
-    available: 2, 
-    size: 25, 
-    price: 850000, 
-    gender: 'Nam', 
-    amenities: ['WC riêng', 'Máy lạnh'], 
-    occupants: ['1771020535'] 
-  },
-  { 
-    id: '2', 
-    roomNumber: 'A102', 
-    building: 'Tòa A', 
-    capacity: 2, 
-    available: 0, 
-    size: 20, 
-    price: 1200000, 
-    gender: 'Nữ', 
-    amenities: ['Máy lạnh'], 
-    occupants: [] 
-  }
-]);
+// ============ AUTHENTICATED USER ============
+const loggedInUser = ref<User | null>(null);
 
-const mockInvoices = ref<Invoice[]>([
-  { 
-    id: 'inv-1', 
-    roomNumber: '101-Tòa B', 
-    studentId: '1771020535', 
-    month: 'Tháng 6/2026', 
-    amount: 850000, 
-    type: 'Tiền phòng', 
-    status: 'Unpaid', 
-    createdAt: '2026-06-01' 
-  }
-]);
+// ============ ROOM BUILDING SERVICE (N1) DATA ============
+const buildings = ref<Building[]>([]);
+const rooms = ref<Room[]>([]);
+const beds = ref<Bed[]>([]);
+const amenities = ref<RoomAmenity[]>([]);
 
-const mockMaintenance = ref<MaintenanceRequest[]>([
-  { 
-    id: 'maint-1', 
-    roomNumber: '101-Tòa B', 
-    title: 'Hỏng điều hòa', 
-    description: 'Điều hòa chảy nước ở cục lạnh không mát', 
-    category: 'Điện', 
-    priority: 'Normal', 
-    status: 'Pending', 
-    createdAt: '2026-06-18' 
-  }
-]);
+// ============ CONTRACT SERVICE (N2) DATA ============
+const applications = ref<BookingApplication[]>([]);
+const transfers = ref<TransferRequest[]>([]);
 
-const mockApplications = ref<BookingApplication[]>([]);
-const mockNews = ref<NewsArticle[]>([]);
-const mockTransfers = ref<TransferRequest[]>([]);
+// ============ BILLING SERVICE (N3) DATA ============
+const invoices = ref<Invoice[]>([]);
+const maintenanceRequests = ref<MaintenanceRequest[]>([]);
+
+// ============ NEWS & COMMUNICATIONS ============
+const news = ref<NewsArticle[]>([]);
 
 // ============ WATCHERS ============
+/**
+ * Watch route change to restore user from localStorage
+ */
 watch(
   () => route.path,
   () => {
@@ -76,15 +64,115 @@ watch(
     if (cached) {
       try {
         loggedInUser.value = JSON.parse(cached);
-      } catch {
-        loggedInUser.value = {};
+      } catch (e) {
+        console.error('Failed to parse cached user:', e);
+        loggedInUser.value = null;
       }
     } else {
-      loggedInUser.value = {};
+      loggedInUser.value = null;
     }
   },
   { immediate: true }
 );
+
+// ============ DATA LOADING LOGIC ============
+/**
+ * Load all data from 3 microservices in parallel
+ * N1: Room Building Service
+ * N2: Contract & Student Service
+ * N3: Billing & Maintenance Service
+ * + News Service
+ */
+const loadData = async () => {
+  isLoading.value = true;
+  apiError.value = null;
+
+  try {
+    // Parallel API calls to all 3 services + News
+    const [
+      buildingsData,
+      roomsData,
+      bedsData,
+      amenitiesData,
+      applicationsData,
+      transfersData,
+      invoicesData,
+      maintenanceData,
+      newsData,
+    ] = await Promise.all([
+      // N1: Room Building Service
+      roomBuildingApi.buildings.getAll().catch((err) => {
+        console.warn('⚠️ Failed to fetch buildings:', err);
+        return [];
+      }),
+      roomBuildingApi.rooms.getAll().catch((err) => {
+        console.warn('⚠️ Failed to fetch rooms:', err);
+        return [];
+      }),
+      roomBuildingApi.beds.getAll().catch((err) => {
+        console.warn('⚠️ Failed to fetch beds:', err);
+        return [];
+      }),
+      roomBuildingApi.amenities.getAll().catch((err) => {
+        console.warn('⚠️ Failed to fetch amenities:', err);
+        return [];
+      }),
+
+      // N2: Contract & Student Service
+      contractApi.applications.getAll().catch((err) => {
+        console.warn('⚠️ Failed to fetch applications:', err);
+        return [];
+      }),
+      contractApi.transfers.getAll().catch((err) => {
+        console.warn('⚠️ Failed to fetch transfers:', err);
+        return [];
+      }),
+
+      // N3: Billing & Maintenance Service
+      billingApi.invoices.getAll().catch((err) => {
+        console.warn('⚠️ Failed to fetch invoices:', err);
+        return [];
+      }),
+      billingApi.maintenance.getAll().catch((err) => {
+        console.warn('⚠️ Failed to fetch maintenance requests:', err);
+        return [];
+      }),
+
+      // News Service
+      newsApi.getAll().catch((err) => {
+        console.warn('⚠️ Failed to fetch news:', err);
+        return [];
+      }),
+    ]);
+
+    // Update refs with fetched data
+    buildings.value = buildingsData ?? [];
+    rooms.value = roomsData ?? [];
+    beds.value = bedsData ?? [];
+    amenities.value = amenitiesData ?? [];
+    applications.value = applicationsData ?? [];
+    transfers.value = transfersData ?? [];
+    invoices.value = invoicesData ?? [];
+    maintenanceRequests.value = maintenanceData ?? [];
+    news.value = newsData ?? [];
+
+    console.log('✅ Data loaded successfully from all 3 services (N1, N2, N3) + News');
+  } catch (error) {
+    apiError.value = error instanceof Error ? error.message : 'Lỗi kết nối API không xác định';
+    console.error('❌ Error loading data:', apiError.value);
+    // Continue with empty arrays - app won't crash
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// ============ LIFECYCLE HOOKS ============
+/**
+ * Load data on app mount
+ */
+onMounted(() => {
+  loadData();
+});
 
 // ============ HELPER FUNCTIONS ============
 const showNavbar = computed(() => {
@@ -92,111 +180,112 @@ const showNavbar = computed(() => {
   return !hiddenRoutes.includes(route.path);
 });
 
-// ============ GLOBAL ACTIONS (được provide cho toàn bộ component) ============
-const handleLogout = () => {
-  localStorage.removeItem('current_user');
-  loggedInUser.value = {};
-  router.push('/auth');
-};
+// ============ APP ACTIONS ============
+/**
+ * Define global actions for mutations and navigation
+ */
+const appActions: AppActions = {
+  // Navigation & Auth
+  logout: () => {
+    loggedInUser.value = null;
+    localStorage.removeItem('current_user');
+    router.push('/auth');
+  },
 
-const handleNavigation = (screenName: string) => {
-  const routes: Record<string, string> = {
-    'Home': '/',
-    'Auth': '/auth',
-    'About': '/about',
-    'News': '/news',
-    'Rules': '/rules',
-    'Contact': '/contact',
-    'Booking': '/booking',
-    'Admin': '/admin',
-    'Staff': '/staff',
-    'Student': '/student'
-  };
-  
-  if (routes[screenName]) {
-    router.push(routes[screenName]);
-  }
-};
+  navigate: (screenName: string) => {
+    const routeMap: Record<string, string> = {
+      Home: '/',
+      Auth: '/auth',
+      StudentPortal: '/student',
+      AdminPortal: '/admin',
+      StaffPortal: '/staff',
+      Booking: '/booking',
+      News: '/news',
+      Rules: '/rules',
+      Contact: '/contact',
+      About: '/about',
+    };
+    const route = routeMap[screenName];
+    if (route) router.push(route);
+  },
 
-// ============ STUDENT PORTAL ACTIONS ============
-const addMaintenance = (req: MaintenanceRequest) => {
-  mockMaintenance.value.push(req);
-};
-
-const updateMaintenanceStatus = (id: string, status: 'Pending' | 'In Progress' | 'Resolved') => {
-  const found = mockMaintenance.value.find(m => m.id === id);
-  if (found) {
-    found.status = status;
-  }
-};
-
-const payInvoice = (invoiceId: string) => {
-  const found = mockInvoices.value.find(i => i.id === invoiceId);
-  if (found) {
-    found.status = 'Paid';
-  }
-};
-
-const addTransfer = (req: TransferRequest) => {
-  mockTransfers.value.push(req);
-};
-
-// ============ ADMIN PORTAL ACTIONS ============
-const approveApplication = (appId: string) => {
-  const found = mockApplications.value.find(a => a.id === appId);
-  if (found) {
-    found.status = 'Approved';
-  }
-};
-
-const rejectApplication = (appId: string) => {
-  const found = mockApplications.value.find(a => a.id === appId);
-  if (found) {
-    found.status = 'Rejected';
-  }
-};
-
-const addNewsArticle = (article: NewsArticle) => {
-  mockNews.value.unshift(article);
-};
-
-const deleteNewsArticle = (id: string) => {
-  mockNews.value = mockNews.value.filter(n => n.id !== id);
-};
-
-const addInvoice = (invoice: Invoice) => {
-  mockInvoices.value.push(invoice);
-};
-
-// ============ PROVIDE GLOBAL DATA & ACTIONS ============
-provide('appData', {
-  user: loggedInUser,
-  rooms: mockRooms,
-  invoices: mockInvoices,
-  maintenanceRequests: mockMaintenance,
-  applications: mockApplications,
-  news: mockNews,
-  transfers: mockTransfers
-});
-
-provide('appActions', {
-  logout: handleLogout,
-  navigate: handleNavigation,
   // Student Portal Actions
-  addMaintenance,
-  updateMaintenanceStatus,
-  payInvoice,
-  addTransfer,
+  addMaintenance: (req: MaintenanceRequest) => {
+    maintenanceRequests.value.push(req);
+  },
+
+  updateMaintenanceStatus: (id: string, status: MaintenanceRequest['status']) => {
+    const idx = maintenanceRequests.value.findIndex((r) => r.id === id);
+    if (idx !== -1) {
+      maintenanceRequests.value[idx].status = status;
+    }
+  },
+
+  payInvoice: (invoiceId: string) => {
+    const idx = invoices.value.findIndex((inv) => inv.id === invoiceId);
+    if (idx !== -1) {
+      invoices.value[idx].status = 'Paid';
+    }
+  },
+
+  addTransfer: (req: TransferRequest) => {
+    transfers.value.push(req);
+  },
+
   // Admin Portal Actions
-  approveApplication,
-  rejectApplication,
-  addNewsArticle,
-  deleteNewsArticle,
+  approveApplication: (appId: string) => {
+    const idx = applications.value.findIndex((app) => app.id === appId);
+    if (idx !== -1) {
+      applications.value[idx].status = 'Approved';
+    }
+  },
+
+  rejectApplication: (appId: string) => {
+    const idx = applications.value.findIndex((app) => app.id === appId);
+    if (idx !== -1) {
+      applications.value[idx].status = 'Rejected';
+    }
+  },
+
+  addNewsArticle: (article: NewsArticle) => {
+    news.value.push(article);
+  },
+
+  deleteNewsArticle: (id: string) => {
+    news.value = news.value.filter((n) => n.id !== id);
+  },
+
   // Staff Portal Actions
-  addInvoice
-});
+  addInvoice: (invoice: Invoice) => {
+    invoices.value.push(invoice);
+  },
 
+  // Data Management
+  loadData: loadData,
+};
 
+// ============ TYPE-SAFE PROVIDE/INJECT ============
+/**
+ * Provide typed AppData and AppActions to all child components
+ * Components use: const { rooms, actions } = useAppData()
+ */
+const appData: AppData = {
+  isLoading,
+  apiError,
+  user: loggedInUser,
+  buildings,
+  rooms,
+  beds,
+  amenities,
+  applications,
+  transfers,
+  invoices,
+  maintenanceRequests,
+  news,
+};
+
+provide('appData', appData);
+provide('appActions', appActions);
 </script>
 
 <template>
