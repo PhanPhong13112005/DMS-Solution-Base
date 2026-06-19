@@ -1,23 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, inject } from 'vue';
 import { LayoutDashboard, Users, UserPlus, Wrench, ShieldAlert, CheckCircle, LogOut, Search, Building, Receipt, FilePlus, AlertTriangle, Info, CheckCircle2 } from 'lucide-vue-next';
 import type { Room, BookingApplication, MaintenanceRequest, Invoice } from '../types';
 
-const props = defineProps<{
-  staffUser: any;
-  rooms: Room[];
-  applications: BookingApplication[];
-  maintenanceRequests: MaintenanceRequest[];
-}>();
-
-const emit = defineEmits<{
-  (e: 'logout'): void;
-  (e: 'approveApplication', appId: string): void;
-  (e: 'rejectApplication', appId: string): void;
-  (e: 'updateRoomVacancy', roomId: string, decrement: boolean): void;
-  (e: 'updateMaintenanceStatus', id: string, status: 'Pending' | 'In Progress' | 'Resolved'): void;
-  (e: 'addInvoice', inv: Invoice): void;
-}>();
+// ============ INJECT GLOBAL DATA & ACTIONS ============
+const appData = inject<any>('appData');
+const appActions = inject<any>('appActions');
 
 const activeTab = ref('Tổng quan');
 const searchQuery = ref('');
@@ -29,40 +17,71 @@ const billMonth = ref('Tháng 6/2026');
 const billType = ref<'Điện nước' | 'Phí dịch vụ'>('Điện nước');
 const billAmount = ref('');
 
-const pendingApps = computed(() => props.applications.filter(a => a.status === 'Pending'));
-const activeIssues = computed(() => props.maintenanceRequests.filter(m => m.status !== 'Resolved'));
-const urgentIssues = computed(() => activeIssues.value.filter(i => i.priority === 'Critical'));
+// ============ COMPUTED WITH SAFE ACCESS ============
+const staffUser = computed(() => appData?.user?.value ?? appData?.user ?? { name: 'Cán bộ', id: 'N/A' });
+const rooms = computed(() => appData?.rooms?.value ?? appData?.rooms ?? []);
+const applications = computed(() => appData?.applications?.value ?? appData?.applications ?? []);
+const maintenanceRequests = computed(() => appData?.maintenanceRequests?.value ?? appData?.maintenanceRequests ?? []);
 
-const totalVacantSlots = computed(() => props.rooms.reduce((accum, r) => accum + r.available, 0));
+const pendingApps = computed(() => applications.value?.filter((a: BookingApplication) => a?.status === 'Pending') ?? []);
+const activeIssues = computed(() => maintenanceRequests.value?.filter((m: MaintenanceRequest) => m?.status !== 'Resolved') ?? []);
+const urgentIssues = computed(() => activeIssues.value?.filter((i: MaintenanceRequest) => i?.priority === 'Critical') ?? []);
 
+const totalVacantSlots = computed(() => 
+  rooms.value?.reduce((accum: number, r: Room) => accum + (r?.available ?? 0), 0) ?? 0
+);
+
+// ============ HELPER FUNCTIONS ============
 const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
   toast.value = { message, type };
   setTimeout(() => { toast.value = null; }, 4000);
 };
 
 const handleCreateBill = () => {
-  if (!billRoom.value || !billAmount.value) {
+  if (!billRoom.value?.trim() || !billAmount.value?.trim()) {
     showToast('Vui lòng khai nhập mã hiệu phòng và số tiền hóa đơn!', 'error');
     return;
   }
+
   const amt = parseFloat(billAmount.value);
   if (isNaN(amt) || amt <= 0) {
     showToast('Số tiền hóa đơn nhập vào chưa hợp lệ!', 'error');
     return;
   }
+
   const newInvoice: Invoice = {
     id: 'inv-' + Math.random().toString(36).substr(2, 9),
     roomNumber: billRoom.value,
     studentId: 'DNU-COMMON',
     month: billMonth.value,
     amount: amt,
-    type: billType.value,
+    type: billType.value as 'Tiền phòng' | 'Điện nước' | 'Phí dịch vụ',
     status: 'Unpaid',
     createdAt: new Date().toISOString().split('T')[0]
   };
-  emit('addInvoice', newInvoice);
+
+  appActions?.addInvoice?.(newInvoice);
   showToast('Phát hành biểu mẫu hóa đơn thành công! Hệ thống đã gửi báo phí tới phòng liên đới.', 'success');
   billAmount.value = '';
+};
+
+const handleUpdateMaintenanceStatus = (id: string, status: 'Pending' | 'In Progress' | 'Resolved') => {
+  appActions?.updateMaintenanceStatus?.(id, status);
+  showToast('Đã cử kỹ sư hiện trường!', 'success');
+};
+
+const handleApproveApplication = (appId: string) => {
+  appActions?.approveApplication?.(appId);
+  showToast('Đã phê duyệt hợp đồng lưu trú thành công!', 'success');
+};
+
+const handleRejectApplication = (appId: string) => {
+  appActions?.rejectApplication?.(appId);
+  showToast('Đã từ chối hợp đồng lưu trú!', 'info');
+};
+
+const handleLogout = () => {
+  appActions?.logout?.();
 };
 
 const menuItems = [
@@ -110,11 +129,11 @@ const menuItems = [
         <div class="p-3 bg-white/15 rounded-2xl flex items-center gap-3 mb-3">
           <div class="w-9 h-9 rounded-full bg-[#CB997E] text-white font-extrabold flex items-center justify-center font-mono text-sm">CB</div>
           <div class="overflow-hidden">
-            <div class="font-bold text-xs truncate text-white">{{ staffUser.name }}</div>
+            <div class="font-bold text-xs truncate text-white">{{ staffUser?.name ?? 'Cán bộ' }}</div>
             <div class="text-[10px] text-[#FDFBF7]/80">Cán bộ trực ban</div>
           </div>
         </div>
-        <button @click="emit('logout')" class="w-full py-2.5 bg-white/15 hover:bg-white/20 text-white rounded-full text-xs font-bold flex items-center justify-center gap-2 cursor-pointer">
+        <button @click="handleLogout()" class="w-full py-2.5 bg-white/15 hover:bg-white/20 text-white rounded-full text-xs font-bold flex items-center justify-center gap-2 cursor-pointer">
           <LogOut class="w-4 h-4" /> <span>Thoát cán bộ</span>
         </button>
       </div>
@@ -132,18 +151,18 @@ const menuItems = [
       <div class="p-8 flex-1 space-y-6">
         
         <div v-if="activeTab === 'Tổng quan'" class="space-y-6">
-          <div v-if="urgentIssues.length > 0" class="bg-[#CB997E]/10 border border-[#CB997E]/30 p-5 rounded-[24px] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div v-if="urgentIssues?.length > 0" class="bg-[#CB997E]/10 border border-[#CB997E]/30 p-5 rounded-[24px] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div class="flex items-start gap-4">
               <div class="w-11 h-11 rounded-full bg-[#CB997E]/20 text-[#CB997E] flex items-center justify-center shrink-0 mt-1">
                 <ShieldAlert class="w-6 h-6 animate-bounce" />
               </div>
               <div>
                 <span class="text-[10px] bg-[#CB997E] text-white font-extrabold uppercase px-2 py-0.5 rounded-md">CẢNH BÁO SỰ CỐ KHẨN</span>
-                <h4 class="font-serif font-light text-[#4A4A4A] text-base mt-2">{{ urgentIssues[0].title }}</h4>
-                <p class="text-xs text-[#8B8B8B] font-light mt-1">Mô tả thực trạng: {{ urgentIssues[0].description }} (Vị trí: {{ urgentIssues[0].roomNumber }})</p>
+                <h4 class="font-serif font-light text-[#4A4A4A] text-base mt-2">{{ urgentIssues[0]?.title ?? 'Sự cố chưa rõ' }}</h4>
+                <p class="text-xs text-[#8B8B8B] font-light mt-1">Mô tả thực trạng: {{ urgentIssues[0]?.description ?? 'N/A' }} (Vị trí: {{ urgentIssues[0]?.roomNumber ?? 'N/A' }})</p>
               </div>
             </div>
-            <button @click="onUpdateMaintenanceStatus(urgentIssues[0].id, 'In Progress'); showToast('Đã cử kĩ sư hiện trường!', 'success');" class="px-5 py-2.5 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold text-xs rounded-full shadow-xs cursor-pointer">
+            <button @click="handleUpdateMaintenanceStatus(urgentIssues[0]?.id ?? '', 'In Progress')" class="px-5 py-2.5 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold text-xs rounded-full shadow-xs cursor-pointer">
               Cử kỹ sư xử lý ngay
             </button>
           </div>

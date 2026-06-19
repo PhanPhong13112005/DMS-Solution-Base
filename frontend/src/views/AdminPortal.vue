@@ -1,25 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, inject } from 'vue';
 import { ChartSpline, Users, Shield, LogOut, ArrowUpRight, ArrowDownRight, Settings, PlusCircle, Trash2, Calendar, Newspaper, Activity, Landmark, BellRing, Info, AlertTriangle, CheckCircle } from 'lucide-vue-next';
 import type { Room, BookingApplication, MaintenanceRequest, NewsArticle, Invoice } from '../types';
 
-const props = defineProps<{
-  adminUser?: any;
-  rooms?: Room[];
-  applications?: BookingApplication[];
-  maintenanceRequests?: MaintenanceRequest[];
-  news?: NewsArticle[];
-  invoices?: Invoice[];
-}>();
-
-const emit = defineEmits<{
-  (e: 'logout'): void;
-  (e: 'approveApplication', appId: string): void;
-  (e: 'rejectApplication', appId: string): void;
-  (e: 'updateMaintenanceStatus', id: string, status: 'Pending' | 'In Progress' | 'Resolved'): void;
-  (e: 'addNewsArticle', article: NewsArticle): void;
-  (e: 'deleteNewsArticle', id: string): void;
-}>();
+// ============ INJECT GLOBAL DATA & ACTIONS ============
+const appData = inject<any>('appData');
+const appActions = inject<any>('appActions');
 
 const activeTab = ref<string>('Bảng điều khiển');
 const toast = ref<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -31,20 +17,35 @@ const newsSummary = ref('');
 const newsContent = ref('');
 const newsImg = ref('https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=400&q=80');
 
-const pendingApps = computed(() => (props.applications || []).filter(a => a.status === 'Pending'));
-const activeIssues = computed(() => (props.maintenanceRequests || []).filter(m => m.status !== 'Resolved'));
+// ============ COMPUTED WITH SAFE ACCESS ============
+const adminUser = computed(() => appData?.user?.value ?? appData?.user ?? { name: 'Admin', id: 'N/A' });
+const rooms = computed(() => appData?.rooms?.value ?? appData?.rooms ?? []);
+const applications = computed(() => appData?.applications?.value ?? appData?.applications ?? []);
+const maintenanceRequests = computed(() => appData?.maintenanceRequests?.value ?? appData?.maintenanceRequests ?? []);
+const news = computed(() => appData?.news?.value ?? appData?.news ?? []);
+const invoices = computed(() => appData?.invoices?.value ?? appData?.invoices ?? []);
 
-const totalInvoicesPaidSum = computed(() => (props.invoices || []).filter(i => i.status === 'Paid').reduce((accum, i) => accum + i.amount, 14500000));
-const totalOccupiedSeats = computed(() => (props.rooms || []).reduce((accum, r) => accum + (r.capacity - r.available), 14));
-const totalCapacitySeats = computed(() => (props.rooms || []).reduce((accum, r) => accum + r.capacity, 28));
+const pendingApps = computed(() => applications.value?.filter((a: BookingApplication) => a?.status === 'Pending') ?? []);
+const activeIssues = computed(() => maintenanceRequests.value?.filter((m: MaintenanceRequest) => m?.status !== 'Resolved') ?? []);
 
+const totalInvoicesPaidSum = computed(() => 
+  (invoices.value?.filter((i: Invoice) => i?.status === 'Paid')?.reduce((accum: number, i: Invoice) => accum + (i?.amount ?? 0), 0) ?? 0) + 14500000
+);
+const totalOccupiedSeats = computed(() => 
+  rooms.value?.reduce((accum: number, r: Room) => accum + ((r?.capacity ?? 0) - (r?.available ?? 0)), 0) ?? 14
+);
+const totalCapacitySeats = computed(() => 
+  rooms.value?.reduce((accum: number, r: Room) => accum + (r?.capacity ?? 0), 0) ?? 28
+);
+
+// ============ HELPER FUNCTIONS ============
 const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
   toast.value = { message, type };
   setTimeout(() => { toast.value = null; }, 4000);
 };
 
 const handleCreateNews = () => {
-  if (!newsTitle.value || !newsSummary.value || !newsContent.value) {
+  if (!newsTitle.value?.trim() || !newsSummary.value?.trim() || !newsContent.value?.trim()) {
     showToast('Vui lòng soạn thảo và bổ sung hoàn chỉnh thông tin các trường yêu cầu!', 'error');
     return;
   }
@@ -59,11 +60,35 @@ const handleCreateNews = () => {
     image: newsImg.value
   };
 
-  emit('addNewsArticle', newArticle);
+  appActions?.addNewsArticle?.(newArticle);
   showToast('Đã soạn đăng và chuyển gửi thông báo mới công khai thành công!', 'success');
   newsTitle.value = '';
   newsSummary.value = '';
   newsContent.value = '';
+};
+
+const handleApproveApplication = (appId: string) => {
+  appActions?.approveApplication?.(appId);
+  showToast('Đã phê duyệt hợp đồng lưu trú thành công!', 'success');
+};
+
+const handleRejectApplication = (appId: string) => {
+  appActions?.rejectApplication?.(appId);
+  showToast('Đã từ chối hợp đồng lưu trú!', 'info');
+};
+
+const handleUpdateMaintenanceStatus = (id: string, status: 'Pending' | 'In Progress' | 'Resolved') => {
+  appActions?.updateMaintenanceStatus?.(id, status);
+  showToast(`Cập nhật trạng thái sự cố thành: ${status === 'Pending' ? 'Đang chờ' : (status === 'In Progress' ? 'Đang sửa' : 'Đã xong')}`, 'success');
+};
+
+const handleDeleteNews = (id: string) => {
+  appActions?.deleteNewsArticle?.(id);
+  showToast('Đã xóa bài viết thành công!', 'success');
+};
+
+const handleLogout = () => {
+  appActions?.logout?.();
 };
 
 const menuItems = [
@@ -117,7 +142,7 @@ const menuItems = [
           </div>
         </div>
         <button 
-          @click="emit('logout')"
+          @click="handleLogout()"
           class="w-full py-2.5 bg-white/15 hover:bg-white/20 text-white rounded-full transition-colors font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
         >
           <LogOut class="w-4 h-4" /> <span>Thoát đặc quyền</span>
@@ -265,7 +290,7 @@ const menuItems = [
                   <div class="font-bold text-[#4A4A4A] leading-tight line-clamp-1">{{ item.title }}</div>
                   <div class="text-[10px] text-[#8B8B8B] font-mono mt-1">{{ item.category }} • {{ item.date }}</div>
                 </div>
-                <button @click="emit('deleteNewsArticle', item.id); showToast('Đã thu hồi bản tin!', 'info');" class="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg cursor-pointer shrink-0">
+                <button @click="handleDeleteNews(item.id)" class="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg cursor-pointer shrink-0">
                   <Trash2 class="w-4 h-4" />
                 </button>
               </div>
@@ -288,7 +313,7 @@ const menuItems = [
                 <p class="text-xs text-[#8B8B8B] font-light mt-1">{{ issue.description }}</p>
               </div>
               <div class="flex gap-2 pt-2 border-t border-[#EAE7E1] text-xs">
-                <button @click="emit('updateMaintenanceStatus', issue.id, 'Resolved'); showToast('Đã đóng hồ sơ bảo trì!', 'success');" class="w-1/2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold py-2 rounded-full cursor-pointer text-center">
+                <button @click="handleUpdateMaintenanceStatus(issue.id, 'Resolved')" class="w-1/2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold py-2 rounded-full cursor-pointer text-center">
                   Khép lại sự cố
                 </button>
                 <span class="flex items-center justify-center italic text-[#8B8B8B] text-xs w-1/2 font-mono bg-[#FDFBF7] border border-[#EAE7E1] rounded-full">
@@ -308,8 +333,8 @@ const menuItems = [
                 <p class="text-xs text-[#8B8B8B] mt-1 font-mono">MSSV: {{ app.studentId }} • Lớp: {{ app.className }} • Phòng muốn nạp: {{ app.roomNumber }}</p>
               </div>
               <div class="flex gap-2">
-                <button @click="emit('approveApplication', app.id); showToast('Phê duyệt hồ sơ thành công!', 'success');" class="px-4 py-2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold text-xs rounded-full cursor-pointer">Duyệt</button>
-                <button @click="emit('rejectApplication', app.id); showToast('Đã hủy bỏ đề xuất đăng kí!', 'info');" class="px-4 py-2 bg-[#CB997E] hover:bg-[#b07d62] text-white font-bold text-xs rounded-full cursor-pointer">Từ chối</button>
+                <button @click="handleApproveApplication(app.id)" class="px-4 py-2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold text-xs rounded-full cursor-pointer">Duyệt</button>
+                <button @click="handleRejectApplication(app.id)" class="px-4 py-2 bg-[#CB997E] hover:bg-[#b07d62] text-white font-bold text-xs rounded-full cursor-pointer">Từ chối</button>
               </div>
             </div>
             <div v-if="pendingApps.length === 0" class="text-center py-12 text-[#8B8B8B] italic text-xs font-mono">Không có hồ sơ lưu trú nào đang đợi kiểm duyệt.</div>
