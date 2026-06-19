@@ -1,14 +1,66 @@
+/**
+ * User account (from OpenAPI Auth endpoints)
+ * Field mapping: id (MSSV/Admin ID), name (Họ tên), role ('Student'|'Admin'|'Staff')
+ */
+export interface User {
+  id: string; // MSSV or Admin ID
+  name: string; // Full name
+  role?: 'Guest' | 'Student' | 'Staff' | 'Admin';
+  email?: string; // Email address
+  phone?: string; // Phone number
+  className?: string; // Class name (for students)
+  roomNumber?: string; // Current room assignment
+}
+
+/**
+ * Building model from Room Building Service
+ * Field mapping: id (UUID), name (Tên tòa), totalFloors (Số tầng)
+ */
+export interface Building {
+  id: number;
+  name: string; // Tòa A, Tòa B, Tòa C
+  totalFloors: number;
+  genderRestriction?: string; // Nam/Nữ/Không
+  rooms?: Room[];
+}
+
+/**
+ * Room model from Room Building Service
+ * Field mapping: id, roomNumber (Số phòng), buildingId, monthlyPrice, status
+ */
 export interface Room {
-  id: string;
+  id: number;
+  buildingId: number;
   roomNumber: string;
-  building: string; // Tòa A, Tòa B, Tòa C
-  capacity: number; // 2, 4, 6
-  size: number; // m²
-  price: number; // VNĐ / tháng
-  amenities: string[]; // "WC riêng", "Máy lạnh", etc.
-  available: number; // slots left
-  gender: 'Nam' | 'Nữ';
-  occupants: string[]; // Student IDs
+  floorNumber: number;
+  roomType?: string; // Standard, VIP, etc.
+  monthlyPrice: number; // VNĐ / tháng
+  status?: string; // Available, Occupied, Maintenance
+  amenities?: RoomAmenity[];
+  beds?: Bed[];
+}
+
+/**
+ * Bed model from Room Building Service
+ * Field mapping: id, roomId, bedName, isAvailable, assignedStudentId
+ */
+export interface Bed {
+  id: number;
+  roomId: number;
+  bedName: string; // Giường A, Giường B, etc.
+  isAvailable: boolean;
+  assignedStudentId?: string | null; // MSSV nếu có người ở
+}
+
+/**
+ * RoomAmenity model from Room Building Service
+ * Field mapping: id, roomId, amenityName (tên tiện nghi), condition (tình trạng)
+ */
+export interface RoomAmenity {
+  id: number;
+  roomId: number;
+  amenityName: string; // WC riêng, Máy lạnh, Bàn học, etc.
+  condition: string; // Good, Fair, Poor
 }
 
 export interface BookingApplication {

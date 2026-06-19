@@ -1,61 +1,40 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { Search, MapPin, Users, Heart, ClipboardCheck, ArrowRight, ShieldAlert, Upload, HelpCircle, CheckCircle2, UserCheck, CreditCard, Landmark, Coins, AlertCircle } from 'lucide-vue-next';
-import type { Room, BookingApplication } from '../types';
+import type { BookingApplication } from '../types';
+import { useAppData } from '../composables/useAppData';
 
-// Trong thực tế, dữ liệu này sẽ lấy từ API hoặc Pinia. 
-// Tạm thời khai báo props để tương thích với cấu trúc cũ.
-const props = defineProps<{
-  rooms?: Room[];
-  initialSelectedRoomNumber?: string;
-}>();
-
-const emit = defineEmits<{
-  (e: 'addApplication', app: BookingApplication): void;
-  (e: 'updateRoomVacancy', roomId: string, decrement: boolean): void;
-}>();
+// ============ USE TYPE-SAFE APP DATA & ACTIONS ============
+const { rooms, actions } = useAppData();
 
 const filter = ref<string>('Tất cả');
 const searchBldg = ref<string>('Tất cả');
 const searchType = ref<string>('Tất cả');
 const searchPrice = ref<string>('Tất cả');
 
-// Dữ liệu mẫu (Mock data) hiển thị giao diện khi chưa có API
-const defaultRooms: Room[] = [
-  { id: '1', roomNumber: '101', building: 'Tòa B', capacity: 4, available: 2, size: 25, price: 850000, gender: 'Nam', amenities: ['WC riêng', 'Máy lạnh'] },
-  { id: '2', roomNumber: '202', building: 'Tòa A', capacity: 2, available: 0, size: 20, price: 1200000, gender: 'Nữ', amenities: ['Máy lạnh'] },
-  { id: '3', roomNumber: '305', building: 'Tòa C', capacity: 6, available: 4, size: 35, price: 500000, gender: 'Nam', amenities: [] }
-];
-
-const roomsList = computed(() => props.rooms && props.rooms.length > 0 ? props.rooms : defaultRooms);
 
 // Booking Modal States
-const selectedRoom = ref<Room | null>(
-  props.initialSelectedRoomNumber ? (roomsList.value.find(r => r.roomNumber === props.initialSelectedRoomNumber) || null) : null
-);
-const isModalOpen = ref<boolean>(!!props.initialSelectedRoomNumber);
-const step = ref<number>(1);
+const selectedRoom = ref(null);
+const isModalOpen = ref(false);
+const step = ref(1);
 const localError = ref<string | null>(null);
 
 // Form Inputs
-const fullName = ref<string>('');
-const studentId = ref<string>('');
-const className = ref<string>('');
-const phone = ref<string>('');
-const email = ref<string>('');
+const fullName = ref('');
+const studentId = ref('');
+const className = ref('');
+const phone = ref('');
+const email = ref('');
 const paymentMethod = ref<'bank' | 'e-wallet' | 'direct'>('bank');
-const cccdUploaded = ref<boolean>(false);
-const studentCardUploaded = ref<boolean>(false);
-const agreeRules = ref<boolean>(false);
-const isSubmitting = ref<boolean>(false);
+const cccdUploaded = ref(false);
+const studentCardUploaded = ref(false);
+const agreeRules = ref(false);
+const isSubmitting = ref(false);
 
 // Filter computation
 const filteredRooms = computed(() => {
-  return roomsList.value.filter(room => {
-    const matchBldg = searchBldg.value === 'Tất cả' || room.building === searchBldg.value;
-    
-    let matchType = true;
-    if (searchType.value !== 'Tất cả') {
+  return (rooms.value ?? []).filter(room => {
+    const matchBldg = searchBldg.value === 'Tất cả' || room.roomType === searchBldg.value;
       const cap = parseInt(searchType.value);
       matchType = room.capacity === cap;
     }

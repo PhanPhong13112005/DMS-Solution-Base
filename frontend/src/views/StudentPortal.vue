@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, inject } from 'vue';
+import { ref, computed } from 'vue';
 import { Home, ClipboardList, BedDouble, Receipt, Wrench, BellRing, LogOut, Settings2, Sparkles, Send, CheckCircle2, ShieldAlert, Landmark, UserMinus, CheckCircle, Info, AlertTriangle } from 'lucide-vue-next';
-import type { Room, MaintenanceRequest, Invoice, TransferRequest } from '../types';
+import type { MaintenanceRequest, Invoice, TransferRequest } from '../types';
+import { useAppData } from '../composables/useAppData';
 
-// ============ INJECT GLOBAL DATA & ACTIONS ============
-const appData = inject<any>('appData');
-const appActions = inject<any>('appActions');
+// ============ USE TYPE-SAFE APP DATA & ACTIONS ============
+const { user, rooms, invoices, maintenanceRequests, transfers, actions, apiError, isLoading } = useAppData();
 
 const activeTab = ref('Trang chủ');
 const toast = ref<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -25,23 +25,63 @@ const payingInvoice = ref<Invoice | null>(null);
 const isPayModalOpen = ref(false);
 
 // ============ COMPUTED WITH SAFE ACCESS ============
-const studentUser = computed(() => appData?.user?.value ?? appData?.user ?? { name: 'Sinh viên', id: 'N/A' });
-const rooms = computed(() => appData?.rooms?.value ?? appData?.rooms ?? []);
-const maintenanceRequests = computed(() => appData?.maintenanceRequests?.value ?? appData?.maintenanceRequests ?? []);
+/**
+ * Student user info from global state with safe defaults
+ * Field mapping: user.id (MSSV), user.name (Họ tên), user.roomNumber (Phòng hiện tại)
+ */
+const studentUser = computed(() => {
+  return {
+    id: user.value?.id ?? 'N/A',
+    name: user.value?.name ?? 'Sinh viên',
+    className: user.value?.className ?? 'CNTT-K15',
+    phone: user.value?.phone ?? '0978.112.551',
+    email: user.value?.email ?? 'hungnguyen@dainam.edu.vn',
+    roomNumber: user.value?.roomNumber ?? null,
+  };
+});
 
+/**
+ * All available rooms (Danh sách phòng của toàn KTX)
+ * Field mapping: room.roomNumber (Số phòng), room.building (Tòa), room.capacity (Sức chứa)
+ */
+const roomsList = computed(() => rooms.value ?? []);
+
+/**
+ * All maintenance requests from KTX system
+ * Field mapping: req.roomNumber (Số phòng), req.status (Trạng thái), req.priority (Mức độ)
+ */
 const myMaintenance = computed(() => {
   const roomNumber = studentUser.value?.roomNumber;
   if (!roomNumber) return [];
-  return maintenanceRequests.value?.filter((req: MaintenanceRequest) => req.roomNumber?.includes(roomNumber)) ?? [];
+  return maintenanceRequests.value?.filter((req) => req?.roomNumber?.includes(roomNumber)) ?? [];
 });
 
-const invoices = computed(() => appData?.invoices?.value ?? appData?.invoices ?? []);
-const transfers = computed(() => appData?.transfers?.value ?? appData?.transfers ?? []);
+/**
+ * Student's unpaid invoices for current semester
+ * Field mapping: invoice.studentId, invoice.amount, invoice.status ('Paid'|'Unpaid')
+ */
+const myInvoices = computed(() => {
+  const studentId = studentUser.value?.id;
+  if (!studentId) return [];
+  return invoices.value?.filter((inv) => inv?.studentId === studentId) ?? [];
+});
 
+/**
+ * Student contact info with safe defaults
+ */
 const phone = computed(() => studentUser.value?.phone ?? '0978.112.551');
 const email = computed(() => studentUser.value?.email ?? 'hungnguyen@dainam.edu.vn');
 const className = computed(() => studentUser.value?.className ?? 'CNTT-K15');
-const myRoom = computed(() => rooms.value?.find((room: Room) => room.roomNumber === studentUser.value?.roomNumber) ?? null);
+
+/**
+ * Current room assignment info
+ * Matches current student's roomNumber with actual room record
+ */
+const myRoom = computed(() => {
+  const studentRoomNumber = studentUser.value?.roomNumber;
+  if (!studentRoomNumber) return null;
+  return roomsList.value?.find((room) => room?.roomNumber === studentRoomNumber) ?? null;
+});
 
 // ============ HELPER FUNCTIONS ============
 const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
@@ -57,7 +97,7 @@ const handleMaintenanceSubmit = () => {
 
   const newRequest: MaintenanceRequest = {
     id: 'maint-' + Math.random().toString(36).substr(2, 9),
-    roomNumber: myRoom.value ? `${myRoom.value.roomNumber}-${myRoom.value.building}` : '101-Tòa B',
+    roomNumber: myRoom.value ? `${myRoom.value.roomNumber}` : '101',
     title: maintTitle.value,
     description: maintDesc.value,
     category: maintCategory.value,
@@ -66,7 +106,7 @@ const handleMaintenanceSubmit = () => {
     createdAt: new Date().toISOString().split('T')[0]
   };
 
-  appActions?.addMaintenance?.(newRequest);
+  actions.addMaintenance(newRequest);
   showToast('Đã gửi phiếu báo hỏng kỹ thuật thành công tới ban kỹ sư KTX!', 'success');
   maintTitle.value = '';
   maintDesc.value = '';
@@ -82,14 +122,14 @@ const handleTransferSubmit = () => {
     id: 'tf-' + Math.random().toString(36).substr(2, 9),
     studentId: studentUser.value?.id ?? 'N/A',
     fullName: studentUser.value?.name ?? 'Sinh viên',
-    currentRoom: myRoom.value ? `${myRoom.value.roomNumber}-${myRoom.value.building}` : '101-Tòa B',
+    currentRoom: myRoom.value ? `${myRoom.value.roomNumber}` : '101',
     requestedRoom: requestedRoomCode.value,
     reason: transferReason.value,
     status: 'Pending',
     createdAt: new Date().toISOString().split('T')[0]
   };
 
-  appActions?.addTransfer?.(newTransfer);
+  actions.addTransfer(newTransfer);
   showToast('Đơn đề xuất xin di chuyển phòng ở đã gửi thành công!', 'success');
   requestedRoomCode.value = '';
   transferReason.value = '';
@@ -102,7 +142,7 @@ const startInvoicePayment = (inv: Invoice) => {
 
 const completeInvoicePayment = () => {
   if (!payingInvoice.value) return;
-  appActions?.payInvoice?.(payingInvoice.value.id);
+  actions.payInvoice(payingInvoice.value.id);
   isPayModalOpen.value = false;
   payingInvoice.value = null;
   showToast('Giao dịch thanh toán hóa đơn đã được ghi nhận thành công!', 'success');
@@ -113,7 +153,7 @@ const handleProfileSave = () => {
 };
 
 const handleLogout = () => {
-  appActions?.logout?.();
+  actions.logout();
 };
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN').format(amount ?? 0);

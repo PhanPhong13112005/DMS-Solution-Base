@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, inject } from 'vue';
+import { ref, computed } from 'vue';
 import { ChartSpline, Users, Shield, LogOut, ArrowUpRight, ArrowDownRight, Settings, PlusCircle, Trash2, Calendar, Newspaper, Activity, Landmark, BellRing, Info, AlertTriangle, CheckCircle } from 'lucide-vue-next';
-import type { Room, BookingApplication, MaintenanceRequest, NewsArticle, Invoice } from '../types';
+import type { BookingApplication, NewsArticle } from '../types';
+import { useAppData } from '../composables/useAppData';
 
-// ============ INJECT GLOBAL DATA & ACTIONS ============
-const appData = inject<any>('appData');
-const appActions = inject<any>('appActions');
+// ============ USE TYPE-SAFE APP DATA & ACTIONS ============
+const { applications, invoices, news, actions, apiError, isLoading } = useAppData();
 
 const activeTab = ref<string>('Bảng điều khiển');
 const toast = ref<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -18,25 +18,95 @@ const newsContent = ref('');
 const newsImg = ref('https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=400&q=80');
 
 // ============ COMPUTED WITH SAFE ACCESS ============
-const adminUser = computed(() => appData?.user?.value ?? appData?.user ?? { name: 'Admin', id: 'N/A' });
+/**
+ * Admin user info from global state
+ * Field mapping: user.id (Admin ID), user.name (Tên Admin)
+ */
+const adminUser = computed(() => {
+  const user = appData?.user?.value ?? appData?.user ?? {};
+  return {
+    id: user?.id ?? 'ADMIN',
+    name: user?.name ?? 'Admin',
+    ...user // Preserve additional fields
+  };
+});
+
+/**
+ * All dormitory rooms (Phòng ở)
+ * Field mapping: room.id, room.roomNumber, room.building, room.capacity, room.available
+ */
 const rooms = computed(() => appData?.rooms?.value ?? appData?.rooms ?? []);
+
+/**
+ * Booking applications from students (Đơn đặt phòng)
+ * Field mapping: app.id, app.studentId, app.fullName, app.status ('Pending'|'Approved'|'Rejected')
+ */
 const applications = computed(() => appData?.applications?.value ?? appData?.applications ?? []);
+
+/**
+ * Maintenance requests (Phiếu báo hỏng)
+ * Field mapping: req.id, req.roomNumber, req.status ('Pending'|'In Progress'|'Resolved')
+ */
 const maintenanceRequests = computed(() => appData?.maintenanceRequests?.value ?? appData?.maintenanceRequests ?? []);
+
+/**
+ * News articles and announcements (Tin tức)
+ * Field mapping: article.id, article.title, article.category, article.date
+ */
 const news = computed(() => appData?.news?.value ?? appData?.news ?? []);
+
+/**
+ * Payment invoices (Hóa đơn thanh toán)
+ * Field mapping: invoice.id, invoice.amount, invoice.status ('Paid'|'Unpaid')
+ */
 const invoices = computed(() => appData?.invoices?.value ?? appData?.invoices ?? []);
 
-const pendingApps = computed(() => applications.value?.filter((a: BookingApplication) => a?.status === 'Pending') ?? []);
-const activeIssues = computed(() => maintenanceRequests.value?.filter((m: MaintenanceRequest) => m?.status !== 'Resolved') ?? []);
+/**
+ * Applications waiting for approval (status === 'Pending')
+ */
+const pendingApps = computed(() => {
+  return applications.value?.filter((a: BookingApplication) => a?.status === 'Pending') ?? [];
+});
 
-const totalInvoicesPaidSum = computed(() => 
-  (invoices.value?.filter((i: Invoice) => i?.status === 'Paid')?.reduce((accum: number, i: Invoice) => accum + (i?.amount ?? 0), 0) ?? 0) + 14500000
-);
-const totalOccupiedSeats = computed(() => 
-  rooms.value?.reduce((accum: number, r: Room) => accum + ((r?.capacity ?? 0) - (r?.available ?? 0)), 0) ?? 14
-);
-const totalCapacitySeats = computed(() => 
-  rooms.value?.reduce((accum: number, r: Room) => accum + (r?.capacity ?? 0), 0) ?? 28
-);
+/**
+ * Active maintenance issues (status !== 'Resolved')
+ * Includes: 'Pending' and 'In Progress' statuses
+ */
+const activeIssues = computed(() => {
+  return maintenanceRequests.value?.filter((m: MaintenanceRequest) => m?.status !== 'Resolved') ?? [];
+});
+
+/**
+ * Total revenue from paid invoices (Tổng doanh số)
+ * Field mapping: invoice.amount (VNĐ/month), invoice.status ('Paid')
+ */
+const totalInvoicesPaidSum = computed(() => {
+  const paidTotal = invoices.value?.filter((i: Invoice) => i?.status === 'Paid')?.reduce((accum: number, i: Invoice) => {
+    return accum + (i?.amount ?? 0);
+  }, 0) ?? 0;
+  return paidTotal + 14500000; // Base revenue
+});
+
+/**
+ * Total occupied beds (Giường được sử dụng)
+ * Calculation: SUM(capacity - available) for all rooms
+ */
+const totalOccupiedSeats = computed(() => {
+  return rooms.value?.reduce((accum: number, r: Room) => {
+    const occupied = (r?.capacity ?? 0) - (r?.available ?? 0);
+    return accum + occupied;
+  }, 0) ?? 14;
+});
+
+/**
+ * Total bed capacity (Tổng sức chứa)
+ * Calculation: SUM(capacity) for all rooms
+ */
+const totalCapacitySeats = computed(() => {
+  return rooms.value?.reduce((accum: number, r: Room) => {
+    return accum + (r?.capacity ?? 0);
+  }, 0) ?? 28;
+});
 
 // ============ HELPER FUNCTIONS ============
 const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
@@ -60,7 +130,7 @@ const handleCreateNews = () => {
     image: newsImg.value
   };
 
-  appActions?.addNewsArticle?.(newArticle);
+  actions.addNewsArticle(newArticle);
   showToast('Đã soạn đăng và chuyển gửi thông báo mới công khai thành công!', 'success');
   newsTitle.value = '';
   newsSummary.value = '';
@@ -68,12 +138,12 @@ const handleCreateNews = () => {
 };
 
 const handleApproveApplication = (appId: string) => {
-  appActions?.approveApplication?.(appId);
+  actions.approveApplication(appId);
   showToast('Đã phê duyệt hợp đồng lưu trú thành công!', 'success');
 };
 
 const handleRejectApplication = (appId: string) => {
-  appActions?.rejectApplication?.(appId);
+  actions.rejectApplication(appId);
   showToast('Đã từ chối hợp đồng lưu trú!', 'info');
 };
 
@@ -83,12 +153,12 @@ const handleUpdateMaintenanceStatus = (id: string, status: 'Pending' | 'In Progr
 };
 
 const handleDeleteNews = (id: string) => {
-  appActions?.deleteNewsArticle?.(id);
+  actions.deleteNewsArticle(id);
   showToast('Đã xóa bài viết thành công!', 'success');
 };
 
 const handleLogout = () => {
-  appActions?.logout?.();
+  actions.logout();
 };
 
 const menuItems = [
