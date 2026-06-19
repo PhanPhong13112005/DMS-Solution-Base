@@ -1,36 +1,104 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, provide } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Building2, LogIn } from 'lucide-vue-next';
+import type { Room, MaintenanceRequest, Invoice, TransferRequest, BookingApplication, NewsArticle } from './types';
 
 const route = useRoute();
 const router = useRouter();
 
-// 1. Dùng Object rỗng thay vì null để chống lỗi Crash trắng màn hình
+// ============ GLOBAL STATE ============
 const loggedInUser = ref<any>({});
 
-// 2. Tự động lắng nghe sự thay đổi URL để nạp lại User từ LocalStorage
+// Mock Data - Rooms
+const mockRooms = ref<Room[]>([
+  { 
+    id: '1', 
+    roomNumber: '101', 
+    building: 'Tòa B', 
+    capacity: 4, 
+    available: 2, 
+    size: 25, 
+    price: 850000, 
+    gender: 'Nam', 
+    amenities: ['WC riêng', 'Máy lạnh'], 
+    occupants: ['1771020535'] 
+  },
+  { 
+    id: '2', 
+    roomNumber: 'A102', 
+    building: 'Tòa A', 
+    capacity: 2, 
+    available: 0, 
+    size: 20, 
+    price: 1200000, 
+    gender: 'Nữ', 
+    amenities: ['Máy lạnh'], 
+    occupants: [] 
+  }
+]);
+
+const mockInvoices = ref<Invoice[]>([
+  { 
+    id: 'inv-1', 
+    roomNumber: '101-Tòa B', 
+    studentId: '1771020535', 
+    month: 'Tháng 6/2026', 
+    amount: 850000, 
+    type: 'Tiền phòng', 
+    status: 'Unpaid', 
+    createdAt: '2026-06-01' 
+  }
+]);
+
+const mockMaintenance = ref<MaintenanceRequest[]>([
+  { 
+    id: 'maint-1', 
+    roomNumber: '101-Tòa B', 
+    title: 'Hỏng điều hòa', 
+    description: 'Điều hòa chảy nước ở cục lạnh không mát', 
+    category: 'Điện', 
+    priority: 'Normal', 
+    status: 'Pending', 
+    createdAt: '2026-06-18' 
+  }
+]);
+
+const mockApplications = ref<BookingApplication[]>([]);
+const mockNews = ref<NewsArticle[]>([]);
+const mockTransfers = ref<TransferRequest[]>([]);
+
+// ============ WATCHERS ============
 watch(
   () => route.path,
   () => {
     const cached = localStorage.getItem('current_user');
     if (cached) {
-      loggedInUser.value = JSON.parse(cached);
+      try {
+        loggedInUser.value = JSON.parse(cached);
+      } catch {
+        loggedInUser.value = {};
+      }
     } else {
       loggedInUser.value = {};
     }
   },
-  { immediate: true } // Chạy ngay lần đầu tiên web được load lên
+  { immediate: true }
 );
 
-// Xử lý đăng xuất
+// ============ HELPER FUNCTIONS ============
+const showNavbar = computed(() => {
+  const hiddenRoutes = ['/admin', '/staff', '/student'];
+  return !hiddenRoutes.includes(route.path);
+});
+
+// ============ GLOBAL ACTIONS (được provide cho toàn bộ component) ============
 const handleLogout = () => {
   localStorage.removeItem('current_user');
   loggedInUser.value = {};
   router.push('/auth');
 };
 
-// 3. Xử lý sự kiện điều hướng từ các nút bấm bên trong trang (HomeView, AboutView...)
 const handleNavigation = (screenName: string) => {
   const routes: Record<string, string> = {
     'Home': '/',
@@ -50,31 +118,83 @@ const handleNavigation = (screenName: string) => {
   }
 };
 
-// Ẩn thanh Navbar nếu đang ở trong các cổng quản lý nội bộ
-const showNavbar = computed(() => {
-  const hiddenRoutes = ['/admin', '/staff', '/student'];
-  return !hiddenRoutes.includes(route.path);
+// ============ STUDENT PORTAL ACTIONS ============
+const addMaintenance = (req: MaintenanceRequest) => {
+  mockMaintenance.value.push(req);
+};
+
+const updateMaintenanceStatus = (id: string, status: 'Pending' | 'In Progress' | 'Resolved') => {
+  const found = mockMaintenance.value.find(m => m.id === id);
+  if (found) {
+    found.status = status;
+  }
+};
+
+const payInvoice = (invoiceId: string) => {
+  const found = mockInvoices.value.find(i => i.id === invoiceId);
+  if (found) {
+    found.status = 'Paid';
+  }
+};
+
+const addTransfer = (req: TransferRequest) => {
+  mockTransfers.value.push(req);
+};
+
+// ============ ADMIN PORTAL ACTIONS ============
+const approveApplication = (appId: string) => {
+  const found = mockApplications.value.find(a => a.id === appId);
+  if (found) {
+    found.status = 'Approved';
+  }
+};
+
+const rejectApplication = (appId: string) => {
+  const found = mockApplications.value.find(a => a.id === appId);
+  if (found) {
+    found.status = 'Rejected';
+  }
+};
+
+const addNewsArticle = (article: NewsArticle) => {
+  mockNews.value.unshift(article);
+};
+
+const deleteNewsArticle = (id: string) => {
+  mockNews.value = mockNews.value.filter(n => n.id !== id);
+};
+
+const addInvoice = (invoice: Invoice) => {
+  mockInvoices.value.push(invoice);
+};
+
+// ============ PROVIDE GLOBAL DATA & ACTIONS ============
+provide('appData', {
+  user: loggedInUser,
+  rooms: mockRooms,
+  invoices: mockInvoices,
+  maintenanceRequests: mockMaintenance,
+  applications: mockApplications,
+  news: mockNews,
+  transfers: mockTransfers
 });
 
-// --- DỮ LIỆU CHẠY THỬ (MOCK DATA) ---
-const mockRooms = ref([
-  { id: '1', roomNumber: '101', building: 'Tòa B', capacity: 4, available: 2, size: 25, price: 850000, gender: 'Nam', amenities: ['WC riêng', 'Máy lạnh'], occupants: ['1771020535'] },
-  { id: '2', roomNumber: 'A102', building: 'Tòa A', capacity: 2, available: 0, size: 20, price: 1200000, gender: 'Nữ', amenities: ['Máy lạnh'], occupants: [] }
-]);
-
-const mockInvoices = ref([
-  { id: 'inv-1', roomNumber: '101-Tòa B', studentId: '1771020535', month: 'Tháng 6/2026', amount: 850000, type: 'Tiền phòng', status: 'Unpaid', createdAt: '2026-06-01' }
-]);
-
-const mockMaintenance = ref([
-  { id: 'maint-1', roomNumber: '101-Tòa B', title: 'Hỏng điều hòa', description: 'Điều hòa chảy nước ở cục lạnh không mát', category: 'Điện', priority: 'Normal', status: 'Pending', createdAt: '2026-06-18' }
-]);
-
-
-
-const mockApplications = ref([]);
-const mockNews = ref([]);
-const mockTransfers = ref([]);
+provide('appActions', {
+  logout: handleLogout,
+  navigate: handleNavigation,
+  // Student Portal Actions
+  addMaintenance,
+  updateMaintenanceStatus,
+  payInvoice,
+  addTransfer,
+  // Admin Portal Actions
+  approveApplication,
+  rejectApplication,
+  addNewsArticle,
+  deleteNewsArticle,
+  // Staff Portal Actions
+  addInvoice
+});
 
 
 </script>

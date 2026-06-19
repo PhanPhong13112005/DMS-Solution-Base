@@ -1,19 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, inject } from 'vue';
 import { Home, ClipboardList, BedDouble, Receipt, Wrench, BellRing, LogOut, Settings2, Sparkles, Send, CheckCircle2, ShieldAlert, Landmark, UserMinus, CheckCircle, Info, AlertTriangle } from 'lucide-vue-next';
-// Giả định import các type (bạn có thể thay đổi đường dẫn cho khớp)
 import type { Room, MaintenanceRequest, Invoice, TransferRequest } from '../types';
 
-const appData: any = inject('appData');
-const actions: any = inject('actions');
-
-const emit = defineEmits<{
-  (e: 'logout'): void;
-  (e: 'addMaintenance', req: MaintenanceRequest): void;
-  (e: 'updateMaintenanceStatus', id: string, status: 'Pending' | 'In Progress' | 'Resolved'): void;
-  (e: 'payInvoice', invoiceId: string): void;
-  (e: 'addTransfer', req: TransferRequest): void;
-}>();
+// ============ INJECT GLOBAL DATA & ACTIONS ============
+const appData = inject<any>('appData');
+const appActions = inject<any>('appActions');
 
 const activeTab = ref('Trang chủ');
 const toast = ref<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -32,28 +24,37 @@ const transferReason = ref('');
 const payingInvoice = ref<Invoice | null>(null);
 const isPayModalOpen = ref(false);
 
+// ============ COMPUTED WITH SAFE ACCESS ============
+const studentUser = computed(() => appData?.user?.value ?? appData?.user ?? { name: 'Sinh viên', id: 'N/A' });
+const rooms = computed(() => appData?.rooms?.value ?? appData?.rooms ?? []);
+const maintenanceRequests = computed(() => appData?.maintenanceRequests?.value ?? appData?.maintenanceRequests ?? []);
 
-const studentUser = computed(() => appData?.user?.value || appData?.user || { name: 'Sinh viên', id: 'N/A' });
-const rooms = computed(() => appData?.rooms?.value || appData?.rooms || []);
-const maintenanceRequests = computed(() => appData?.maintenanceRequests?.value || appData?.maintenanceRequests || []);
-const invoices = computed(() => appData?.invoices?.value || appData?.invoices || []);
-const transferRequests = computed(() => appData?.transferRequests?.value || appData?.transferRequests || []);
+const myMaintenance = computed(() => {
+  const roomNumber = studentUser.value?.roomNumber;
+  if (!roomNumber) return [];
+  return maintenanceRequests.value?.filter((req: MaintenanceRequest) => req.roomNumber?.includes(roomNumber)) ?? [];
+});
 
-// Sửa lại các ref profile để lấy dữ liệu từ studentUser.value
-const phone = computed(() => studentUser.value.phone || '0978.112.551');
-const email = computed(() => studentUser.value.email || 'hungnguyen@dainam.edu.vn');
-const className = computed(() => studentUser.value.className || 'CNTT-K15');
+const invoices = computed(() => appData?.invoices?.value ?? appData?.invoices ?? []);
+const transfers = computed(() => appData?.transfers?.value ?? appData?.transfers ?? []);
 
+const phone = computed(() => studentUser.value?.phone ?? '0978.112.551');
+const email = computed(() => studentUser.value?.email ?? 'hungnguyen@dainam.edu.vn');
+const className = computed(() => studentUser.value?.className ?? 'CNTT-K15');
+const myRoom = computed(() => rooms.value?.find((room: Room) => room.roomNumber === studentUser.value?.roomNumber) ?? null);
+
+// ============ HELPER FUNCTIONS ============
 const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
   toast.value = { message, type };
   setTimeout(() => { toast.value = null; }, 4000);
 };
 
 const handleMaintenanceSubmit = () => {
-  if (!maintTitle.value || !maintDesc.value) {
+  if (!maintTitle.value?.trim() || !maintDesc.value?.trim()) {
     showToast('Vui lòng điền đủ tiêu đề và nội dung mô tả lỗi báo hỏng!', 'error');
     return;
   }
+
   const newRequest: MaintenanceRequest = {
     id: 'maint-' + Math.random().toString(36).substr(2, 9),
     roomNumber: myRoom.value ? `${myRoom.value.roomNumber}-${myRoom.value.building}` : '101-Tòa B',
@@ -64,28 +65,31 @@ const handleMaintenanceSubmit = () => {
     status: 'Pending',
     createdAt: new Date().toISOString().split('T')[0]
   };
-  emit('addMaintenance', newRequest);
+
+  appActions?.addMaintenance?.(newRequest);
   showToast('Đã gửi phiếu báo hỏng kỹ thuật thành công tới ban kỹ sư KTX!', 'success');
   maintTitle.value = '';
   maintDesc.value = '';
 };
 
 const handleTransferSubmit = () => {
-  if (!requestedRoomCode.value || !transferReason.value) {
+  if (!requestedRoomCode.value?.trim() || !transferReason.value?.trim()) {
     showToast('Vui lòng chọn phòng mong muốn và ghi đầy đủ lý do nguyện vọng chuyển phòng!', 'error');
     return;
   }
+
   const newTransfer: TransferRequest = {
     id: 'tf-' + Math.random().toString(36).substr(2, 9),
-    studentId: props.studentUser.id,
-    fullName: props.studentUser.name,
+    studentId: studentUser.value?.id ?? 'N/A',
+    fullName: studentUser.value?.name ?? 'Sinh viên',
     currentRoom: myRoom.value ? `${myRoom.value.roomNumber}-${myRoom.value.building}` : '101-Tòa B',
     requestedRoom: requestedRoomCode.value,
     reason: transferReason.value,
     status: 'Pending',
     createdAt: new Date().toISOString().split('T')[0]
   };
-  emit('addTransfer', newTransfer);
+
+  appActions?.addTransfer?.(newTransfer);
   showToast('Đơn đề xuất xin di chuyển phòng ở đã gửi thành công!', 'success');
   requestedRoomCode.value = '';
   transferReason.value = '';
@@ -98,7 +102,7 @@ const startInvoicePayment = (inv: Invoice) => {
 
 const completeInvoicePayment = () => {
   if (!payingInvoice.value) return;
-  emit('payInvoice', payingInvoice.value.id);
+  appActions?.payInvoice?.(payingInvoice.value.id);
   isPayModalOpen.value = false;
   payingInvoice.value = null;
   showToast('Giao dịch thanh toán hóa đơn đã được ghi nhận thành công!', 'success');
@@ -108,7 +112,11 @@ const handleProfileSave = () => {
   showToast('Cập nhật thông tin trích lý lịch cá nhân thành công!', 'success');
 };
 
-const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN').format(amount);
+const handleLogout = () => {
+  appActions?.logout?.();
+};
+
+const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN').format(amount ?? 0);
 
 const menuItems = [
   { id: 'Trang chủ', icon: Home },
@@ -164,7 +172,7 @@ const menuItems = [
             <div class="text-[10px] text-[#FDFBF7]/80 font-mono">MSSV: {{ studentUser.id }}</div>
           </div>
         </div>
-        <button @click="actions.logout()"
+        <button @click="handleLogout()"
           class="w-full py-2.5 bg-white/15 hover:bg-white/20 text-white rounded-full transition-colors font-bold text-xs flex items-center justify-center gap-2 cursor-pointer">
           <LogOut class="w-4 h-4" /> <span>Thoát cổng sinh viên</span>
         </button>
