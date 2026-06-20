@@ -5,7 +5,7 @@ import type { BookingApplication, NewsArticle } from '../types';
 import { useAppData } from '../composables/useAppData';
 
 // ============ USE TYPE-SAFE APP DATA & ACTIONS ============
-const { applications, invoices, news, actions, apiError, isLoading } = useAppData();
+const { user, rooms, applications, maintenanceRequests, invoices, news, actions, apiError, isLoading } = useAppData();
 
 const activeTab = ref<string>('Bảng điều khiển');
 const toast = ref<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -23,43 +23,13 @@ const newsImg = ref('https://images.unsplash.com/photo-1555854877-bab0e564b8d5?a
  * Field mapping: user.id (Admin ID), user.name (Tên Admin)
  */
 const adminUser = computed(() => {
-  const user = appData?.user?.value ?? appData?.user ?? {};
+  const userData = user?.value ?? { id: 'ADMIN', name: 'Admin' };
   return {
-    id: user?.id ?? 'ADMIN',
-    name: user?.name ?? 'Admin',
-    ...user // Preserve additional fields
+    id: userData?.id ?? 'ADMIN',
+    name: userData?.name ?? 'Admin',
+    ...userData // Preserve additional fields
   };
 });
-
-/**
- * All dormitory rooms (Phòng ở)
- * Field mapping: room.id, room.roomNumber, room.building, room.capacity, room.available
- */
-const rooms = computed(() => appData?.rooms?.value ?? appData?.rooms ?? []);
-
-/**
- * Booking applications from students (Đơn đặt phòng)
- * Field mapping: app.id, app.studentId, app.fullName, app.status ('Pending'|'Approved'|'Rejected')
- */
-const applications = computed(() => appData?.applications?.value ?? appData?.applications ?? []);
-
-/**
- * Maintenance requests (Phiếu báo hỏng)
- * Field mapping: req.id, req.roomNumber, req.status ('Pending'|'In Progress'|'Resolved')
- */
-const maintenanceRequests = computed(() => appData?.maintenanceRequests?.value ?? appData?.maintenanceRequests ?? []);
-
-/**
- * News articles and announcements (Tin tức)
- * Field mapping: article.id, article.title, article.category, article.date
- */
-const news = computed(() => appData?.news?.value ?? appData?.news ?? []);
-
-/**
- * Payment invoices (Hóa đơn thanh toán)
- * Field mapping: invoice.id, invoice.amount, invoice.status ('Paid'|'Unpaid')
- */
-const invoices = computed(() => appData?.invoices?.value ?? appData?.invoices ?? []);
 
 /**
  * Applications waiting for approval (status === 'Pending')
@@ -148,7 +118,7 @@ const handleRejectApplication = (appId: string) => {
 };
 
 const handleUpdateMaintenanceStatus = (id: string, status: 'Pending' | 'In Progress' | 'Resolved') => {
-  appActions?.updateMaintenanceStatus?.(id, status);
+  actions.updateMaintenanceStatus(id, status);
   showToast(`Cập nhật trạng thái sự cố thành: ${status === 'Pending' ? 'Đang chờ' : (status === 'In Progress' ? 'Đang sửa' : 'Đã xong')}`, 'success');
 };
 

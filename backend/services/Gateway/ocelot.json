@@ -1,0 +1,61 @@
+{
+  "Routes": [
+    {
+      "UpstreamPathTemplate": "/api/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8080 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/Rooms/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/Rooms/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8080 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/Beds/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/Beds/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8080 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/RoomAmenities/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/RoomAmenities/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8080 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/BookingApplications/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/BookingApplications/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8081 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/TransferRequests/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/TransferRequests/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8081 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/Invoices/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/Invoices/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/MaintenanceRequests/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/MaintenanceRequests/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
+    }
+  ],
+  "GlobalConfiguration": { "BaseUrl": "http://localhost:5000" }
+}
