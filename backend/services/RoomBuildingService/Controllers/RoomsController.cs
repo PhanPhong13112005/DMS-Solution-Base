@@ -21,10 +21,35 @@ namespace RoomBuildingService.Controllers
         }
 
         // GET: api/Rooms
+        // GET: api/Rooms
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Room>>> GetRooms()
+        public async Task<ActionResult<IEnumerable<object>>> GetRooms()
         {
-            return await _context.Rooms.ToListAsync();
+            var rooms = await _context.Rooms
+                .Include(r => r.Building)      // Kéo data từ bảng Buildings
+                .Select(r => new
+                {
+                    id = r.Id,
+                    buildingId = r.BuildingId,
+                    building = r.Building.Name, // Lấy tên Tòa nhà thay vì chỉ ID
+                    roomNumber = r.RoomNumber,
+                    floorNumber = r.FloorNumber,
+                    roomType = r.RoomType,
+                    price = r.MonthlyPrice,
+                    status = r.Status,
+                    size = 25, // Thêm kích thước ảo nếu chưa có trong DB
+                    capacity = r.RoomType == "Phòng 4 người" ? 4 : (r.RoomType == "Phòng 6 người" ? 6 : 2),
+
+                    // Xử lý đếm giường trống từ RoomDB nếu bạn có mapping với bảng Beds,
+                    // Nếu chưa có Navigation Property r.Beds, tạm thời mock data:
+                    available = r.Status == "Còn chỗ" ? 2 : 0,
+
+                    // Mock danh sách tiện ích (Hoặc dùng Include(r.RoomAmenities) nếu có mapping)
+                    amenities = new[] { "Máy lạnh", "WC riêng" }
+                })
+                .ToListAsync();
+
+            return Ok(rooms);
         }
 
         // GET: api/Rooms/5

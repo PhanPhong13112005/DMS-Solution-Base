@@ -32,13 +32,20 @@ const agreeRules = ref(false);
 const isSubmitting = ref(false);
 
 // Filter computation
+// Filter computation
 const filteredRooms = computed(() => {
   return (rooms.value ?? []).filter(room => {
-    const matchBldg = searchBldg.value === 'Tất cả' || room.roomType === searchBldg.value;
+    // 1. Lọc theo Tòa nhà
+    const matchBldg = searchBldg.value === 'Tất cả' || room.building === searchBldg.value;
+
+    // 2. Lọc theo Loại phòng (Sức chứa)
+    let matchType = true;
+    if (searchType.value !== 'Tất cả') {
       const cap = parseInt(searchType.value);
       matchType = room.capacity === cap;
     }
 
+    // 3. Lọc theo Giá
     let matchPrice = true;
     if (searchPrice.value !== 'Tất cả') {
       if (searchPrice.value === 'Dưới 600k') matchPrice = room.price < 600000;
@@ -46,6 +53,7 @@ const filteredRooms = computed(() => {
       else if (searchPrice.value === 'Trên 1tr') matchPrice = room.price > 1000000;
     }
 
+    // 4. Lọc theo Tiện ích / Tag
     let matchTag = true;
     if (filter.value !== 'Tất cả') {
       if (filter.value === '2 người') matchTag = room.capacity === 2;

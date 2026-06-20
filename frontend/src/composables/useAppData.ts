@@ -202,16 +202,4 @@ export const useAppData = () => {
 // ============ RE-EXPORT TYPES FOR EXTERNAL USE ============
 export type { AppData, AppActions };
 
-    news,
-    transfers,
-
-    // Actions
-    actions,
-
-    // Raw data (if needed)
-    appData,
-    appActions,
-  };
-};
-
 export default useAppData;
