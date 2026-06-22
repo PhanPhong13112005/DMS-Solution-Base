@@ -68,7 +68,38 @@ const mockApplications = ref<BookingApplication[]>([]);
 
 const mockMaintenance = ref<MaintenanceRequest[]>([]);
 
-const mockInvoices = ref<Invoice[]>([]);
+const mockInvoices = ref<Invoice[]>([
+  {
+    id: 'HD001',
+    displayId: 'PTT00001',
+    roomNumber: '101',
+    studentId: '1771020535',
+    month: '06/2026',
+    amount: 620000,
+    roomFee: 500000,
+    electricityFee: 50000,
+    waterFee: 50000,
+    serviceFee: 20000,
+    type: 'Phí lưu trú tự động tháng 06/2026',
+    status: 'Unpaid',
+    createdAt: '2026-06-21'
+  },
+  {
+    id: 'HD002',
+    displayId: 'PTT00002',
+    roomNumber: '101',
+    studentId: '1771020535',
+    month: '05/2026',
+    amount: 150000,
+    roomFee: 0,
+    electricityFee: 100000,
+    waterFee: 50000,
+    serviceFee: 0,
+    type: 'Hóa đơn phụ phí tháng 05/2026',
+    status: 'Paid',
+    createdAt: '2026-05-28'
+  }
+]);
 
 const mockNews = ref<NewsArticle[]>([]);
 const mockTransfers = ref<TransferRequest[]>([]);
@@ -93,8 +124,9 @@ const fetchN3Data = async () => {
         }));
 
         const maintRes = await apiClient.get('/maintenance');
-        mockMaintenance.value = (maintRes.data.data || maintRes.data.Data || []).map((m: any) => ({
+        mockMaintenance.value = (maintRes.data.data || maintRes.data.Data || []).map((m: any, idx: number) => ({
           id: m.id,
+          displayId: `SC${String(idx + 1).padStart(3, '0')}`,
           roomNumber: m.roomId.toString(),
           title: m.title,
           description: m.description,
@@ -127,9 +159,10 @@ const fetchN3Data = async () => {
           }));
 
           // 3. Fetch Báo hỏng theo mã Phòng
-          const maintRes = await apiClient.get(`/maintenance/room/${realRoomId}`);
-          mockMaintenance.value = (maintRes.data.data || maintRes.data.Data || []).map((m: any) => ({
+          const maintRes = await apiClient.get(`/maintenance/student/${sId}`);
+          mockMaintenance.value = (maintRes.data.data || maintRes.data.Data || []).map((m: any, idx: number) => ({
             id: m.id,
+            displayId: `SC${String(idx + 1).padStart(3, '0')}`,
             roomNumber: m.roomId.toString(), // Hoặc nối thêm tên tòa
             title: m.title,
             description: m.description,
@@ -211,9 +244,9 @@ const handleAddInvoice = async (inv: Invoice) => {
       contractId: "",
       title: inv.type, // Lưu lại loại phí thực tế từ modal
       targetMonth: inv.month,
-      electricityCost: inv.electricityCost || 0,
-      waterCost: inv.waterCost || 0,
-      serviceFee: inv.amount - (inv.electricityCost || 0) - (inv.waterCost || 0),
+      electricityCost: inv.electricityFee || 0,
+      waterCost: inv.waterFee || 0,
+      serviceFee: inv.amount - (inv.electricityFee || 0) - (inv.waterFee || 0),
       totalAmount: inv.amount,
       isPaid: false
     });
@@ -353,12 +386,14 @@ provide('actions', {
         :rooms="mockRooms"
         :applications="mockApplications"
         :maintenance-requests="mockMaintenance"
+        :invoices="mockInvoices"
         @logout="handleLogout"
         @approve-application="handleApproveApplication"
         @reject-application="handleRejectApplication"
         @update-room-vacancy="handleUpdateRoomVacancy"
         @update-maintenance-status="handleUpdateMaintenanceStatus"
         @add-invoice="handleAddInvoice"
+        @pay-invoice="handlePayInvoice"
       />
       <component
         :is="Component"

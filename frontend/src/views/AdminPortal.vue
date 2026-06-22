@@ -52,7 +52,7 @@ const filteredIssues = computed(() => {
     let match = true;
     if (maintenanceSearch.value) {
       const term = maintenanceSearch.value.toLowerCase();
-      match = match && (
+      match = match && Boolean(
         (m.title && m.title.toLowerCase().includes(term)) || 
         (m.roomNumber && m.roomNumber.toLowerCase().includes(term)) ||
         (m.description && m.description.toLowerCase().includes(term))
@@ -150,7 +150,8 @@ const invoiceSearch = ref('');
 const invoiceStatusFilter = ref('All');
 
 const filteredInvoices = computed(() => {
-  return props.invoices.filter(inv => {
+  let list = props.invoices || [];
+  return list.filter(inv => {
     const matchSearch = inv.id.toLowerCase().includes(invoiceSearch.value.toLowerCase()) || 
                         inv.roomNumber.toLowerCase().includes(invoiceSearch.value.toLowerCase()) ||
                         (inv.displayId && inv.displayId.toLowerCase().includes(invoiceSearch.value.toLowerCase()));
@@ -164,10 +165,17 @@ const filteredInvoices = computed(() => {
 const { paginatedItems: pInvoices, currentPage: cpInvoices, totalPages: tpInvoices, nextPage: npInvoices, prevPage: ppInvoices } = usePagination(filteredInvoices, 5);
 
 // Thống kê thẻ Hóa Đơn & Công Nợ
-const totalCollectedThisMonth = computed(() => {
-  return props.invoices.filter(i => i.status === 'Paid').reduce((sum, i) => sum + i.amount, 0);
+const totalRevenue = computed(() => {
+  return (props.invoices || []).filter(i => i.status === 'Paid').reduce((sum, inv) => sum + inv.amount, 0);
 });
-const unpaidInvoices = computed(() => props.invoices.filter(i => i.status === 'Unpaid'));
+const totalOutstanding = computed(() => {
+  return (props.invoices || []).filter(i => i.status === 'Unpaid').reduce((sum, inv) => sum + inv.amount, 0);
+});
+const totalCollectedThisMonth = computed(() => {
+  return (props.invoices || []).filter(i => i.status === 'Paid').reduce((sum, i) => sum + i.amount, 0);
+});
+const unpaidInvoicesCount = computed(() => (props.invoices || []).filter(i => i.status === 'Unpaid').length);
+const unpaidInvoices = computed(() => (props.invoices || []).filter(i => i.status === 'Unpaid'));
 const totalUnpaid = computed(() => unpaidInvoices.value.reduce((sum, i) => sum + i.amount, 0));
 const unpaidCount = computed(() => unpaidInvoices.value.length);
 
@@ -220,7 +228,8 @@ const paymentSearch = ref('');
 const paymentMethodFilter = ref('All');
 
 const filteredPayments = computed(() => {
-  return props.invoices.filter(inv => inv.status === 'Paid').filter(inv => {
+  let list = (props.invoices || []).filter(i => i.status === 'Paid');
+  return list.filter(inv => {
     const matchSearch = inv.id.toLowerCase().includes(paymentSearch.value.toLowerCase()) || 
                         (inv.displayId && inv.displayId.toLowerCase().includes(paymentSearch.value.toLowerCase()));
     return matchSearch;
@@ -266,7 +275,7 @@ const handleViewDebt = (group: any) => {
 import { watch } from 'vue';
 watch(() => paymentForm.value.invoiceId, (newId) => {
   if (newId) {
-    const inv = props.invoices.find(i => i.id === newId);
+    const inv = (props.invoices || []).find(i => i.id === newId);
     if (inv) paymentForm.value.amount = inv.amount;
   } else {
     paymentForm.value.amount = 0;
@@ -1901,8 +1910,8 @@ const executeDelete = () => {
             <label class="text-xs font-bold text-[#4A4A4A]"><span class="text-rose-500">*</span> Phiếu Thu</label>
             <select v-model="paymentForm.invoiceId" class="w-full bg-white border border-[#EAE7E1] rounded-lg px-4 py-2.5 text-xs outline-none focus:border-[#6B705C] text-[#4A4A4A]">
               <option value="">Chọn phiếu thu cần thanh toán</option>
-              <option v-for="inv in props.invoices.filter(i => i.status === 'Unpaid' || i.id === paymentForm.invoiceId)" :key="inv.id" :value="inv.id">
-                {{ inv.displayId || inv.id.toString().substring(0,8).toUpperCase() }} - Phòng {{ inv.roomNumber }} - {{ new Intl.NumberFormat('vi-VN').format(inv.amount) }}đ
+              <option v-for="inv in (props.invoices || []).filter(i => i.status === 'Unpaid' || i.id === paymentForm.invoiceId)" :key="inv.id" :value="inv.id">
+                {{ inv.displayId || inv.id }} - Phòng {{ inv.roomNumber }} - {{ new Intl.NumberFormat('vi-VN').format(inv.amount) }}đ
               </option>
             </select>
           </div>

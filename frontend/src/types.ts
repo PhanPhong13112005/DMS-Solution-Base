@@ -33,12 +33,13 @@ export interface BookingApplication {
 
 export interface MaintenanceRequest {
   id: string;
+  displayId?: string;
   roomNumber: string;
   title: string;
   description: string;
   category: string;
   priority: 'Critical' | 'Normal';
-  status: 'Pending' | 'In Progress' | 'Resolved';
+  status: 'Pending' | 'In Progress' | 'Waiting for Acceptance' | 'Resolved' | 'Cancelled' | 'Rejected';
   createdAt: string;
 }
 
@@ -59,8 +60,10 @@ export interface Invoice {
   studentId: string;
   month: string;
   amount: number;
-  electricityCost?: number;
-  waterCost?: number;
+  roomFee?: number;
+  electricityFee?: number;
+  waterFee?: number;
+  serviceFee?: number;
   type: string;
   status: 'Unpaid' | 'Paid';
   createdAt: string;
