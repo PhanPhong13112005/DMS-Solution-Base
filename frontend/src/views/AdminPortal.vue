@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { ChartSpline, Users, Shield, LogOut, ArrowUpRight, ArrowDownRight, Settings, PlusCircle, Trash2, Calendar, Newspaper, Activity, Landmark, BellRing, Info, AlertTriangle, CheckCircle } from 'lucide-vue-next';
 import type { BookingApplication, NewsArticle, Room, Bed } from '../types';
 import { useAppData } from '../composables/useAppData';
-import { roomBuildingApi } from '../services/room-building.service'; // API của Nhóm 1
+import { roomBuildingApi } from '../services/room-building.service'; 
+
+// Import Icons
+import { LayoutDashboard, Building2, Users, Banknote, Wrench, BarChart3, Plus, Shield, LogOut, ArrowUpRight, ArrowDownRight, Settings, PlusCircle, Trash2, Calendar, Newspaper, Activity, Landmark, BellRing, Info, AlertTriangle, CheckCircle } from 'lucide-vue-next';
 
 // ============ USE TYPE-SAFE APP DATA & ACTIONS ============
 const { user, applications, maintenanceRequests, invoices, news, actions } = useAppData();
@@ -11,12 +13,15 @@ const { user, applications, maintenanceRequests, invoices, news, actions } = use
 const activeTab = ref<string>('Bảng điều khiển');
 const toast = ref<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
 
-// Form Tin tức
-const newsTitle = ref('');
-const newsCat = ref<'TIN TỨC KTX' | 'SỰ KIỆN' | 'THÔNG BÁO' | 'HOẠT ĐỘNG SV' | 'Quy định - Thủ tục'>('TIN TỨC KTX');
-const newsSummary = ref('');
-const newsContent = ref('');
-const newsImg = ref('https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=400&q=80');
+// Mảng Menu Mới (Chuẩn DNU KTX)
+const menuItems = [
+  { id: 'Bảng điều khiển', icon: LayoutDashboard },
+  { id: 'Cơ sở vật chất', icon: Building2 }, 
+  { id: 'Sinh viên', icon: Users },          
+  { id: 'Tài chính', icon: Banknote },       
+  { id: 'Bảo trì', icon: Wrench },           
+  { id: 'Báo cáo', icon: BarChart3 }
+];
 
 // ============ REAL DATA (DỮ LIỆU THẬT NHÓM 1) ============
 const realTotalBeds = ref(0);
@@ -24,11 +29,10 @@ const realOccupiedBeds = ref(0);
 const realAvailableBeds = ref(0);
 const allBedsList = ref<any[]>([]);
 
+// HÀM 1: Lấy số liệu đếm giường cho Bảng điều khiển
 const loadDashboardStats = async () => {
   try {
-    // Gọi API qua Gateway cổng 5000
     const beds: any = await roomBuildingApi.beds.getAll();
-    
     if (beds && beds.length > 0) {
         allBedsList.value = beds;
         realTotalBeds.value = beds.length;
@@ -41,32 +45,41 @@ const loadDashboardStats = async () => {
   }
 };
 
+// ============ DỮ LIỆU CƠ SỞ VẬT CHẤT (NHÓM 1) ============
+const roomsList = ref<any[]>([]); // Chứa danh sách phòng
+const buildingsList = ref<any[]>([]); // Chứa danh sách tòa nhà
+
+// HÀM 2: Lấy chi tiết danh sách phòng cho Tab Cơ sở vật chất
+const loadFacilitiesData = async () => {
+  try {
+    const [bRes, rRes] = await Promise.all([
+      roomBuildingApi.buildings.getAll(),
+      roomBuildingApi.rooms.getAll()
+    ]);
+    
+    if (bRes) buildingsList.value = bRes;
+    if (rRes) roomsList.value = rRes;
+  } catch (error) {
+    console.error("Lỗi tải dữ liệu phòng:", error);
+  }
+};
+
+// Gọi CẢ 2 HÀM ngay khi vào trang Admin
 onMounted(() => {
-  loadDashboardStats();
+  loadDashboardStats(); // Hàm thống kê Dashboard
+  loadFacilitiesData(); // Hàm lấy Data Table Phòng
 });
-
-// ============ COMPUTED WITH SAFE ACCESS ============
+// ============ COMPUTED (DỮ LIỆU MOCK N2, N3 TẠM THỜI) ============
 const adminUser = computed(() => {
-  const userData = user?.value ?? { id: 'ADMIN', name: 'Admin' };
-  return {
-    id: userData?.id ?? 'ADMIN',
-    name: userData?.name ?? 'Admin',
-    ...userData 
-  };
+  if (user && user.value) {
+    return user.value;
+  }
+  return { id: 'ADMIN', name: 'Admin' };
 });
-
-const pendingApps = computed(() => {
-  return applications.value?.filter((a: BookingApplication) => a?.status === 'Pending') ?? [];
-});
-
-const activeIssues = computed(() => {
-  return maintenanceRequests.value?.filter((m: any) => m?.status !== 'Resolved') ?? [];
-});
-
+const pendingApps = computed(() => applications.value?.filter((a: BookingApplication) => a?.status === 'Pending') ?? []);
+const activeIssues = computed(() => maintenanceRequests.value?.filter((m: any) => m?.status !== 'Resolved') ?? []);
 const totalInvoicesPaidSum = computed(() => {
-  const paidTotal = invoices.value?.filter((i: any) => i?.status === 'Paid')?.reduce((accum: number, i: any) => {
-    return accum + (i?.amount ?? 0);
-  }, 0) ?? 0;
+  const paidTotal = invoices.value?.filter((i: any) => i?.status === 'Paid')?.reduce((accum: number, i: any) => accum + (i?.amount ?? 0), 0) ?? 0;
   return paidTotal + 14500000; 
 });
 
@@ -75,65 +88,7 @@ const showToast = (message: string, type: 'success' | 'info' | 'error' = 'succes
   toast.value = { message, type };
   setTimeout(() => { toast.value = null; }, 4000);
 };
-
-const handleCreateNews = () => {
-  if (!newsTitle.value?.trim() || !newsSummary.value?.trim() || !newsContent.value?.trim()) {
-    showToast('Vui lòng soạn thảo và bổ sung hoàn chỉnh thông tin các trường yêu cầu!', 'error');
-    return;
-  }
-
-  const newArticle: NewsArticle = {
-    id: 'news-' + Math.random().toString(36).substr(2, 9),
-    title: newsTitle.value,
-    category: newsCat.value,
-    date: new Date().toLocaleDateString('vi-VN'),
-    summary: newsSummary.value,
-    content: newsContent.value,
-    image: newsImg.value
-  };
-
-  actions.addNewsArticle(newArticle);
-  showToast('Đã soạn đăng và chuyển gửi thông báo mới công khai thành công!', 'success');
-  newsTitle.value = '';
-  newsSummary.value = '';
-  newsContent.value = '';
-};
-
-const handleApproveApplication = (appId: string) => {
-  actions.approveApplication(appId);
-  showToast('Đã phê duyệt hợp đồng lưu trú thành công!', 'success');
-};
-
-const handleRejectApplication = (appId: string) => {
-  actions.rejectApplication(appId);
-  showToast('Đã từ chối hợp đồng lưu trú!', 'info');
-};
-
-const handleUpdateMaintenanceStatus = (id: string, status: 'Pending' | 'In Progress' | 'Resolved') => {
-  actions.updateMaintenanceStatus(id, status);
-  showToast(`Cập nhật trạng thái sự cố thành: ${status === 'Pending' ? 'Đang chờ' : (status === 'In Progress' ? 'Đang sửa' : 'Đã xong')}`, 'success');
-};
-
-const handleDeleteNews = (id: string) => {
-  actions.deleteNewsArticle(id);
-  showToast('Đã xóa bài viết thành công!', 'success');
-};
-
-const handleLogout = () => {
-  actions.logout();
-};
-
-// Thêm các icon mới (LayoutDashboard, Building2, Banknote, Wrench, BarChart3, Plus)
-import { LayoutDashboard, Building2, Users, Banknote, Wrench, BarChart3, Plus, Shield, LogOut, ArrowUpRight, ArrowDownRight, Settings, PlusCircle, Trash2, Calendar, Newspaper, Activity, Landmark, BellRing, Info, AlertTriangle, CheckCircle } from 'lucide-vue-next';
-// Thay thế mảng menuItems cũ bằng mảng mới này
-const menuItems = [
-  { id: 'Bảng điều khiển', icon: LayoutDashboard },
-  { id: 'Cơ sở vật chất', icon: Building2 }, // Đất diễn của Nhóm 1
-  { id: 'Sinh viên', icon: Users },          // Đất diễn của Nhóm 2
-  { id: 'Tài chính', icon: Banknote },       // Đất diễn của Nhóm 3
-  { id: 'Bảo trì', icon: Wrench },           // Đất diễn của Nhóm 3
-  { id: 'Báo cáo', icon: BarChart3 }
-];
+const handleLogout = () => actions.logout();
 </script>
 
 <template>
@@ -146,42 +101,47 @@ const menuItems = [
       <div class="text-xs font-semibold text-[#4A4A4A] leading-relaxed">{{ toast.message }}</div>
     </div>
 
-    <aside class="w-64 bg-[#6B705C] text-slate-100 shrink-0 select-none flex flex-col justify-between border-r border-[#EAE7E1] p-0">
-      <div>
-        <div class="p-6 border-b border-white/10 flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-[#CB997E] flex items-center justify-center text-white font-serif font-extrabold text-sm">A</span>
+    <aside class="w-64 bg-white text-[#4A4A4A] shrink-0 select-none flex flex-col justify-between border-r border-[#EAE7E1] p-0 z-10">
+      <div class="p-5">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-10 h-10 rounded-full bg-[#F97316] flex items-center justify-center text-white font-bold text-xs shrink-0">DNU</div>
           <div>
-            <div class="font-serif font-light text-sm text-white tracking-widest uppercase">DNU KTX</div>
-            <div class="text-[10px] text-[#FDFBF7]/85">Ban quản trị hệ thống</div>
+            <div class="font-bold text-[#A03500] text-xl leading-tight">DNU KTX</div>
+            <div class="text-[11px] text-gray-500 font-medium">Cổng quản trị</div>
           </div>
         </div>
 
-        <nav class="p-4 space-y-1.5 text-xs text-[#FDFBF7]">
+        <button class="w-full bg-[#F97316] hover:bg-[#E86305] text-white rounded-xl py-3 flex justify-center items-center gap-2 mb-6 font-medium text-sm transition-colors shadow-sm cursor-pointer">
+          <Plus class="w-4 h-4" /> Đăng ký mới
+        </button>
+
+        <nav class="space-y-1 text-sm text-[#4A4A4A]">
           <button
             v-for="tab in menuItems"
             :key="tab.id"
             @click="activeTab = tab.id"
-            :class="['w-full flex items-center gap-3.5 px-4.5 py-3 rounded-2xl font-semibold cursor-pointer transition-all text-left', activeTab === tab.id ? 'bg-[#CB997E] text-white shadow-xs' : 'hover:bg-white/10 text-[#FDFBF7]/85 hover:text-white']"
+            :class="[
+              'w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-medium cursor-pointer transition-all text-left relative', 
+              activeTab === tab.id ? 'bg-[#FFF5F0] text-[#A03500] font-bold overflow-hidden' : 'hover:bg-gray-50 text-gray-600'
+            ]"
           >
-            <component :is="tab.icon" class="w-4.5 h-4.5 shrink-0" />
+            <div v-if="activeTab === tab.id" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/4 bg-[#A03500] rounded-r-md"></div>
+            <component :is="tab.icon" :class="['w-5 h-5 shrink-0', activeTab === tab.id ? 'text-[#A03500]' : 'text-gray-500']" />
             <span>{{ tab.id }}</span>
           </button>
         </nav>
       </div>
 
-      <div class="p-4 border-t border-white/10">
-        <div class="p-3 bg-white/15 rounded-2xl flex items-center gap-3 mb-3">
-          <div class="w-9 h-9 rounded-full bg-[#CB997E] text-white font-extrabold flex items-center justify-center border border-white/10 font-mono text-sm leading-none">AD</div>
+      <div class="p-5 border-t border-[#EAE7E1]">
+        <div class="p-3 bg-gray-50 rounded-xl flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-full bg-gray-200 text-gray-600 font-extrabold flex items-center justify-center border border-gray-300 font-mono text-sm leading-none shrink-0">AD</div>
           <div class="overflow-hidden">
-            <div class="font-bold text-xs truncate text-white">{{ adminUser?.name || 'Admin' }}</div>
-            <div class="text-[10px] text-[#FDFBF7]/85 font-mono">Quản trị tối cao</div>
+            <div class="font-bold text-xs truncate text-gray-800">{{ adminUser?.name || 'Admin' }}</div>
+            <div class="text-[10px] text-gray-500 font-mono">Quản trị tối cao</div>
           </div>
         </div>
-        <button 
-          @click="handleLogout()"
-          class="w-full py-2.5 bg-white/15 hover:bg-white/20 text-white rounded-full transition-colors font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
-        >
-          <LogOut class="w-4 h-4" /> <span>Thoát đặc quyền</span>
+        <button @click="handleLogout()" class="w-full py-2.5 bg-gray-50 hover:bg-red-50 hover:text-red-600 text-gray-600 rounded-xl transition-colors font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer">
+          <LogOut class="w-4 h-4" /> <span>Đăng xuất</span>
         </button>
       </div>
     </aside>
@@ -194,8 +154,8 @@ const menuItems = [
           <h2 class="font-serif font-light text-[#4A4A4A] text-lg leading-none mt-1">{{ activeTab }}</h2>
         </div>
         <div class="flex items-center gap-4">
-          <div class="bg-[#CB997E] border border-[#CB997E]/30 text-white rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
-            <Shield class="w-3.5 h-3.5 fill-white" /> <span>Chế độ: ROOT ADMIN 🛡️</span>
+          <div class="bg-[#F97316]/10 border border-[#F97316]/30 text-[#A03500] rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+            <Shield class="w-3.5 h-3.5" /> <span>ROOT ADMIN 🛡️</span>
           </div>
         </div>
       </header>
@@ -204,185 +164,82 @@ const menuItems = [
         
         <div v-if="activeTab === 'Bảng điều khiển'" class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-6 text-left">
-            
             <div class="bg-white p-6 rounded-[24px] border border-[#EAE7E1] shadow-xs space-y-2">
               <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block">Học viên đang ở</span>
               <div class="text-2xl font-bold font-mono text-[#4A4A4A]">{{ realOccupiedBeds }} SV</div>
-              <div class="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-                <ArrowUpRight class="w-4 h-4 shrink-0" /> <span>Hợp đồng có hiệu lực</span>
-              </div>
+              <div class="text-[11px] text-emerald-700 font-semibold flex items-center gap-1"><ArrowUpRight class="w-4 h-4" /> <span>Hợp đồng có hiệu lực</span></div>
             </div>
-
             <div class="bg-white p-6 rounded-[24px] border border-[#EAE7E1] shadow-xs space-y-2">
               <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block">Phòng (Giường) trống</span>
               <div class="text-2xl font-bold font-mono text-[#4A4A4A]">{{ realAvailableBeds }}</div>
               <div class="text-[11px] text-[#8B8B8B] font-light">Sẵn sàng phân bổ</div>
             </div>
-
             <div class="bg-white p-6 rounded-[24px] border border-[#EAE7E1] shadow-xs space-y-2">
               <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block">Doanh số tổng hợp</span>
               <div class="text-2xl font-bold font-mono text-[#CB997E]">{{ new Intl.NumberFormat('vi-VN').format(totalInvoicesPaidSum) }}đ</div>
-              <div class="text-[11px] text-[#6B705C] font-semibold flex items-center gap-1">
-                <ArrowDownRight class="w-4 h-4 shrink-0" /> <span>Lệ phí kết toán niên vụ</span>
-              </div>
+              <div class="text-[11px] text-[#6B705C] font-semibold flex items-center gap-1"><ArrowDownRight class="w-4 h-4" /> <span>Lệ phí kết toán niên vụ</span></div>
             </div>
-
             <div class="bg-white p-6 rounded-[24px] border border-[#EAE7E1] shadow-xs space-y-2">
               <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block">Lỗi kỹ thuật điện nước</span>
               <div class="text-2xl font-bold font-mono text-[#CB997E]">{{ activeIssues.length }} Sự cố</div>
-              <div class="text-[11px] text-[#CB997E] font-semibold flex items-center gap-1">
-                <ArrowUpRight class="w-4 h-4 shrink-0" /> <span>Cần nhanh chóng khắc phục</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
-            <div class="bg-white rounded-[32px] border border-[#EAE7E1] p-6 shadow-xs">
-              <div class="flex justify-between items-baseline mb-4">
-                <h4 class="font-serif text-[#4A4A4A] text-sm font-light">Ước tính doanh thu túc xá Đại Nam</h4>
-                <span class="text-[10px] text-[#6B705C] font-bold uppercase">Biểu đồ ước lượng</span>
-              </div>
-              <div class="h-56 w-full bg-[#FDFBF7] border border-[#EAE7E1] rounded-[24px] p-4 flex items-end relative overflow-hidden">
-                <svg class="w-full h-full" viewBox="0 0 400 150" preserveAspectRatio="none">
-                  <polygon points="0,150 80,110 160,115 240,60 320,80 400,20 400,150" fill="rgba(107, 112, 92, 0.1)" />
-                  <polyline points="0,150 80,110 160,115 240,60 320,80 400,20" fill="none" stroke="#6B705C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-                  <circle cx="80" cy="110" r="5" fill="#CB997E" />
-                  <circle cx="240" cy="60" r="5" fill="#CB997E" />
-                  <circle cx="400" cy="20" r="5" fill="#CB997E" />
-                </svg>
-                <div class="absolute bottom-1 left-0 right-0 px-4 flex justify-between text-[8px] font-mono font-bold text-[#8B8B8B]">
-                  <span>Tháng 1</span><span>Tháng 2</span><span>Tháng 3</span><span>Tháng 4</span><span>Tháng 5</span><span>Tháng 6</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="bg-white rounded-[32px] border border-[#EAE7E1] p-6 shadow-xs">
-              <div class="flex justify-between items-baseline mb-4">
-                <h4 class="font-serif text-[#4A4A4A] text-sm font-light">Tốc độ lấp đầy chỗ ở của Khối tòa</h4>
-                <span class="text-[10px] text-[#8B8B8B] font-mono">Hiệu suất phân khu</span>
-              </div>
-              <div class="h-56 w-full bg-[#FDFBF7] border border-[#EAE7E1] rounded-[24px] p-6 flex justify-around items-end relative">
-                <div class="flex flex-col items-center gap-2">
-                  <div class="w-10 bg-[#EAE7E1] rounded-t-xl h-36 relative flex items-end overflow-hidden">
-                    <div class="absolute inset-x-0 bottom-0 bg-[#6B705C]" :style="{ height: realTotalBeds > 0 ? `${(realOccupiedBeds / realTotalBeds) * 100}%` : '0%' }" />
-                  </div>
-                  <span class="text-[10px] font-bold font-mono">Toàn KTX ({{ realTotalBeds > 0 ? Math.round((realOccupiedBeds / realTotalBeds) * 100) : 0 }}%)</span>
-                </div>
-              </div>
+              <div class="text-[11px] text-[#CB997E] font-semibold flex items-center gap-1"><ArrowUpRight class="w-4 h-4" /> <span>Cần nhanh chóng khắc phục</span></div>
             </div>
           </div>
         </div>
 
-        <div v-if="activeTab === 'Quản lý tin tức'" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div class="lg:col-span-2 bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm text-left">
-            <h3 class="font-serif text-[#4A4A4A] text-lg mb-2">Đăng thông cáo & Bản tin sự kiện sinh viên</h3>
-            <form @submit.prevent="handleCreateNews" class="space-y-4 mt-6">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="space-y-1">
-                  <label class="text-xs font-bold text-[#4A4A4A]">Tiêu đề bài viết bản tin <span class="text-[#CB997E]">*</span></label>
-                  <input type="text" required v-model="newsTitle" class="w-full bg-[#FDFBF7] border border-[#EAE7E1] rounded-2xl px-4 py-2.5 text-xs outline-none focus:border-[#6B705C]" />
-                </div>
-                <div class="space-y-1">
-                  <label class="text-xs font-bold text-[#4A4A4A]">Chuyên mục tin đăng</label>
-                  <select v-model="newsCat" class="w-full bg-[#FDFBF7] border border-[#EAE7E1] rounded-2xl px-4 py-2.5 text-xs outline-none focus:border-[#6B705C]">
-                    <option value="TIN TỨC KTX">Tin tức nội trú KTX</option>
-                    <option value="SỰ KIỆN">Hoạt động Sự kiện</option>
-                    <option value="THÔNG BÁO">Thông báo chung</option>
-                    <option value="HOẠT ĐỘNG SV">Sinh viên ngoại khóa</option>
-                    <option value="Quy định - Thủ tục">Quy chế nội quy</option>
-                  </select>
-                </div>
-              </div>
-              <div class="space-y-1">
-                <label class="text-xs font-bold text-[#4A4A4A]">Lời tóm tắt ngắn mục lục <span class="text-[#CB997E]">*</span></label>
-                <input type="text" required v-model="newsSummary" class="w-full bg-[#FDFBF7] border border-[#EAE7E1] rounded-2xl px-4 py-2.5 text-xs outline-none focus:border-[#6B705C]" />
-              </div>
-              <div class="space-y-1">
-                <label class="text-xs font-bold text-[#4A4A4A]">Nội dung văn tự bài viết chi tiết <span class="text-[#CB997E]">*</span></label>
-                <textarea required rows="6" v-model="newsContent" class="w-full bg-[#FDFBF7] border border-[#EAE7E1] rounded-2xl px-4 py-3 text-xs outline-none resize-none focus:border-[#6B705C]"></textarea>
-              </div>
-              <button type="submit" class="px-6 py-3 bg-[#6B705C] hover:bg-[#8B9178] text-white font-serif font-light text-xs rounded-full shadow-xs cursor-pointer flex items-center gap-1.5">
-                <PlusCircle class="w-4 h-4" /> <span>Xuất bản ngay</span>
-              </button>
-            </form>
-          </div>
-
-          <div class="bg-white rounded-[32px] border border-[#EAE7E1] p-6 shadow-sm">
-            <h4 class="font-serif text-[#4A4A4A] text-sm mb-4">Các tin tức đã phát hành</h4>
-            <div class="space-y-3">
-              <div v-for="item in (news || [])" :key="item.id" class="p-3.5 border border-[#EAE7E1] bg-[#FDFBF7]/50 rounded-2xl flex items-start justify-between gap-3 text-xs">
-                <div class="overflow-hidden">
-                  <div class="font-bold text-[#4A4A4A] leading-tight line-clamp-1">{{ item.title }}</div>
-                  <div class="text-[10px] text-[#8B8B8B] font-mono mt-1">{{ item.category }} • {{ item.date }}</div>
-                </div>
-                <button @click="handleDeleteNews(item.id)" class="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg cursor-pointer shrink-0">
-                  <Trash2 class="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="activeTab === 'Sự cố bảo trì'" class="bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm space-y-6 text-left">
-          <h3 class="font-serif text-[#4A4A4A] text-lg border-b border-[#EAE7E1] pb-3.5">Lý lịch sửa chữa lỗi sự cố kỹ thuật</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs md:text-sm">
-            <div v-for="issue in activeIssues" :key="issue.id" class="p-5 border border-[#EAE7E1] bg-[#FDFBF7]/35 rounded-2xl space-y-3 flex flex-col justify-between">
-              <div>
-                <div class="flex justify-between items-baseline mb-2 bg-[#FDFBF7] border border-[#EAE7E1] p-2 rounded-xl">
-                  <span class="font-bold text-[#4A4A4A]">Phiếu: {{ issue.id }}</span>
-                  <span :class="['text-[10px] font-extrabold px-1.5 py-0.5 rounded-lg', issue.priority === 'Critical' ? 'bg-[#CB997E]/20 text-[#CB997E]' : 'bg-[#6B705C]/20 text-[#6B705C]']">
-                    {{ issue.priority === 'Critical' ? 'Khẩn cấp' : 'Thường' }}
-                  </span>
-                </div>
-                <h4 class="font-serif text-[#4A4A4A] text-base">Phòng {{ issue.roomNumber }} - {{ issue.title }}</h4>
-                <p class="text-xs text-[#8B8B8B] font-light mt-1">{{ issue.description }}</p>
-              </div>
-              <div class="flex gap-2 pt-2 border-t border-[#EAE7E1] text-xs">
-                <button @click="handleUpdateMaintenanceStatus(issue.id, 'Resolved')" class="w-1/2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold py-2 rounded-full cursor-pointer text-center">
-                  Khép lại sự cố
-                </button>
-                <span class="flex items-center justify-center italic text-[#8B8B8B] text-xs w-1/2 font-mono bg-[#FDFBF7] border border-[#EAE7E1] rounded-full">
-                  Trạng thái: {{ issue.status }}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="activeTab === 'Duyệt lưu trú'" class="bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm space-y-6 text-left">
-          <h3 class="font-serif text-[#4A4A4A] text-lg border-b border-[#EAE7E1] pb-3.5">Hồ sơ chờ phê duyệt phân phòng</h3>
-          <div class="space-y-4">
-            <div v-for="app in pendingApps" :key="app.id" class="p-5 border border-[#EAE7E1] bg-[#FDFBF7]/30 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h4 class="font-serif text-slate-950 text-base">{{ app.fullName }}</h4>
-                <p class="text-xs text-[#8B8B8B] mt-1 font-mono">MSSV: {{ app.studentId }} • Lớp: {{ app.className }} • Phòng muốn nạp: {{ app.roomNumber }}</p>
-              </div>
-              <div class="flex gap-2">
-                <button @click="handleApproveApplication(app.id)" class="px-4 py-2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold text-xs rounded-full cursor-pointer">Duyệt</button>
-                <button @click="handleRejectApplication(app.id)" class="px-4 py-2 bg-[#CB997E] hover:bg-[#b07d62] text-white font-bold text-xs rounded-full cursor-pointer">Từ chối</button>
-              </div>
-            </div>
-            <div v-if="pendingApps.length === 0" class="text-center py-12 text-[#8B8B8B] italic text-xs font-mono">Không có hồ sơ lưu trú nào đang đợi kiểm duyệt.</div>
-          </div>
-        </div>
-
-        <div v-if="activeTab === 'Cài đặt hệ thống'" class="bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm text-left">
-          <h3 class="font-serif text-[#4A4A4A] text-lg border-b border-[#EAE7E1] pb-3">Thiết lập cấu hình tham số KTX</h3>
-          <div class="space-y-5 max-w-xl text-xs md:text-sm pt-4">
-            <div class="space-y-2">
-              <label class="font-bold text-[#4A4A4A]">1. Giờ giới nghiêm khóa cổng ban đêm</label>
-              <input type="text" defaultValue="22:30" class="w-full bg-[#FDFBF7] border border-[#EAE7E1] px-4 py-2.5 rounded-2xl outline-none focus:border-[#6B705C]" />
-            </div>
-            <div class="space-y-2">
-              <label class="font-bold text-[#4A4A4A]">2. Quy định lệ phí chỗ ở nội trú sàn tối thiểu (VND/Tháng)</label>
-              <input type="number" defaultValue="1200000" class="w-full bg-[#FDFBF7] border border-[#EAE7E1] px-4 py-2.5 rounded-2xl outline-none focus:border-[#6B705C]" />
-            </div>
-            <button @click="showToast('Ghi nhận thông tin tham số vận hành vĩ mô thành công!', 'success')" class="px-6 py-2.5 bg-[#6B705C] text-white text-xs font-bold rounded-full cursor-pointer hover:bg-[#8B9178] mt-2">
-              Lưu thiết đặt cấu hình
+        <div v-if="activeTab === 'Cơ sở vật chất'" class="bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm space-y-6 text-left">
+          <div class="flex justify-between items-center border-b border-[#EAE7E1] pb-4">
+            <h3 class="font-bold text-[#A03500] text-xl">Quản lý Tòa nhà & Phòng nội trú</h3>
+            <button class="bg-[#F97316] hover:bg-[#E86305] text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors cursor-pointer">
+              <Plus class="w-4 h-4" /> Thêm Tòa/Phòng
             </button>
           </div>
-        </div>
+          <div class="bg-white border border-[#EAE7E1] rounded-2xl overflow-hidden mt-6">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-[#EAE7E1]">
+                  <tr>
+                    <th scope="col" class="px-6 py-4 font-bold text-[#A03500]">Tên Phòng</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-[#A03500]">Tòa Nhà</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-[#A03500]">Sức chứa</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-[#A03500]">Trạng thái</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-right text-[#A03500]">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="roomsList.length === 0" class="bg-white border-b border-[#EAE7E1]">
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-500 italic">
+                      <Building2 class="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      Chưa có dữ liệu phòng nào trong Database. Hãy bấm "Thêm Tòa/Phòng" để tạo mới.
+                    </td>
+                  </tr>
+                  
+                  <tr v-for="room in roomsList" :key="room.id" class="bg-white border-b border-[#EAE7E1] hover:bg-[#FFF5F0]/50 transition-colors">
+                    <td class="px-6 py-4 font-bold text-gray-800">
+                      Phòng {{ room.roomNumber || room.name }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-600 font-medium">
+                      Tòa {{ room.buildingId }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">
+                      {{ room.capacity }} Giường
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-md text-[11px] font-bold uppercase tracking-wider">
+                        Sẵn sàng
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-right space-x-3">
+                      <button class="text-blue-600 hover:text-blue-800 font-bold text-xs cursor-pointer">Sửa</button>
+                      <button class="text-red-600 hover:text-red-800 font-bold text-xs cursor-pointer">Xóa</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
+      </div>
       </div>
     </main>
   </div>
