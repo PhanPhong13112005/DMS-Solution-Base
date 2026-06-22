@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { ChartSpline, Users, Shield, LogOut, ArrowUpRight, ArrowDownRight, Settings, PlusCircle, Trash2, Calendar, Newspaper, Activity, Landmark, BellRing, Info, AlertTriangle, CheckCircle } from 'lucide-vue-next';
-import type { BookingApplication, NewsArticle } from '../types';
+import type { BookingApplication, NewsArticle, Room, Bed } from '../types';
 import { useAppData } from '../composables/useAppData';
+import { roomBuildingApi } from '../services/room-building.service'; // API của Nhóm 1
 
 // ============ USE TYPE-SAFE APP DATA & ACTIONS ============
-const { user, rooms, applications, maintenanceRequests, invoices, news, actions, apiError, isLoading } = useAppData();
+const { user, applications, maintenanceRequests, invoices, news, actions } = useAppData();
 
 const activeTab = ref<string>('Bảng điều khiển');
 const toast = ref<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -17,65 +18,56 @@ const newsSummary = ref('');
 const newsContent = ref('');
 const newsImg = ref('https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=400&q=80');
 
+// ============ REAL DATA (DỮ LIỆU THẬT NHÓM 1) ============
+const realTotalBeds = ref(0);
+const realOccupiedBeds = ref(0);
+const realAvailableBeds = ref(0);
+const allBedsList = ref<any[]>([]);
+
+const loadDashboardStats = async () => {
+  try {
+    // Gọi API qua Gateway cổng 5000
+    const beds: any = await roomBuildingApi.beds.getAll();
+    
+    if (beds && beds.length > 0) {
+        allBedsList.value = beds;
+        realTotalBeds.value = beds.length;
+        realOccupiedBeds.value = beds.filter((b: any) => !b.isAvailable).length; 
+        realAvailableBeds.value = beds.filter((b: any) => b.isAvailable).length;
+    }
+  } catch (error) {
+    console.error("Lỗi khi tải dữ liệu thống kê từ N1:", error);
+    showToast("Không thể kết nối đến máy chủ dữ liệu Gateway!", "error");
+  }
+};
+
+onMounted(() => {
+  loadDashboardStats();
+});
+
 // ============ COMPUTED WITH SAFE ACCESS ============
-/**
- * Admin user info from global state
- * Field mapping: user.id (Admin ID), user.name (Tên Admin)
- */
 const adminUser = computed(() => {
   const userData = user?.value ?? { id: 'ADMIN', name: 'Admin' };
   return {
     id: userData?.id ?? 'ADMIN',
     name: userData?.name ?? 'Admin',
-    ...userData // Preserve additional fields
+    ...userData 
   };
 });
 
-/**
- * Applications waiting for approval (status === 'Pending')
- */
 const pendingApps = computed(() => {
   return applications.value?.filter((a: BookingApplication) => a?.status === 'Pending') ?? [];
 });
 
-/**
- * Active maintenance issues (status !== 'Resolved')
- * Includes: 'Pending' and 'In Progress' statuses
- */
 const activeIssues = computed(() => {
-  return maintenanceRequests.value?.filter((m: MaintenanceRequest) => m?.status !== 'Resolved') ?? [];
+  return maintenanceRequests.value?.filter((m: any) => m?.status !== 'Resolved') ?? [];
 });
 
-/**
- * Total revenue from paid invoices (Tổng doanh số)
- * Field mapping: invoice.amount (VNĐ/month), invoice.status ('Paid')
- */
 const totalInvoicesPaidSum = computed(() => {
-  const paidTotal = invoices.value?.filter((i: Invoice) => i?.status === 'Paid')?.reduce((accum: number, i: Invoice) => {
+  const paidTotal = invoices.value?.filter((i: any) => i?.status === 'Paid')?.reduce((accum: number, i: any) => {
     return accum + (i?.amount ?? 0);
   }, 0) ?? 0;
-  return paidTotal + 14500000; // Base revenue
-});
-
-/**
- * Total occupied beds (Giường được sử dụng)
- * Calculation: SUM(capacity - available) for all rooms
- */
-const totalOccupiedSeats = computed(() => {
-  return rooms.value?.reduce((accum: number, r: Room) => {
-    const occupied = (r?.capacity ?? 0) - (r?.available ?? 0);
-    return accum + occupied;
-  }, 0) ?? 14;
-});
-
-/**
- * Total bed capacity (Tổng sức chứa)
- * Calculation: SUM(capacity) for all rooms
- */
-const totalCapacitySeats = computed(() => {
-  return rooms.value?.reduce((accum: number, r: Room) => {
-    return accum + (r?.capacity ?? 0);
-  }, 0) ?? 28;
+  return paidTotal + 14500000; 
 });
 
 // ============ HELPER FUNCTIONS ============
@@ -131,12 +123,16 @@ const handleLogout = () => {
   actions.logout();
 };
 
+// Thêm các icon mới (LayoutDashboard, Building2, Banknote, Wrench, BarChart3, Plus)
+import { LayoutDashboard, Building2, Users, Banknote, Wrench, BarChart3, Plus, Shield, LogOut, ArrowUpRight, ArrowDownRight, Settings, PlusCircle, Trash2, Calendar, Newspaper, Activity, Landmark, BellRing, Info, AlertTriangle, CheckCircle } from 'lucide-vue-next';
+// Thay thế mảng menuItems cũ bằng mảng mới này
 const menuItems = [
-  { id: 'Bảng điều khiển', icon: ChartSpline },
-  { id: 'Quản lý tin tức', icon: Newspaper },
-  { id: 'Sự cố bảo trì', icon: Activity },
-  { id: 'Duyệt lưu trú', icon: Users },
-  { id: 'Cài đặt hệ thống', icon: Settings }
+  { id: 'Bảng điều khiển', icon: LayoutDashboard },
+  { id: 'Cơ sở vật chất', icon: Building2 }, // Đất diễn của Nhóm 1
+  { id: 'Sinh viên', icon: Users },          // Đất diễn của Nhóm 2
+  { id: 'Tài chính', icon: Banknote },       // Đất diễn của Nhóm 3
+  { id: 'Bảo trì', icon: Wrench },           // Đất diễn của Nhóm 3
+  { id: 'Báo cáo', icon: BarChart3 }
 ];
 </script>
 
@@ -208,25 +204,26 @@ const menuItems = [
         
         <div v-if="activeTab === 'Bảng điều khiển'" class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-6 text-left">
+            
             <div class="bg-white p-6 rounded-[24px] border border-[#EAE7E1] shadow-xs space-y-2">
               <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block">Học viên đang ở</span>
-              <div class="text-2xl font-bold font-mono text-[#4A4A4A]">{{ totalOccupiedSeats }} SV</div>
+              <div class="text-2xl font-bold font-mono text-[#4A4A4A]">{{ realOccupiedBeds }} SV</div>
               <div class="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
                 <ArrowUpRight class="w-4 h-4 shrink-0" /> <span>Hợp đồng có hiệu lực</span>
               </div>
             </div>
 
             <div class="bg-white p-6 rounded-[24px] border border-[#EAE7E1] shadow-xs space-y-2">
-              <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block">Tỷ suất khai thác giường</span>
-              <div class="text-2xl font-bold font-mono text-[#4A4A4A]">{{ totalOccupiedSeats }} / {{ totalCapacitySeats }}</div>
-              <div class="text-[11px] text-[#8B8B8B] font-light">Hiệu suất lấp đầy cao KTX DNU</div>
+              <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block">Phòng (Giường) trống</span>
+              <div class="text-2xl font-bold font-mono text-[#4A4A4A]">{{ realAvailableBeds }}</div>
+              <div class="text-[11px] text-[#8B8B8B] font-light">Sẵn sàng phân bổ</div>
             </div>
 
             <div class="bg-white p-6 rounded-[24px] border border-[#EAE7E1] shadow-xs space-y-2">
               <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block">Doanh số tổng hợp</span>
               <div class="text-2xl font-bold font-mono text-[#CB997E]">{{ new Intl.NumberFormat('vi-VN').format(totalInvoicesPaidSum) }}đ</div>
               <div class="text-[11px] text-[#6B705C] font-semibold flex items-center gap-1">
-                <ArrowDownRight class="w-4 h-4 shrink-0" /> <span>Lệ phí kết toán niên vụ 2026</span>
+                <ArrowDownRight class="w-4 h-4 shrink-0" /> <span>Lệ phí kết toán niên vụ</span>
               </div>
             </div>
 
@@ -267,21 +264,9 @@ const menuItems = [
               <div class="h-56 w-full bg-[#FDFBF7] border border-[#EAE7E1] rounded-[24px] p-6 flex justify-around items-end relative">
                 <div class="flex flex-col items-center gap-2">
                   <div class="w-10 bg-[#EAE7E1] rounded-t-xl h-36 relative flex items-end overflow-hidden">
-                    <div class="absolute inset-x-0 bottom-0 bg-[#6B705C] h-[85%]" />
+                    <div class="absolute inset-x-0 bottom-0 bg-[#6B705C]" :style="{ height: realTotalBeds > 0 ? `${(realOccupiedBeds / realTotalBeds) * 100}%` : '0%' }" />
                   </div>
-                  <span class="text-[10px] font-bold font-mono">Tòa A (85%)</span>
-                </div>
-                <div class="flex flex-col items-center gap-2">
-                  <div class="w-10 bg-[#EAE7E1] rounded-t-xl h-36 relative flex items-end overflow-hidden">
-                    <div class="absolute inset-x-0 bottom-0 bg-[#CB997E] h-[92%]" />
-                  </div>
-                  <span class="text-[10px] font-bold font-mono">Tòa B (92%)</span>
-                </div>
-                <div class="flex flex-col items-center gap-2">
-                  <div class="w-10 bg-[#EAE7E1] rounded-t-xl h-36 relative flex items-end overflow-hidden">
-                    <div class="absolute inset-x-0 bottom-0 bg-[#8B9178] h-[68%]" />
-                  </div>
-                  <span class="text-[10px] font-bold font-mono">Tòa C (68%)</span>
+                  <span class="text-[10px] font-bold font-mono">Toàn KTX ({{ realTotalBeds > 0 ? Math.round((realOccupiedBeds / realTotalBeds) * 100) : 0 }}%)</span>
                 </div>
               </div>
             </div>
