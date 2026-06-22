@@ -1,6 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using BillingMaintenanceService.Infrastructure;
 using BillingMaintenanceService.Application;
+using BillingMaintenanceService.Events;
+using MassTransit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,10 +19,14 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<BillingDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. ĐĂNG KÝ PHÂN TẦNG THEO ĐÚNG SƠ ĐỒ KIẾN TRÚC C4 MODEL COMPONENT
+// 4. TIÊM DEPENDENCY INJECTION
 builder.Services.AddScoped<BillingMaintenanceRepository>();
 builder.Services.AddScoped<BillingAppService>();
 builder.Services.AddScoped<MaintenanceAppService>();
+
+// Thêm Hosted Service để sinh hóa đơn ngầm
+builder.Services.AddHostedService<BillingMaintenanceService.Workers.MonthlyBillingWorker>();
+builder.Services.AddScoped<AuthAppService>();
 
 // 3. Kích hoạt bộ sinh tài liệu Swagger UI
 builder.Services.AddEndpointsApiExplorer();
@@ -34,7 +43,55 @@ builder.Services.AddCors(options =>
     });
 });
 
+// 5. CẤU HÌNH RABBITMQ (Nhận sự kiện ContractCreatedEvent từ Nhóm 2)
+// TẠM THỜI COMMENT ĐỂ CHẠY LOCAL KHÔNG LỖI RABBITMQ
+/*
+builder.Services.AddMassTransit(x =>
+{
+    // Đăng ký Consumer
+    x.AddConsumer<ContractCreatedConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMQ:Host"], "/", h => {
+            h.Username(builder.Configuration["RabbitMQ:Username"]);
+            h.Password(builder.Configuration["RabbitMQ:Password"]);
+        });
+
+        cfg.ReceiveEndpoint("billing-contract-created-queue", e =>
+        {
+            e.ConfigureConsumer<ContractCreatedConsumer>(context);
+        });
+    });
+});
+*/
+
+// 6. CẤU HÌNH JWT AUTHENTICATION
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
+builder.Services.AddAuthorization();
+
+
 var app = builder.Build();
+
+// TỰ ĐỘNG TẠO DATABASE VÀ SEED DATA NẾU CHƯA CÓ
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
+    db.Database.EnsureCreated();
+}
 
 // ==============================================================================
 // VÙNG 2: CẤU HÌNH ĐƯỜNG ĐI (Middleware - Bắt buộc nằm sau builder.Build)
@@ -50,12 +107,13 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Tắt tạm HTTPS Redirection để tránh lỗi CORS/SSL khi Frontend gọi API ở môi trường local
 
 app.UseCors("AllowFrontend");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+app.Run();

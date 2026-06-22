@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { usePagination } from '../composables/usePagination';
 import { LayoutDashboard, Users, UserPlus, Wrench, ShieldAlert, CheckCircle, LogOut, Search, Building, Receipt, FilePlus, AlertTriangle, Info, CheckCircle2 } from 'lucide-vue-next';
 import type { Room, BookingApplication, MaintenanceRequest, Invoice } from '../types';
 
@@ -32,6 +33,8 @@ const billAmount = ref('');
 const pendingApps = computed(() => props.applications.filter(a => a.status === 'Pending'));
 const activeIssues = computed(() => props.maintenanceRequests.filter(m => m.status !== 'Resolved'));
 const urgentIssues = computed(() => activeIssues.value.filter(i => i.priority === 'Critical'));
+
+const { paginatedItems: pIssues, currentPage: cpIssues, totalPages: tpIssues, nextPage: npIssues, prevPage: ppIssues } = usePagination(activeIssues, 4);
 
 const totalVacantSlots = computed(() => props.rooms.reduce((accum, r) => accum + r.available, 0));
 
@@ -160,6 +163,43 @@ const menuItems = [
             <div class="bg-white p-5 rounded-[24px] border border-[#EAE7E1] shadow-xs">
               <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block mb-1">Số lượng giường trống</span>
               <div class="text-xl font-bold text-[#6B705C] font-mono mt-1.5">{{ totalVacantSlots }} Giường</div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="activeTab === 'Sự cố bảo trì'" class="bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm space-y-6 text-left flex flex-col min-h-[500px]">
+          <h3 class="font-serif text-[#4A4A4A] text-lg border-b border-[#EAE7E1] pb-3.5">Quản lý sự cố kỹ thuật</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs md:text-sm flex-1">
+            <div v-for="issue in pIssues" :key="issue.id" class="p-5 border border-[#EAE7E1] bg-[#FDFBF7]/35 rounded-2xl space-y-3 flex flex-col justify-between">
+              <div>
+                <div class="flex justify-between items-baseline mb-2 bg-[#FDFBF7] border border-[#EAE7E1] p-2 rounded-xl">
+                  <span class="font-bold text-[#4A4A4A]">Phiếu: {{ issue.id.toString().substring(0,8) }}</span>
+                  <span :class="['text-[10px] font-extrabold px-1.5 py-0.5 rounded-lg', issue.priority === 'Critical' ? 'bg-[#CB997E]/20 text-[#CB997E]' : 'bg-[#6B705C]/20 text-[#6B705C]']">
+                    {{ issue.priority === 'Critical' ? 'Khẩn cấp' : 'Thường' }}
+                  </span>
+                </div>
+                <h4 class="font-serif text-[#4A4A4A] text-base">Phòng {{ issue.roomNumber }} - {{ issue.title }}</h4>
+                <p class="text-xs text-[#8B8B8B] font-light mt-1">{{ issue.description }}</p>
+              </div>
+              <div class="flex gap-2 pt-2 border-t border-[#EAE7E1] text-xs">
+                <button @click="emit('updateMaintenanceStatus', issue.id, 'Resolved'); showToast('Đã đóng hồ sơ bảo trì!', 'success');" class="w-1/2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold py-2 rounded-full cursor-pointer text-center">
+                  Đã sửa xong
+                </button>
+                <span class="flex items-center justify-center italic text-[#8B8B8B] text-xs w-1/2 font-mono bg-[#FDFBF7] border border-[#EAE7E1] rounded-full">
+                  Trạng thái: {{ issue.status }}
+                </span>
+              </div>
+            </div>
+            <div v-if="activeIssues.length === 0" class="col-span-1 md:col-span-2 text-center py-12 text-[#8B8B8B] italic text-xs font-mono">
+              Không có sự cố bảo trì nào đang chờ xử lý.
+            </div>
+          </div>
+          <!-- Phân trang Sự cố -->
+          <div v-if="activeIssues.length > 0" class="flex justify-between items-center mt-6 pt-4 border-t border-[#EAE7E1]">
+            <span class="text-xs text-[#8B8B8B]">Trang {{ cpIssues }} / {{ tpIssues }}</span>
+            <div class="flex gap-2">
+              <button @click="ppIssues" :disabled="cpIssues === 1" class="px-3 py-1.5 bg-[#FDFBF7] border border-[#EAE7E1] rounded-lg text-xs font-bold text-[#4A4A4A] disabled:opacity-50 hover:bg-white transition-colors">Trước</button>
+              <button @click="npIssues" :disabled="cpIssues === tpIssues" class="px-3 py-1.5 bg-[#FDFBF7] border border-[#EAE7E1] rounded-lg text-xs font-bold text-[#4A4A4A] disabled:opacity-50 hover:bg-white transition-colors">Sau</button>
             </div>
           </div>
         </div>

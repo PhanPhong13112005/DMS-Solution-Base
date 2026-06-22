@@ -1,14 +1,17 @@
+// src/types.ts
+// Định nghĩa các kiểu dữ liệu (interfaces) dùng chung trong toàn bộ ứng dụng
+
 export interface Room {
   id: string;
   roomNumber: string;
-  building: string; // Tòa A, Tòa B, Tòa C
-  capacity: number; // 2, 4, 6
-  size: number; // m²
-  price: number; // VNĐ / tháng
-  amenities: string[]; // "WC riêng", "Máy lạnh", etc.
-  available: number; // slots left
-  gender: 'Nam' | 'Nữ';
-  occupants: string[]; // Student IDs
+  building: string;
+  capacity: number;
+  available: number;
+  size: number;
+  price: number;
+  gender: string;
+  amenities: string[];
+  occupants?: string[];
 }
 
 export interface BookingApplication {
@@ -24,8 +27,8 @@ export interface BookingApplication {
   paymentMethod: 'bank' | 'e-wallet' | 'direct';
   status: 'Pending' | 'Approved' | 'Rejected';
   createdAt: string;
-  evidenceCCCD: string;
-  evidenceStudentCard: string;
+  evidenceCCCD?: string;
+  evidenceStudentCard?: string;
 }
 
 export interface MaintenanceRequest {
@@ -33,32 +36,9 @@ export interface MaintenanceRequest {
   roomNumber: string;
   title: string;
   description: string;
-  category: string; // Điện, Nước, Thiết bị, Khác
+  category: string;
   priority: 'Critical' | 'Normal';
   status: 'Pending' | 'In Progress' | 'Resolved';
-  createdAt: string;
-  feedback?: string;
-}
-
-export interface TransferRequest {
-  id: string;
-  studentId: string;
-  fullName: string;
-  currentRoom: string;
-  requestedRoom: string;
-  reason: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  createdAt: string;
-}
-
-export interface Invoice {
-  id: string;
-  roomNumber: string;
-  studentId: string;
-  month: string;
-  amount: number;
-  type: 'Tiền phòng' | 'Điện nước' | 'Phí dịch vụ';
-  status: 'Paid' | 'Unpaid';
   createdAt: string;
 }
 
@@ -72,22 +52,27 @@ export interface NewsArticle {
   image: string;
 }
 
-export enum UserRole {
-  Guest = 'Guest',
-  Student = 'Student',
-  Staff = 'Staff',
-  Admin = 'Admin'
+export interface Invoice {
+  id: string;
+  displayId?: string;
+  roomNumber: string;
+  studentId: string;
+  month: string;
+  amount: number;
+  electricityCost?: number;
+  waterCost?: number;
+  type: string;
+  status: 'Unpaid' | 'Paid';
+  createdAt: string;
 }
 
-export enum AppScreen {
-  Home = 'Home',
-  About = 'About',
-  Booking = 'Booking',
-  News = 'News',
-  Rules = 'Rules',
-  Contact = 'Contact',
-  Auth = 'Auth',
-  StudentPortal = 'StudentPortal',
-  StaffPortal = 'StaffPortal',
-  AdminPortal = 'AdminPortal'
+export interface TransferRequest {
+  id: string;
+  studentId: string;
+  fullName: string;
+  currentRoom: string;
+  requestedRoom: string;
+  reason: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  createdAt: string;
 }

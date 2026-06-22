@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, provide } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Building2, LogIn } from 'lucide-vue-next';
+import type { Room, BookingApplication, MaintenanceRequest, NewsArticle, Invoice, TransferRequest } from './types';
 
 const route = useRoute();
 const router = useRouter();
 
-// 1. Dùng Object rỗng thay vì null để chống lỗi Crash trắng màn hình
+// =============================================
+// AUTH STATE
+// =============================================
 const loggedInUser = ref<any>({});
 
-// 2. Tự động lắng nghe sự thay đổi URL để nạp lại User từ LocalStorage
 watch(
   () => route.path,
   () => {
@@ -20,17 +22,15 @@ watch(
       loggedInUser.value = {};
     }
   },
-  { immediate: true } // Chạy ngay lần đầu tiên web được load lên
+  { immediate: true }
 );
 
-// Xử lý đăng xuất
 const handleLogout = () => {
   localStorage.removeItem('current_user');
   loggedInUser.value = {};
   router.push('/auth');
 };
 
-// 3. Xử lý sự kiện điều hướng từ các nút bấm bên trong trang (HomeView, AboutView...)
 const handleNavigation = (screenName: string) => {
   const routes: Record<string, string> = {
     'Home': '/',
@@ -44,39 +44,251 @@ const handleNavigation = (screenName: string) => {
     'Staff': '/staff',
     'Student': '/student'
   };
-  
   if (routes[screenName]) {
     router.push(routes[screenName]);
   }
 };
 
-// Ẩn thanh Navbar nếu đang ở trong các cổng quản lý nội bộ
+// Ẩn Navbar khi ở các trang portal nội bộ
 const showNavbar = computed(() => {
   const hiddenRoutes = ['/admin', '/staff', '/student'];
   return !hiddenRoutes.includes(route.path);
 });
 
-// --- DỮ LIỆU CHẠY THỬ (MOCK DATA) ---
-const mockRooms = ref([
+// =============================================
+// STATE (MOCK DATA)
+// =============================================
+const mockRooms = ref<Room[]>([
   { id: '1', roomNumber: '101', building: 'Tòa B', capacity: 4, available: 2, size: 25, price: 850000, gender: 'Nam', amenities: ['WC riêng', 'Máy lạnh'], occupants: ['1771020535'] },
-  { id: '2', roomNumber: 'A102', building: 'Tòa A', capacity: 2, available: 0, size: 20, price: 1200000, gender: 'Nữ', amenities: ['Máy lạnh'], occupants: [] }
+  { id: '2', roomNumber: 'A102', building: 'Tòa A', capacity: 2, available: 0, size: 20, price: 1200000, gender: 'Nữ', amenities: ['Máy lạnh'], occupants: [] },
+  { id: '3', roomNumber: '305', building: 'Tòa C', capacity: 6, available: 4, size: 35, price: 500000, gender: 'Nam', amenities: [], occupants: [] }
 ]);
 
-const mockInvoices = ref([
-  { id: 'inv-1', roomNumber: '101-Tòa B', studentId: '1771020535', month: 'Tháng 6/2026', amount: 850000, type: 'Tiền phòng', status: 'Unpaid', createdAt: '2026-06-01' }
-]);
+const mockApplications = ref<BookingApplication[]>([]);
 
-const mockMaintenance = ref([
-  { id: 'maint-1', roomNumber: '101-Tòa B', title: 'Hỏng điều hòa', description: 'Điều hòa chảy nước ở cục lạnh không mát', category: 'Điện', priority: 'Normal', status: 'Pending', createdAt: '2026-06-18' }
-]);
+const mockMaintenance = ref<MaintenanceRequest[]>([]);
 
+const mockInvoices = ref<Invoice[]>([]);
 
+const mockNews = ref<NewsArticle[]>([]);
+const mockTransfers = ref<TransferRequest[]>([]);
 
-const mockApplications = ref([]);
-const mockNews = ref([]);
-const mockTransfers = ref([]);
+import apiClient from './api/axios';
 
+const fetchN3Data = async () => {
+  if (loggedInUser.value && loggedInUser.value.role) {
+    try {
+      if (loggedInUser.value.role === 'Admin' || loggedInUser.value.role === 'Staff') {
+        const billRes = await apiClient.get('/bills');
+        mockInvoices.value = (billRes.data.data || billRes.data.Data || []).map((b: any, idx: number) => ({
+          id: b.id,
+          displayId: `PTT${String(idx + 1).padStart(5, '0')}`,
+          roomNumber: b.roomId.toString(),
+          studentId: b.studentId?.toString() || 'N/A',
+          month: b.targetMonth,
+          amount: b.totalAmount,
+          type: b.title || 'Phí KTX', // Dùng tên thực tế từ Backend
+          status: b.isPaid ? 'Paid' : 'Unpaid',
+          createdAt: b.createdAt.split('T')[0]
+        }));
 
+        const maintRes = await apiClient.get('/maintenance');
+        mockMaintenance.value = (maintRes.data.data || maintRes.data.Data || []).map((m: any) => ({
+          id: m.id,
+          roomNumber: m.roomId.toString(),
+          title: m.title,
+          description: m.description,
+          category: m.category === 'Electricity' ? 'Điện' : m.category === 'Water' ? 'Nước' : 'Khác',
+          priority: m.priority,
+          status: m.status === 'Completed' ? 'Resolved' : m.status,
+          createdAt: m.createdAt.split('T')[0]
+        }));
+      } else if (loggedInUser.value.role === 'Student') {
+        const sId = loggedInUser.value.referenceId;
+        if (sId) {
+          // 1. Xác định Room của sinh viên hiện tại
+          const sIdStr = sId.toString();
+          const studentRoom = mockRooms.value.find(r => r.occupants && r.occupants.includes(sIdStr));
+          // API cần ID thực tế (vd: 101)
+          const realRoomId = studentRoom ? parseInt(studentRoom.roomNumber) : 101;
+
+          // 2. Fetch Hóa đơn theo mã Phòng (Vì Cán bộ phát hành hóa đơn cho phòng, không gán đích danh sinh viên)
+          const billRes = await apiClient.get(`/bills/room/${realRoomId}`);
+          mockInvoices.value = (billRes.data.data || billRes.data.Data || []).map((b: any, idx: number) => ({
+            id: b.id,
+            displayId: `PTT${String(idx + 1).padStart(5, '0')}`,
+            roomNumber: b.roomId.toString(),
+            studentId: b.studentId?.toString() || 'N/A',
+            month: b.targetMonth,
+            amount: b.totalAmount,
+            type: b.title || 'Phí KTX', // Dùng tên thực tế từ Backend
+            status: b.isPaid ? 'Paid' : 'Unpaid',
+            createdAt: b.createdAt.split('T')[0]
+          }));
+
+          // 3. Fetch Báo hỏng theo mã Phòng
+          const maintRes = await apiClient.get(`/maintenance/room/${realRoomId}`);
+          mockMaintenance.value = (maintRes.data.data || maintRes.data.Data || []).map((m: any) => ({
+            id: m.id,
+            roomNumber: m.roomId.toString(), // Hoặc nối thêm tên tòa
+            title: m.title,
+            description: m.description,
+            category: m.category === 'Electricity' ? 'Điện' : m.category === 'Water' ? 'Nước' : 'Khác',
+            priority: m.priority,
+            status: m.status === 'Completed' ? 'Resolved' : m.status,
+            createdAt: m.createdAt.split('T')[0]
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi fetch dữ liệu N3", error);
+    }
+  }
+};
+
+watch(
+  () => loggedInUser.value,
+  () => {
+    if (loggedInUser.value && loggedInUser.value.role) {
+      fetchN3Data();
+    }
+  },
+  { deep: true, immediate: true }
+);
+
+// =============================================
+// HANDLERS — dùng cho emit từ các Portal
+// =============================================
+const handleAddApplication = (app: BookingApplication) => {
+  mockApplications.value.push(app);
+};
+
+const handleUpdateRoomVacancy = (roomId: string, decrement: boolean) => {
+  const room = mockRooms.value.find(r => r.id === roomId);
+  if (room) {
+    if (decrement && room.available > 0) room.available--;
+    else if (!decrement && room.available < room.capacity) room.available++;
+  }
+};
+
+const handleApproveApplication = (appId: string) => {
+  const app = mockApplications.value.find(a => a.id === appId);
+  if (app) app.status = 'Approved';
+};
+
+const handleRejectApplication = (appId: string) => {
+  const app = mockApplications.value.find(a => a.id === appId);
+  if (app) app.status = 'Rejected';
+};
+
+const handleUpdateMaintenanceStatus = async (id: string, status: 'Pending' | 'In Progress' | 'Resolved') => {
+  try {
+    const backendStatus = status === 'Resolved' ? 'Completed' : status;
+    await apiClient.put(`/maintenance/${id}/status`, `"${backendStatus}"`, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const req = mockMaintenance.value.find(m => m.id === id);
+    if (req) req.status = status;
+  } catch (error) {
+    console.error("Lỗi cập nhật bảo trì", error);
+  }
+};
+
+const handleAddNewsArticle = (article: NewsArticle) => {
+  mockNews.value.unshift(article);
+};
+
+const handleDeleteNewsArticle = (id: string) => {
+  mockNews.value = mockNews.value.filter(a => a.id !== id);
+};
+
+const handleAddInvoice = async (inv: Invoice) => {
+  try {
+    // Gọi API thật để tạo Bill
+    await apiClient.post('/bills', {
+      roomId: parseInt(inv.roomNumber.split('-')[0]) || 101,
+      studentId: 0,
+      contractId: "",
+      title: inv.type, // Lưu lại loại phí thực tế từ modal
+      targetMonth: inv.month,
+      electricityCost: inv.electricityCost || 0,
+      waterCost: inv.waterCost || 0,
+      serviceFee: inv.amount - (inv.electricityCost || 0) - (inv.waterCost || 0),
+      totalAmount: inv.amount,
+      isPaid: false
+    });
+    fetchN3Data(); // Tải lại danh sách
+  } catch (error) {
+    console.error("Lỗi tạo hóa đơn", error);
+  }
+};
+
+const handleAddMaintenance = async (req: MaintenanceRequest) => {
+  try {
+    await apiClient.post('/maintenance', {
+      roomId: parseInt(req.roomNumber.split('-')[0]) || 101,
+      title: req.title,
+      description: req.description,
+      category: req.category === 'Điện' ? 'Electricity' : req.category === 'Nước' ? 'Water' : 'Other',
+      priority: req.priority
+    });
+    fetchN3Data();
+  } catch (error) {
+    console.error("Lỗi tạo yêu cầu bảo trì", error);
+  }
+};
+
+const handlePayInvoice = async (invoiceId: string) => {
+  try {
+    await apiClient.put(`/bills/${invoiceId}/pay`);
+    const inv = mockInvoices.value.find(i => i.id === invoiceId);
+    if (inv) inv.status = 'Paid';
+  } catch (error) {
+    console.error("Lỗi thanh toán hóa đơn", error);
+  }
+};
+
+const handleDeletePayment = (invoiceId: string) => {
+  const inv = mockInvoices.value.find(i => i.id === invoiceId);
+  if (inv) {
+    inv.status = 'Unpaid';
+    // Mở rộng sau: gọi API xóa thanh toán nếu backend hỗ trợ
+  }
+};
+
+const handleDeleteInvoice = async (invoiceId: string) => {
+  try {
+    await apiClient.delete(`/bills/${invoiceId}`);
+    mockInvoices.value = mockInvoices.value.filter(i => i.id !== invoiceId);
+  } catch (error) {
+    console.error("Lỗi xóa hóa đơn", error);
+    // Silent fail or handle error notification if needed
+  }
+};
+
+const handleAddTransfer = (req: TransferRequest) => {
+  mockTransfers.value.push(req);
+};
+
+// =============================================
+// PROVIDE — cho StudentPortal & NewsView dùng inject
+// =============================================
+provide('appData', {
+  user: loggedInUser,
+  rooms: mockRooms,
+  maintenanceRequests: mockMaintenance,
+  invoices: mockInvoices,
+  news: mockNews,
+  transferRequests: mockTransfers,
+});
+
+provide('actions', {
+  logout: handleLogout,
+  addMaintenance: handleAddMaintenance,
+  updateMaintenanceStatus: handleUpdateMaintenanceStatus,
+  payInvoice: handlePayInvoice,
+  addTransfer: handleAddTransfer,
+});
 </script>
 
 <template>
@@ -116,7 +328,47 @@ const mockTransfers = ref([]);
       </div>
     </nav>
 
-    <router-view />
+    <!-- Dùng v-slot để truyền props xuống AdminPortal và StaffPortal -->
+    <router-view v-slot="{ Component }">
+      <component
+        :is="Component"
+        v-if="route.path === '/admin'"
+        :user="loggedInUser"
+        :rooms="mockRooms"
+        :maintenanceRequests="mockMaintenance"
+        :invoices="mockInvoices"
+        :applications="mockApplications"
+        @logout="handleLogout"
+        @updateMaintenanceStatus="handleUpdateMaintenanceStatus"
+        @addNewsArticle="handleAddNewsArticle"
+        @deleteNewsArticle="handleDeleteNewsArticle"
+        @deleteInvoice="handleDeleteInvoice"
+        @payInvoice="handlePayInvoice"
+        @deletePayment="handleDeletePayment"
+      />
+      <component
+        :is="Component"
+        v-else-if="route.path === '/staff'"
+        :staff-user="loggedInUser"
+        :rooms="mockRooms"
+        :applications="mockApplications"
+        :maintenance-requests="mockMaintenance"
+        @logout="handleLogout"
+        @approve-application="handleApproveApplication"
+        @reject-application="handleRejectApplication"
+        @update-room-vacancy="handleUpdateRoomVacancy"
+        @update-maintenance-status="handleUpdateMaintenanceStatus"
+        @add-invoice="handleAddInvoice"
+      />
+      <component
+        :is="Component"
+        v-else-if="route.path === '/booking'"
+        :rooms="mockRooms"
+        @add-application="handleAddApplication"
+        @update-room-vacancy="handleUpdateRoomVacancy"
+      />
+      <component :is="Component" v-else />
+    </router-view>
     
   </div>
-</template>
+</template>

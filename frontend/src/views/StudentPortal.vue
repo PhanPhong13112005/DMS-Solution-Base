@@ -49,6 +49,15 @@ const showToast = (message: string, type: 'success' | 'info' | 'error' = 'succes
   setTimeout(() => { toast.value = null; }, 4000);
 };
 
+const myRoom = computed(() => {
+  return rooms.value.find((r: Room) => r.occupants && r.occupants.includes(studentUser.value.id));
+});
+
+const myMaintenance = computed(() => {
+  // Vì App.vue đã gọi API lấy đúng danh sách của phòng này rồi nên ta trả về luôn
+  return maintenanceRequests.value;
+});
+
 const handleMaintenanceSubmit = () => {
   if (!maintTitle.value || !maintDesc.value) {
     showToast('Vui lòng điền đủ tiêu đề và nội dung mô tả lỗi báo hỏng!', 'error');
@@ -59,12 +68,16 @@ const handleMaintenanceSubmit = () => {
     roomNumber: myRoom.value ? `${myRoom.value.roomNumber}-${myRoom.value.building}` : '101-Tòa B',
     title: maintTitle.value,
     description: maintDesc.value,
-    category: maintCategory.value,
+    category: maintCategory.value as any,
     priority: maintPriority.value,
     status: 'Pending',
     createdAt: new Date().toISOString().split('T')[0]
   };
-  emit('addMaintenance', newRequest);
+  
+  if (actions && actions.addMaintenance) {
+    actions.addMaintenance(newRequest);
+  }
+  
   showToast('Đã gửi phiếu báo hỏng kỹ thuật thành công tới ban kỹ sư KTX!', 'success');
   maintTitle.value = '';
   maintDesc.value = '';
@@ -77,15 +90,19 @@ const handleTransferSubmit = () => {
   }
   const newTransfer: TransferRequest = {
     id: 'tf-' + Math.random().toString(36).substr(2, 9),
-    studentId: props.studentUser.id,
-    fullName: props.studentUser.name,
+    studentId: studentUser.value.id,
+    fullName: studentUser.value.name,
     currentRoom: myRoom.value ? `${myRoom.value.roomNumber}-${myRoom.value.building}` : '101-Tòa B',
     requestedRoom: requestedRoomCode.value,
     reason: transferReason.value,
     status: 'Pending',
     createdAt: new Date().toISOString().split('T')[0]
   };
-  emit('addTransfer', newTransfer);
+  
+  if (actions && actions.addTransfer) {
+    actions.addTransfer(newTransfer);
+  }
+
   showToast('Đơn đề xuất xin di chuyển phòng ở đã gửi thành công!', 'success');
   requestedRoomCode.value = '';
   transferReason.value = '';
@@ -98,7 +115,11 @@ const startInvoicePayment = (inv: Invoice) => {
 
 const completeInvoicePayment = () => {
   if (!payingInvoice.value) return;
-  emit('payInvoice', payingInvoice.value.id);
+  
+  if (actions && actions.payInvoice) {
+    actions.payInvoice(payingInvoice.value.id);
+  }
+
   isPayModalOpen.value = false;
   payingInvoice.value = null;
   showToast('Giao dịch thanh toán hóa đơn đã được ghi nhận thành công!', 'success');
@@ -250,8 +271,34 @@ const menuItems = [
               </div>
             </div>
           </div>
-          <div v-else class="text-center py-12 text-[#8B8B8B] italic">Bạn chưa được sắp phòng chính thức từ văn phòng
-            KTX.</div>
+          <div v-else class="text-center py-12 text-[#8B8B8B] italic">Bạn chưa được sắp phòng chính thức từ văn phòng KTX.</div>
+        </div>
+
+        <div v-if="activeTab === 'Thanh toán'" class="bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm space-y-6 text-left">
+          <h3 class="font-serif text-[#4A4A4A] text-lg border-b border-[#EAE7E1] pb-3.5">Hóa đơn điện tử & Thanh toán</h3>
+          <div class="space-y-4">
+            <div v-for="inv in invoices" :key="inv.id" class="p-5 border border-[#EAE7E1] bg-[#FDFBF7]/35 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div class="flex items-center gap-4">
+                <div :class="['w-12 h-12 rounded-full flex items-center justify-center shrink-0', inv.status === 'Paid' ? 'bg-[#6B705C]/15 text-[#6B705C]' : 'bg-[#CB997E]/15 text-[#CB997E]']">
+                  <Receipt class="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 class="font-bold text-[#4A4A4A] text-base">{{ inv.type }} - Tháng {{ inv.month }}</h4>
+                  <p class="text-xs text-[#8B8B8B] font-mono mt-1">Phòng: {{ inv.roomNumber }} • Hóa đơn: {{ inv.id.toString().substring(0,8) }}</p>
+                </div>
+              </div>
+              <div class="flex flex-col items-end gap-2 shrink-0">
+                <div class="text-lg font-bold font-mono text-[#4A4A4A]">{{ formatCurrency(inv.amount) }}đ</div>
+                <div v-if="inv.status === 'Paid'" class="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold uppercase tracking-wider rounded-md flex items-center gap-1">
+                  <CheckCircle2 class="w-3 h-3" /> Đã thu
+                </div>
+                <button v-else @click="startInvoicePayment(inv)" class="px-5 py-2 bg-[#CB997E] hover:bg-[#b07d62] text-white font-bold text-xs rounded-full shadow-xs cursor-pointer">
+                  Thanh toán ngay
+                </button>
+              </div>
+            </div>
+            <div v-if="invoices.length === 0" class="text-center py-12 text-[#8B8B8B] italic text-xs font-mono">Không có hóa đơn nào cần thanh toán.</div>
+          </div>
         </div>
 
         <div v-if="activeTab === 'Yêu cầu sửa chữa'" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -321,5 +368,32 @@ const menuItems = [
 
       </div>
     </main>
+
+    <!-- Payment Modal -->
+    <div v-if="isPayModalOpen && payingInvoice" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-[#4A4A4A]/40 backdrop-blur-sm" @click="isPayModalOpen = false"></div>
+      <div class="bg-white rounded-[32px] p-8 max-w-sm w-full relative z-10 shadow-2xl border border-[#EAE7E1] animate-fade-in text-center">
+        <div class="w-16 h-16 bg-[#CB997E]/10 text-[#CB997E] rounded-full flex items-center justify-center mx-auto mb-4">
+          <Receipt class="w-8 h-8" />
+        </div>
+        <h3 class="font-serif text-[#4A4A4A] text-xl mb-1">Thanh toán hóa đơn</h3>
+        <p class="text-xs text-[#8B8B8B] mb-6">Mã phiếu: {{ payingInvoice.id.toString().substring(0,8) }}</p>
+        
+        <div class="bg-[#FDFBF7] border border-[#EAE7E1] rounded-2xl p-4 mb-6">
+          <div class="text-[10px] text-[#8B8B8B] font-bold uppercase tracking-wider mb-1">{{ payingInvoice.type }} - Tháng {{ payingInvoice.month }}</div>
+          <div class="text-3xl font-mono font-bold text-[#4A4A4A]">{{ formatCurrency(payingInvoice.amount) }}<span class="text-lg text-[#8B8B8B]">đ</span></div>
+        </div>
+
+        <div class="space-y-3">
+          <button @click="completeInvoicePayment" class="w-full py-3.5 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold text-sm rounded-full shadow-md cursor-pointer transition-colors">
+            Xác nhận thanh toán
+          </button>
+          <button @click="isPayModalOpen = false" class="w-full py-3.5 bg-transparent hover:bg-[#FDFBF7] text-[#8B8B8B] font-bold text-sm rounded-full cursor-pointer transition-colors">
+            Hủy bỏ
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
