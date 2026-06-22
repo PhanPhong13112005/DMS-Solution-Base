@@ -1,9 +1,9 @@
 {
   "Routes": [
     {
-      "UpstreamPathTemplate": "/api/{everything}",
+      "UpstreamPathTemplate": "/api/Buildings/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
-      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamPathTemplate": "/api/Buildings/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8080 }]
     },
@@ -57,5 +57,7 @@
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
     }
   ],
-  "GlobalConfiguration": { "BaseUrl": "http://localhost:5000" }
+  "GlobalConfiguration": { 
+    "BaseUrl": "http://localhost:5000" 
+  }
 }
