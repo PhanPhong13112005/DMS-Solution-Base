@@ -35,6 +35,11 @@ builder.Services.AddMassTransit(x =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+// Add services to the container.
+builder.Services.AddControllers();
+
+// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
@@ -44,8 +49,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseHttpsRedirection();
+
+app.UseDefaultFiles(); // Tự động tìm và chạy file index.html
+app.UseStaticFiles();  // Cho phép trình duyệt đọc CSS, JS, Hình ảnh trong wwwroot
+
 app.UseAuthorization();
 app.MapControllers();
 
 // Khởi chạy chính xác trên port 8081 dành cho Nhóm 2
 app.Run("http://localhost:8081");
+app.Run();

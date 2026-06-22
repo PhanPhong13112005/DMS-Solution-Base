@@ -19,3 +19,43 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
+version: '3.8'
+
+services:
+  # 1. Bưu điện RabbitMQ (Có kèm giao diện web quản lý)
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: dms-rabbitmq
+    ports:
+      - "5672:5672"   # Cổng để các Service kết nối vào gửi/nhận sự kiện
+      - "15672:15672" # Cổng để bạn vào web xem quản lý
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  # 2. Database SQL Server
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    container_name: dms-sqlserver
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: "PhanPhong@123" # Pass phải có chữ hoa, thường, số, ký tự đặc biệt
+
+  # 3. Billing & Maintenance Service (Nhóm 3)
+  billing-maintenance:
+    build:
+      context: ./backend/services/BillingMaintenanceService
+      dockerfile: Dockerfile
+    container_name: dms-billing-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - sqlserver
+      - rabbitmq
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=BillingMaintenanceDB;User Id=sa;Password=PhanPhong@123;TrustServerCertificate=True
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Username=guest
+      - RabbitMQ__Password=guest

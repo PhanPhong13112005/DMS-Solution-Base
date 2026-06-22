@@ -5,7 +5,7 @@
 Dự án áp dụng kiến trúc Microservices trong một Monorepo theo đúng tiêu chuẩn kỹ thuật phân tán:
 
 - **Frontend:** VueJS 3 + Tailwind CSS.
-- **Backend:** ASP.NET Core Web API (.NET 8).
+- **Backend:** ASP.NET Core Web API (.NET 9).
 - **Database:** SQL Server.
 - **API Gateway:** Ocelot (Xử lý JWT Token & Routing).
 - **Event Bus:** RabbitMQ + MassTransit (Xử lý giao tiếp bất đồng bộ).

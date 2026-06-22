@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace RoomBuildingService.Models;
 
@@ -19,9 +21,13 @@ public partial class Room
 
     public string Status { get; set; } = null!;
 
+    [JsonIgnore]
     public virtual ICollection<Bed>? Beds { get; set; } = new List<Bed>();
 
+    [JsonIgnore]
+    [ValidateNever]
     public virtual Building? Building { get; set; } = null!;
 
+    [JsonIgnore]
     public virtual ICollection<RoomAmenity>? RoomAmenities { get; set; } = new List<RoomAmenity>();
 }

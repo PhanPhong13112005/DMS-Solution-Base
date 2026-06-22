@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>KTX Đại Nam - Danh sách phòng</title>
+    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/fontawesome.css">
+    <link rel="stylesheet" href="assets/css/templatemo-villa-agency.css">
+    <link rel="stylesheet" href="assets/css/owl.css">
+    <link rel="stylesheet" href="assets/css/animate.css">
+  </head>
+<body>
+
+  <div id="js-preloader" class="js-preloader">
+    <div class="preloader-inner">
+      <span class="dot"></span>
+      <div class="dots"><span></span><span></span><span></span></div>
+    </div>
+  </div>
+  <header class="header-area header-sticky">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <nav class="main-nav">
+                    <a href="index.html" class="logo">
+                        <h1>KTX DNU</h1>
+                    </a>
+                    <ul class="nav">
+                      <li><a href="index.html">Trang chủ</a></li>
+                      <li><a href="properties.html" class="active">Danh sách phòng</a></li>
+                      <li><a href="contact.html">Liên hệ</a></li>
+                  </ul>   
+                    <a class='menu-trigger'><span>Menu</span></a>
+                </nav>
+            </div>
+        </div>
+    </div>
+  </header>
+  <div class="page-heading header-text">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12">
+          <span class="breadcrumb"><a href="index.html">Trang chủ</a> / Danh sách phòng</span>
+          <h3>Đăng ký Ký túc xá</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section properties">
+    <div class="container">
+      <ul class="properties-filter">
+        <li><a class="is_active" href="#!" data-filter="*">Tất cả</a></li>
+        <li><a href="#!" data-filter=".adv">Phòng Nam</a></li>
+        <li><a href="#!" data-filter=".str">Phòng Nữ</a></li>
+      </ul>
+      
+      <div class="row properties-box" id="room-list-container">
+          <div class="col-12 text-center py-5" id="loading-indicator">
+              <div class="spinner-border text-warning" role="status"></div>
+              <p class="mt-2 font-weight-bold">Đang tải danh sách phòng từ hệ thống...</p>
+          </div>
+      </div>
+      
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="col-lg-12">
+        <p>Copyright © 2026 KTX Đại Nam. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="vendor/jquery/jquery.min.js"></script>
+  <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+  <script src="assets/js/isotope.min.js"></script>
+  <script src="assets/js/owl-carousel.js"></script>
+  <script src="assets/js/custom.js"></script>
+
+  <script>
+    $(document).ready(function() {
+        // GỌI API: Nhớ kiểm tra lại đường dẫn API này cho khớp với Controller C# của bạn
+        $.ajax({
+            url: '/api/Rooms', // <-- Sửa chỗ này nếu Controller của bạn là /api/Room
+            type: 'GET',
+            success: function(rooms) {
+                let html = '';
+                if(!rooms || rooms.length === 0) {
+                    html = '<div class="col-12 text-center"><h5>Hiện tại chưa có dữ liệu phòng.</h5></div>';
+                } else {
+                    // Dùng vòng lặp duyệt qua từng phòng lấy từ DB
+                    rooms.forEach(room => {
+                        html += `
+                        <div class="col-lg-4 col-md-6 align-self-center mb-30 properties-items">
+                            <div class="item">
+                                <a href="property-details.html?id=${room.id}">
+                                    <img src="assets/images/property-01.jpg" alt="">
+                                </a>
+                                <span class="category">${room.roomType || 'Phòng tiêu chuẩn'}</span>
+                                <h6>${room.price || '500.000'} VNĐ/Tháng</h6>
+                                <h4><a href="property-details.html?id=${room.id}">${room.roomName}</a></h4>
+                                <ul>
+                                    <li>Tổng giường: <span>${room.totalBeds || 0}</span></li>
+                                    <li>Giường trống: <span>${room.availableBeds || 0}</span></li>
+                                    <li>Diện tích: <span>${room.area || 30}m2</span></li>
+                                </ul>
+                                <div class="main-button">
+                                    <a href="property-details.html?id=${room.id}">Xem & Đăng ký</a>
+                                </div>
+                            </div>
+                        </div>`;
+                    });
+                }
+                // Đổ danh sách HTML vừa tạo vào khung trên giao diện
+                $('#room-list-container').html(html);
+            },
+            error: function(err) {
+                console.error("Lỗi gọi API: ", err);
+                $('#loading-indicator').html('<p class="text-danger font-weight-bold">Không thể kết nối đến hệ thống máy chủ (Backend). Hãy kiểm tra lại API!</p>');
+            }
+        });
+    });
+  </script>
+</body>
+</html>
