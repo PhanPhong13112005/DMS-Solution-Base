@@ -1,6 +1,27 @@
 version: '3.8'
 
 services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver_container
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourSecurePassword123 # Nhớ đổi lại cho khớp với ConnectionString trong appsettings.json của bạn
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_container
+    ports:
+      - "5672:5672"   # Cổng kết nối của MassTransit
+      - "15672:15672" # Cổng giao diện Web để quản lý RabbitMQ
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+version: '3.8'
+
+services:
   # 1. Bưu điện RabbitMQ (Có kèm giao diện web quản lý)
   rabbitmq:
     image: rabbitmq:3-management
@@ -37,4 +58,4 @@ services:
       - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=BillingMaintenanceDB;User Id=sa;Password=PhanPhong@123;TrustServerCertificate=True
       - RabbitMQ__Host=rabbitmq
       - RabbitMQ__Username=guest
-      - RabbitMQ__Password=guest
+      - RabbitMQ__Password=guest
