@@ -1,3 +1,5 @@
+// src/types.ts
+// Định nghĩa các kiểu dữ liệu (interfaces) dùng chung trong toàn bộ ứng dụng
 /**
  * User account (from OpenAPI Auth endpoints)
  * Field mapping: id (MSSV/Admin ID), name (Họ tên), role ('Student'|'Admin'|'Staff')
@@ -32,11 +34,18 @@ export interface Room {
   id: number;
   buildingId: number;
   roomNumber: string;
-  floorNumber: number;
+  building?: string;
+  capacity?: number;
+  available?: number;
+  size?: number;
+  price?: number;
+  gender?: string;
+  amenities?: any; // To allow both string[] and RoomAmenity[]
+  occupants?: string[];
+  floorNumber?: number;
   roomType?: string; // Standard, VIP, etc.
-  monthlyPrice: number; // VNĐ / tháng
+  monthlyPrice?: number; // VNĐ / tháng
   status?: string; // Available, Occupied, Maintenance
-  amenities?: RoomAmenity[];
   beds?: Bed[];
 }
 
@@ -76,41 +85,19 @@ export interface BookingApplication {
   paymentMethod: 'bank' | 'e-wallet' | 'direct';
   status: 'Pending' | 'Approved' | 'Rejected';
   createdAt: string;
-  evidenceCCCD: string;
-  evidenceStudentCard: string;
+  evidenceCCCD?: string;
+  evidenceStudentCard?: string;
 }
 
 export interface MaintenanceRequest {
   id: string;
+  displayId?: string;
   roomNumber: string;
   title: string;
   description: string;
-  category: string; // Điện, Nước, Thiết bị, Khác
+  category: string;
   priority: 'Critical' | 'Normal';
-  status: 'Pending' | 'In Progress' | 'Resolved';
-  createdAt: string;
-  feedback?: string;
-}
-
-export interface TransferRequest {
-  id: string;
-  studentId: string;
-  fullName: string;
-  currentRoom: string;
-  requestedRoom: string;
-  reason: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  createdAt: string;
-}
-
-export interface Invoice {
-  id: string;
-  roomNumber: string;
-  studentId: string;
-  month: string;
-  amount: number;
-  type: 'Tiền phòng' | 'Điện nước' | 'Phí dịch vụ';
-  status: 'Paid' | 'Unpaid';
+  status: 'Pending' | 'In Progress' | 'Waiting for Acceptance' | 'Resolved' | 'Cancelled' | 'Rejected';
   createdAt: string;
 }
 
@@ -124,22 +111,29 @@ export interface NewsArticle {
   image: string;
 }
 
-export enum UserRole {
-  Guest = 'Guest',
-  Student = 'Student',
-  Staff = 'Staff',
-  Admin = 'Admin'
+export interface Invoice {
+  id: string;
+  displayId?: string;
+  roomNumber: string;
+  studentId: string;
+  month: string;
+  amount: number;
+  roomFee?: number;
+  electricityFee?: number;
+  waterFee?: number;
+  serviceFee?: number;
+  type: string;
+  status: 'Unpaid' | 'Paid';
+  createdAt: string;
 }
 
-export enum AppScreen {
-  Home = 'Home',
-  About = 'About',
-  Booking = 'Booking',
-  News = 'News',
-  Rules = 'Rules',
-  Contact = 'Contact',
-  Auth = 'Auth',
-  StudentPortal = 'StudentPortal',
-  StaffPortal = 'StaffPortal',
-  AdminPortal = 'AdminPortal'
+export interface TransferRequest {
+  id: string;
+  studentId: string;
+  fullName: string;
+  currentRoom: string;
+  requestedRoom: string;
+  reason: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  createdAt: string;
 }

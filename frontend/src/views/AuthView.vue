@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { LogIn, KeyRound, Eye, EyeOff, User, Fingerprint, Sparkles, HelpCircle, AlertCircle, CheckCircle } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
+import apiClient from '../api/axios';
 
 const router = useRouter();
 const isLogin = ref(true);
@@ -18,7 +19,7 @@ const regId = ref('');
 const regClass = ref('');
 const regPass = ref('');
 
-const handleAuthSubmit = () => {
+const handleAuthSubmit = async () => {
   errorMsg.value = '';
   infoMsg.value = '';
   successMsg.value = '';
@@ -29,50 +30,43 @@ const handleAuthSubmit = () => {
       return;
     }
 
-    // 1. KIỂM TRA TÀI KHOẢN ADMIN
-    if (username.value.trim() === 'admin' && password.value === '123456') {
-      successMsg.value = 'Đăng nhập quyền Admin tối cao thành công! Đang chuyển hướng...';
-      const userPayload = { name: 'Quản trị viên Trung cấp', id: 'admin-01', role: 'Admin' };
-      localStorage.setItem('current_user', JSON.stringify(userPayload));
-      
-      setTimeout(() => {
-        router.push('/admin'); // Nhảy sang trang AdminPortal
-      }, 1000);
-      return;
-    }
+    try {
+      // 1. GỌI API LOGIN THỰC TẾ
+      const response = await apiClient.post('/auth/login', {
+        username: username.value,
+        password: password.value
+      });
 
-    // 2. KIỂM TRA TÀI KHOẢN NHÂN VIÊN
-    if (username.value.trim() === 'nhanvien' && password.value === '123456') {
-      successMsg.value = 'Đăng nhập quyền Cán bộ trực ban thành công! Đang chuyển hướng...';
-      const userPayload = { name: 'Nhân viên trực ban BQL', id: 'staff-01', role: 'Staff' };
-      localStorage.setItem('current_user', JSON.stringify(userPayload));
-      
-      setTimeout(() => {
-        router.push('/staff'); // Nhảy sang trang StaffPortal
-      }, 1000);
-      return;
+      if (response.data.isSuccess) {
+        successMsg.value = 'Đăng nhập thành công! Đang chuyển hướng...';
+        
+        const userData = response.data.data;
+        // 2. LƯU TOKEN VÀO LOCALSTORAGE
+        localStorage.setItem('jwt_token', userData.token);
+        
+        // 3. LƯU CURRENT USER VÀO LOCALSTORAGE
+        const userPayload = { 
+          name: userData.username, 
+          id: userData.username, 
+          role: userData.role,
+          referenceId: userData.referenceId
+        };
+        localStorage.setItem('current_user', JSON.stringify(userPayload));
+        
+        // 4. CHUYỂN HƯỚNG DỰA THEO ROLE THỰC TẾ
+        setTimeout(() => {
+          if (userData.role === 'Admin') {
+            router.push('/admin');
+          } else if (userData.role === 'Staff') {
+            router.push('/staff');
+          } else {
+            router.push('/student');
+          }
+        }, 1000);
+      }
+    } catch (error: any) {
+      errorMsg.value = error.response?.data?.message || 'Lỗi kết nối đến máy chủ!';
     }
-
-    // 3. KIỂM TRA TÀI KHOẢN SINH VIÊN (Chấp nhận mọi MSSV có pass là 123456)
-    if (password.value === '123456') {
-      successMsg.value = 'Xác minh danh tính Sinh viên thành công! Đang vào hệ thống...';
-      const userPayload = { 
-        name: username.value.trim() === '1771020535' ? 'Phan Lưu Phong' : 'Nguyễn Hữu Hưng', 
-        id: username.value.trim(),
-        className: 'K15-CNTT1',
-        role: 'Student',
-        phone: '0978.112.551',
-        email: username.value.trim() + '@dainam.edu.vn'
-      };
-      localStorage.setItem('current_user', JSON.stringify(userPayload));
-      
-      setTimeout(() => {
-        router.push('/student'); // Nhảy sang trang StudentPortal
-      }, 1000);
-      return;
-    }
-
-    errorMsg.value = 'Tài khoản hoặc mật khẩu không chính xác! Vui lòng kiểm tra lại.';
   } else {
     // Logic Đăng ký tài khoản mới giữ nguyên...
     if (!regName.value || !regId.value || !regClass.value || !regPass.value) {
@@ -121,12 +115,12 @@ const handleForgetPassword = (e: Event) => {
       <div class="relative z-10 mt-12 bg-[#5F6352] border border-[#8B9178]/40 p-4 rounded-2xl text-xs space-y-3 shrink-0">
         <div class="font-bold text-white uppercase tracking-widest text-[10px] pb-1 border-b border-white/10">THỬ ĐĂNG NHẬP NHANH</div>
         <div class="space-y-2 text-[11px] text-[#FDFBF7]">
-          <button @click="setCredentials('1771020535', '123456')" class="w-full flex items-center justify-between p-2.5 bg-[#4B4E41]/35 hover:bg-[#4B4E41]/70 rounded-xl transition-all border border-white/5 text-left font-mono">
-            <span>Sinh viên: <strong class="text-[#CB997E]">1771020535</strong></span>
+          <button @click="setCredentials('student1001', '123456')" class="w-full flex items-center justify-between p-2.5 bg-[#4B4E41]/35 hover:bg-[#4B4E41]/70 rounded-xl transition-all border border-white/5 text-left font-mono">
+            <span>Sinh viên: <strong class="text-[#CB997E]">student1001</strong></span>
             <span class="text-[10px] text-[#FDFBF7]/70 font-sans">Chọn</span>
           </button>
-          <button @click="setCredentials('nhanvien', '123456')" class="w-full flex items-center justify-between p-2.5 bg-[#4B4E41]/35 hover:bg-[#4B4E41]/70 rounded-xl transition-all border border-white/5 text-left font-mono">
-            <span>Nhân viên: <strong class="text-[#CB997E]">nhanvien</strong></span>
+          <button @click="setCredentials('staff', '123456')" class="w-full flex items-center justify-between p-2.5 bg-[#4B4E41]/35 hover:bg-[#4B4E41]/70 rounded-xl transition-all border border-white/5 text-left font-mono">
+            <span>Nhân viên: <strong class="text-[#CB997E]">staff</strong></span>
             <span class="text-[10px] text-[#FDFBF7]/70 font-sans">Chọn</span>
           </button>
           <button @click="setCredentials('admin', '123456')" class="w-full flex items-center justify-between p-2.5 bg-[#4B4E41]/35 hover:bg-[#4B4E41]/70 rounded-xl transition-all border border-white/5 text-left font-mono">

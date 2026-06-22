@@ -1,8 +1,6 @@
-import { createApp } from 'vue';
-import './assets/main.css'; // <-- ĐẢM BẢO ĐƯỜNG DẪN NÀY CHUẨN XÁC
-import App from './App.vue';
-import router from './router';
+@import "tailwindcss";
 
-const app = createApp(App);
-app.use(router);
-app.mount('#app');
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+}

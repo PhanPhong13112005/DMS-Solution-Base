@@ -1,5 +1,5 @@
 import { createApp } from 'vue';
-import './index.css'; // <-- ĐẢM BẢO CÓ DÒNG NÀY ĐỂ GỌI CSS
+import './assets/main.css'; // <-- ĐẢM BẢO CÓ DÒNG NÀY ĐỂ GỌI CSS
 import App from './App.vue';
 import router from './router';
 

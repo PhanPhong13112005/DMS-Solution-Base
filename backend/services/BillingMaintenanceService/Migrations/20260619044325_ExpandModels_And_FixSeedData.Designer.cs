@@ -4,6 +4,7 @@ using BillingMaintenanceService.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BillingMaintenanceService.Migrations
 {
     [DbContext(typeof(BillingDbContext))]
-    partial class BillingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619044325_ExpandModels_And_FixSeedData")]
+    partial class ExpandModels_And_FixSeedData
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -167,56 +170,6 @@ namespace BillingMaintenanceService.Migrations
                             RoomId = 205,
                             Status = "Pending",
                             Title = "Rò rỉ đường ống nước"
-                        });
-                });
-
-            modelBuilder.Entity("BillingMaintenanceService.Domain.User", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ReferenceId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Users");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("55555555-5555-5555-5555-555555555555"),
-                            PasswordHash = "$2a$11$K.eA15gXoD825z6Yg6A8U.H4iF4V4WwJ1F95O9v.r3p101m4e3j8O",
-                            Role = "Admin",
-                            Username = "admin"
-                        },
-                        new
-                        {
-                            Id = new Guid("66666666-6666-6666-6666-666666666666"),
-                            PasswordHash = "$2a$11$K.eA15gXoD825z6Yg6A8U.H4iF4V4WwJ1F95O9v.r3p101m4e3j8O",
-                            Role = "Staff",
-                            Username = "staff"
-                        },
-                        new
-                        {
-                            Id = new Guid("77777777-7777-7777-7777-777777777777"),
-                            PasswordHash = "$2a$11$K.eA15gXoD825z6Yg6A8U.H4iF4V4WwJ1F95O9v.r3p101m4e3j8O",
-                            ReferenceId = 1001,
-                            Role = "Student",
-                            Username = "student1001"
                         });
                 });
 #pragma warning restore 612, 618
