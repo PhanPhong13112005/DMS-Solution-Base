@@ -1,0 +1,45 @@
+services:
+  # 1. Database SQL Server chung cho các nhóm
+  sqlserver_db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: dms-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=VipPassword@123!
+    ports:
+      - "1433:1433"
+    networks:
+      - dms_network
+
+  # 2. Message Broker RabbitMQ (Event Bus)
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: microservices-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - dms_network
+
+  # 3. Service Nhóm 2 của bạn (Student & Contract)
+  student-contract-service:
+    build: 
+      context: ../backend/services/StudentContractService
+      dockerfile: Dockerfile
+    container_name: student-contract-service
+    ports:
+      - "8081:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8081
+      - ConnectionStrings__StudentDBConnection=Server=sqlserver_db;Database=StudentDB;User Id=sa;Password=VipPassword@123!;TrustServerCertificate=True;
+    depends_on:
+      - sqlserver_db
+      - rabbitmq
+    networks:
+      - dms_network
+
+# Chỉ khai báo 1 lần duy nhất ở cuối file
+networks:
+  dms_network:
+    driver: bridge
