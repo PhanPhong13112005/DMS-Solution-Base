@@ -308,18 +308,17 @@ provide('appActions', appActions);
           <router-link to="/" active-class="text-[#CB997E]" class="hover:text-[#4A4A4A] transition-colors">Trang chủ</router-link>
           <router-link to="/about" active-class="text-[#CB997E]" class="hover:text-[#4A4A4A] transition-colors">Giới thiệu</router-link>
           <router-link to="/news" active-class="text-[#CB997E]" class="hover:text-[#4A4A4A] transition-colors">Tin tức</router-link>
+          <router-link to="/booking" active-class="text-[#CB997E]" class="hover:text-[#4A4A4A] transition-colors">Đăng ký phòng</router-link>
           <router-link to="/rules" active-class="text-[#CB997E]" class="hover:text-[#4A4A4A] transition-colors">Nội quy</router-link>
           <router-link to="/contact" active-class="text-[#CB997E]" class="hover:text-[#4A4A4A] transition-colors">Liên hệ</router-link>
         </div>
 
         <div class="flex items-center gap-3">
-          <router-link to="/auth" class="hidden md:flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-[#6B705C] hover:bg-[#FDFBF7] rounded-full transition-all border border-transparent hover:border-[#EAE7E1]">
-            <LogIn class="w-4 h-4" />
-            <span>Cổng đăng nhập</span>
-          </router-link>
-          <router-link to="/booking" class="px-6 py-2.5 bg-[#CB997E] hover:bg-[#b07f66] text-white text-sm font-bold rounded-full shadow-xs transition-colors">
-            Đăng ký phòng
-          </router-link>
+        <router-link to="/auth" class="hidden md:flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-[#F97316] bg-[#F97316]/10 border border-[#F97316]/20 hover:bg-[#F97316] hover:text-white hover:border-[#F97316] rounded-full transition-all duration-300 shadow-xs hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
+          <LogIn class="w-4 h-4" />
+          <span>Cổng đăng nhập</span>
+        </router-link>
+          
         </div>
 
       </div>

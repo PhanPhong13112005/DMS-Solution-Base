@@ -29,6 +29,7 @@ const realOccupiedBeds = ref(0);
 const realAvailableBeds = ref(0);
 const allBedsList = ref<any[]>([]);
 
+// HÀM 1: Lấy số liệu đếm giường cho Bảng điều khiển
 const loadDashboardStats = async () => {
   try {
     const beds: any = await roomBuildingApi.beds.getAll();
@@ -44,10 +45,30 @@ const loadDashboardStats = async () => {
   }
 };
 
-onMounted(() => {
-  loadDashboardStats();
-});
+// ============ DỮ LIỆU CƠ SỞ VẬT CHẤT (NHÓM 1) ============
+const roomsList = ref<any[]>([]); // Chứa danh sách phòng
+const buildingsList = ref<any[]>([]); // Chứa danh sách tòa nhà
 
+// HÀM 2: Lấy chi tiết danh sách phòng cho Tab Cơ sở vật chất
+const loadFacilitiesData = async () => {
+  try {
+    const [bRes, rRes] = await Promise.all([
+      roomBuildingApi.buildings.getAll(),
+      roomBuildingApi.rooms.getAll()
+    ]);
+    
+    if (bRes) buildingsList.value = bRes;
+    if (rRes) roomsList.value = rRes;
+  } catch (error) {
+    console.error("Lỗi tải dữ liệu phòng:", error);
+  }
+};
+
+// Gọi CẢ 2 HÀM ngay khi vào trang Admin
+onMounted(() => {
+  loadDashboardStats(); // Hàm thống kê Dashboard
+  loadFacilitiesData(); // Hàm lấy Data Table Phòng
+});
 // ============ COMPUTED (DỮ LIỆU MOCK N2, N3 TẠM THỜI) ============
 const adminUser = computed(() => {
   if (user && user.value) {
@@ -173,25 +194,52 @@ const handleLogout = () => actions.logout();
               <Plus class="w-4 h-4" /> Thêm Tòa/Phòng
             </button>
           </div>
-          <div class="border border-dashed border-gray-300 rounded-2xl p-12 text-center bg-gray-50">
-            <Building2 class="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <h4 class="text-gray-600 font-bold mb-1">Khu vực hiển thị danh sách phòng</h4>
-            <p class="text-xs text-gray-400">Trần sẽ thiết kế bảng Data Table (CRUD) gọi API lấy danh sách Tòa/Phòng vào đây.</p>
+          <div class="bg-white border border-[#EAE7E1] rounded-2xl overflow-hidden mt-6">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-[#EAE7E1]">
+                  <tr>
+                    <th scope="col" class="px-6 py-4 font-bold text-[#A03500]">Tên Phòng</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-[#A03500]">Tòa Nhà</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-[#A03500]">Sức chứa</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-[#A03500]">Trạng thái</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-right text-[#A03500]">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="roomsList.length === 0" class="bg-white border-b border-[#EAE7E1]">
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-500 italic">
+                      <Building2 class="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      Chưa có dữ liệu phòng nào trong Database. Hãy bấm "Thêm Tòa/Phòng" để tạo mới.
+                    </td>
+                  </tr>
+                  
+                  <tr v-for="room in roomsList" :key="room.id" class="bg-white border-b border-[#EAE7E1] hover:bg-[#FFF5F0]/50 transition-colors">
+                    <td class="px-6 py-4 font-bold text-gray-800">
+                      Phòng {{ room.roomNumber || room.name }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-600 font-medium">
+                      Tòa {{ room.buildingId }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">
+                      {{ room.capacity }} Giường
+                    </td>
+                    <td class="px-6 py-4">
+                      <span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-md text-[11px] font-bold uppercase tracking-wider">
+                        Sẵn sàng
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 text-right space-x-3">
+                      <button class="text-blue-600 hover:text-blue-800 font-bold text-xs cursor-pointer">Sửa</button>
+                      <button class="text-red-600 hover:text-red-800 font-bold text-xs cursor-pointer">Xóa</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        <div v-if="activeTab === 'Sinh viên'" class="bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm text-center py-20">
-          <Users class="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <h3 class="font-bold text-gray-600 text-lg">Quản lý Hồ sơ Sinh viên & Hợp đồng</h3>
-          <p class="text-sm text-gray-400 mt-2">Khu vực dành cho Nhóm 2 gọi API hiển thị và duyệt hợp đồng.</p>
-        </div>
-
-        <div v-if="activeTab === 'Tài chính'" class="bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm text-center py-20">
-          <Banknote class="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <h3 class="font-bold text-gray-600 text-lg">Quản lý Hóa đơn & Thanh toán</h3>
-          <p class="text-sm text-gray-400 mt-2">Khu vực dành cho Nhóm 3 gọi API Invoices (Port 8082).</p>
-        </div>
-
+      </div>
       </div>
     </main>
   </div>
