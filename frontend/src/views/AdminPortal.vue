@@ -146,42 +146,57 @@ const menuItems = [
       <div class="text-xs font-semibold text-[#4A4A4A] leading-relaxed">{{ toast.message }}</div>
     </div>
 
-    <aside class="w-64 bg-[#6B705C] text-slate-100 shrink-0 select-none flex flex-col justify-between border-r border-[#EAE7E1] p-0">
-      <div>
-        <div class="p-6 border-b border-white/10 flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-[#CB997E] flex items-center justify-center text-white font-serif font-extrabold text-sm">A</span>
+    <aside class="w-64 bg-white text-[#4A4A4A] shrink-0 select-none flex flex-col justify-between border-r border-[#EAE7E1] p-0 z-10">
+      <div class="p-5">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-10 h-10 rounded-full bg-[#F97316] flex items-center justify-center text-white font-bold text-xs shrink-0">
+            DNU
+          </div>
           <div>
-            <div class="font-serif font-light text-sm text-white tracking-widest uppercase">DNU KTX</div>
-            <div class="text-[10px] text-[#FDFBF7]/85">Ban quản trị hệ thống</div>
+            <div class="font-bold text-[#A03500] text-xl leading-tight">DNU KTX</div>
+            <div class="text-[11px] text-gray-500 font-medium">Cổng quản trị</div>
           </div>
         </div>
 
-        <nav class="p-4 space-y-1.5 text-xs text-[#FDFBF7]">
+        <button class="w-full bg-[#F97316] hover:bg-[#E86305] text-white rounded-xl py-3 flex justify-center items-center gap-2 mb-6 font-medium text-sm transition-colors shadow-sm cursor-pointer">
+          <Plus class="w-4 h-4" /> Đăng ký mới
+        </button>
+
+        <nav class="space-y-1 text-sm text-[#4A4A4A]">
           <button
             v-for="tab in menuItems"
             :key="tab.id"
             @click="activeTab = tab.id"
-            :class="['w-full flex items-center gap-3.5 px-4.5 py-3 rounded-2xl font-semibold cursor-pointer transition-all text-left', activeTab === tab.id ? 'bg-[#CB997E] text-white shadow-xs' : 'hover:bg-white/10 text-[#FDFBF7]/85 hover:text-white']"
+            :class="[
+              'w-full flex items-center gap-3.5 px-4 py-3 rounded-lg font-medium cursor-pointer transition-all text-left relative', 
+              activeTab === tab.id 
+                ? 'bg-[#FFF5F0] text-[#A03500] font-bold overflow-hidden' 
+                : 'hover:bg-gray-50 text-gray-600'
+            ]"
           >
-            <component :is="tab.icon" class="w-4.5 h-4.5 shrink-0" />
+            <div v-if="activeTab === tab.id" class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/4 bg-[#A03500] rounded-r-md"></div>
+            
+            <component :is="tab.icon" :class="['w-5 h-5 shrink-0', activeTab === tab.id ? 'text-[#A03500]' : 'text-gray-500']" />
             <span>{{ tab.id }}</span>
           </button>
         </nav>
       </div>
 
-      <div class="p-4 border-t border-white/10">
-        <div class="p-3 bg-white/15 rounded-2xl flex items-center gap-3 mb-3">
-          <div class="w-9 h-9 rounded-full bg-[#CB997E] text-white font-extrabold flex items-center justify-center border border-white/10 font-mono text-sm leading-none">AD</div>
+      <div class="p-5 border-t border-[#EAE7E1]">
+        <div class="p-3 bg-gray-50 rounded-xl flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-full bg-gray-200 text-gray-600 font-extrabold flex items-center justify-center border border-gray-300 font-mono text-sm leading-none shrink-0">
+            AD
+          </div>
           <div class="overflow-hidden">
-            <div class="font-bold text-xs truncate text-white">{{ adminUser?.name || 'Admin' }}</div>
-            <div class="text-[10px] text-[#FDFBF7]/85 font-mono">Quản trị tối cao</div>
+            <div class="font-bold text-xs truncate text-gray-800">{{ adminUser?.name || 'Admin' }}</div>
+            <div class="text-[10px] text-gray-500 font-mono">Quản trị tối cao</div>
           </div>
         </div>
         <button 
           @click="handleLogout()"
-          class="w-full py-2.5 bg-white/15 hover:bg-white/20 text-white rounded-full transition-colors font-bold text-xs flex items-center justify-center gap-2 cursor-pointer"
+          class="w-full py-2.5 bg-gray-50 hover:bg-red-50 hover:text-red-600 text-gray-600 rounded-xl transition-colors font-semibold text-xs flex items-center justify-center gap-2 cursor-pointer"
         >
-          <LogOut class="w-4 h-4" /> <span>Thoát đặc quyền</span>
+          <LogOut class="w-4 h-4" /> <span>Đăng xuất</span>
         </button>
       </div>
     </aside>
