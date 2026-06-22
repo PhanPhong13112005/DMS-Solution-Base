@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'; // Thêm dòng này
+const router = useRouter(); // Thêm dòng này
 import { ref } from 'vue';
 import { Compass, BookOpen, ShieldCheck, HelpCircle, ArrowRight, Home, Users, Flame, Wind, Star, ChevronRight, MessageCircle } from 'lucide-vue-next';
 
@@ -60,14 +62,15 @@ const heroSlides = [
         
         <div class="flex flex-wrap gap-4">
           <button 
-            @click="emit('navigate', 'Booking')"
+            @click="router.push('/booking')"
             class="px-8 py-3.5 bg-[#CB997E] hover:bg-[#A47148] text-white font-bold rounded-full shadow-lg shadow-[#CB997E]/20 transition-all transform hover:-translate-y-0.5 flex items-center gap-2.5 group cursor-pointer"
           >
             <span>{{ heroSlides[activeSlide].accent }}</span>
             <ArrowRight class="w-4.5 h-4.5 group-hover:translate-x-1.5 transition-transform" />
           </button>
+          
           <button 
-            @click="emit('navigate', 'About')"
+            @click="router.push('/about')"
             class="px-8 py-3.5 bg-white/10 backdrop-blur-xs text-white font-semibold rounded-full hover:bg-white/20 border border-white/25 transition-all flex items-center gap-2 cursor-pointer"
           >
             <span>Tìm hiểu thêm</span>
@@ -78,7 +81,7 @@ const heroSlides = [
             </svg>
           </button>
         </div>
-      </div>
+        </div>
 
       <div class="absolute bottom-6 right-12 flex items-center gap-3 z-20">
         <button 
@@ -197,7 +200,7 @@ const heroSlides = [
         </div>
 
         <button 
-          @click="emit('navigate', 'Booking')"
+          @click="router.push('/booking')"
           class="mt-12 px-8 py-3.5 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold rounded-full shadow-md hover:shadow-lg hover:shadow-[#6B705C]/15 transition-all flex items-center gap-2 mx-auto cursor-pointer"
         >
           <span>BẮT ĐẦU ĐĂNG KÝ NGAY</span>

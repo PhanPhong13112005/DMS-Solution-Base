@@ -314,11 +314,11 @@ provide('appActions', appActions);
         </div>
 
         <div class="flex items-center gap-3">
-        <router-link to="/auth" class="hidden md:flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-[#F97316] bg-[#F97316]/10 border border-[#F97316]/20 hover:bg-[#F97316] hover:text-white hover:border-[#F97316] rounded-full transition-all duration-300 shadow-xs hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
-          <LogIn class="w-4 h-4" />
-          <span>Cổng đăng nhập</span>
-        </router-link>
-          
+          <router-link to="/auth" class="hidden md:flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-[#F97316] bg-[#F97316]/10 border border-[#F97316]/20 hover:bg-[#F97316] hover:text-white hover:border-[#F97316] rounded-full transition-all duration-300 shadow-xs hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
+            <LogIn class="w-4 h-4" />
+            <span>Cổng đăng nhập</span>
+          </router-link>
+
         </div>
 
       </div>
