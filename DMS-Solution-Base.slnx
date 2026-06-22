@@ -2,4 +2,5 @@
   <Project Path="backend/services/BillingMaintenanceService/BillingMaintenanceService.csproj" />
   <Project Path="backend/services/RoomBuildingService/RoomBuildingService.csproj" />
   <Project Path="backend/services/StudentContractService/StudentContractService.csproj" />
+  <Project Path="DMS.Shared/DMS.Shared.csproj" Id="5d4c4658-7e1b-449f-b004-98c93ee66db1" />
 </Solution>
