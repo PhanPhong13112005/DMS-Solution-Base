@@ -25,7 +25,7 @@ services:
   # 3. Billing & Maintenance Service (Nhóm 3)
   billing-maintenance:
     build:
-      context: ./backend/services/BillingMaintenanceService
+      context: ../backend/services/BillingMaintenanceService
       dockerfile: Dockerfile
     container_name: dms-billing-service
     ports:
