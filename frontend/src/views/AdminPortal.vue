@@ -6,6 +6,7 @@ import { X, Save, Pencil, ChartSpline, Users, Shield, LogOut, ArrowUpRight, Arro
 import type { Room, BookingApplication, MaintenanceRequest, NewsArticle, Invoice, Bed } from '../types';
 import { useAppData } from '../composables/useAppData';
 import { roomBuildingApi } from '../services/room-building.service'; 
+import { invoicesApi, maintenanceApi } from '../services/billing.service';
 
 const { user, applications: _applications, maintenanceRequests: _maintenanceRequests, invoices: _invoices, news: _news, actions, rooms: _rooms } = useAppData();
 
@@ -67,6 +68,29 @@ const loadFacilitiesData = async () => {
     console.error("Lỗi tải dữ liệu phòng:", error);
   }
 };
+
+// ============ REAL DATA (DỮ LIỆU THẬT NHÓM 3) ============
+const dueSoonBills = ref<Invoice[]>([]);
+const maintStats = ref<any>(null);
+
+const loadN3Data = async () => {
+  try {
+    const [dueRes, statsRes] = await Promise.all([
+      invoicesApi.getDueSoon(5),
+      maintenanceApi.getStats()
+    ]);
+    if (dueRes) dueSoonBills.value = dueRes;
+    if (statsRes) maintStats.value = statsRes;
+  } catch (error) {
+    console.error("Lỗi tải dữ liệu N3:", error);
+  }
+};
+
+onMounted(() => {
+  loadDashboardStats();
+  loadFacilitiesData();
+  loadN3Data();
+});
 
 const activeTab = ref<string>('Bảng điều khiển');
 const toast = ref<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -1287,6 +1311,31 @@ const confirmDeleteRoom = async () => {
             </div>
           </div>
 
+          <!-- MỚI: Section Sắp hết hạn (N3) -->
+          <div v-if="dueSoonBills && dueSoonBills.length > 0" class="mb-6 bg-rose-50 border border-rose-200 rounded-2xl p-5 shadow-sm">
+            <div class="flex items-center gap-2 mb-4 text-rose-700">
+              <AlertTriangle class="w-5 h-5" />
+              <h4 class="font-bold text-sm">Cảnh báo: Có {{ dueSoonBills.length }} khoản nợ sắp đến hạn thu (trong 5 ngày tới)!</h4>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div v-for="inv in dueSoonBills" :key="inv.id" class="bg-white border border-rose-100 rounded-xl p-4 shadow-sm flex items-center justify-between hover:-translate-y-1 transition-transform">
+                <div>
+                  <div class="text-xs font-bold text-[#4A4A4A]">{{ inv.type === 'EXTRA_FEE' ? 'Nợ phát sinh' : 'Nợ tháng' }}</div>
+                  <div class="text-[10px] text-[#8B8B8B]">Phòng: {{ inv.roomNumber }}</div>
+                  <div class="text-rose-500 font-mono text-sm font-bold mt-1">{{ new Intl.NumberFormat('vi-VN').format(inv.amount) }}đ</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-[10px] text-rose-700 bg-rose-100 px-2 py-1 rounded font-mono">
+                    Hạn: {{ inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('vi-VN') : 'Sắp tới' }}
+                  </div>
+                  <button @click="showToast('Đã gửi SMS hối thúc thu nợ!', 'info')" class="mt-2 text-[10px] font-bold text-white bg-rose-500 hover:bg-rose-600 px-3 py-1.5 rounded-full cursor-pointer transition-colors shadow-xs">
+                    Nhắc nhở
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="bg-white rounded-2xl border border-[#EAE7E1] shadow-sm p-4">
             <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
               <div class="relative w-full max-w-md">
@@ -1516,6 +1565,26 @@ const confirmDeleteRoom = async () => {
               <button @click="openCreateMaintenanceModal" class="px-4 py-2 bg-[#CB997E] hover:bg-[#A47148] text-white font-bold text-xs rounded-full shadow-sm transition-colors flex items-center gap-2 cursor-pointer">
                 + Tạo Yêu Cầu
               </button>
+            </div>
+          </div>
+
+          <!-- MỚI: Dashboard Thống kê Kỹ thuật (N3) -->
+          <div v-if="maintStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white border border-[#EAE7E1] rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center hover:border-[#CB997E]/30 transition-colors">
+              <div class="text-[#8B8B8B] text-[10px] font-bold uppercase">Tổng Yêu Cầu</div>
+              <div class="text-3xl font-mono font-bold text-[#4A4A4A] mt-1">{{ maintStats.totalRequests }}</div>
+            </div>
+            <div class="bg-white border border-[#EAE7E1] rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center hover:border-[#CB997E]/30 transition-colors">
+              <div class="text-[#8B8B8B] text-[10px] font-bold uppercase">Tỷ lệ Giải quyết</div>
+              <div class="text-3xl font-mono font-bold text-emerald-500 mt-1">{{ Math.round(maintStats.resolutionRate) }}%</div>
+            </div>
+            <div class="bg-white border border-[#EAE7E1] rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center hover:border-[#CB997E]/30 transition-colors">
+              <div class="text-[#8B8B8B] text-[10px] font-bold uppercase">Xử lý trung bình</div>
+              <div class="text-3xl font-mono font-bold text-[#CB997E] mt-1">{{ Math.round(maintStats.avgResolutionHours) }}h</div>
+            </div>
+            <div class="bg-white border border-[#EAE7E1] rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center hover:border-[#CB997E]/30 transition-colors">
+              <div class="text-[#8B8B8B] text-[10px] font-bold uppercase">Sự cố khẩn cấp</div>
+              <div class="text-3xl font-mono font-bold text-rose-500 mt-1">{{ maintStats.criticalCount }}</div>
             </div>
           </div>
 

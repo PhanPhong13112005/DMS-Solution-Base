@@ -44,10 +44,22 @@ const handleAuthSubmit = async () => {
         // 2. LƯU TOKEN VÀO LOCALSTORAGE
         localStorage.setItem('jwt_token', userData.token);
         
+        const regName = localStorage.getItem(`reg_name_${userData.username}`);
+        const regClass = localStorage.getItem(`reg_class_${userData.username}`);
+        
+        let displayName = regName || userData.username;
+        let displayClass = regClass || 'K16-IT';
+
+        if (userData.username === 'student1001') {
+          displayName = regName || 'Nguyễn Văn Hùng';
+          displayClass = regClass || 'CNTT-K15';
+        }
+
         // 3. LƯU CURRENT USER VÀO LOCALSTORAGE
         const userPayload = { 
-          name: userData.username, 
+          name: displayName, 
           id: userData.username, 
+          className: displayClass,
           role: userData.role,
           referenceId: userData.referenceId
         };
@@ -73,6 +85,11 @@ const handleAuthSubmit = async () => {
       errorMsg.value = 'Vui lòng khai báo đúng đủ tất cả các trường dữ liệu!';
       return;
     }
+
+    // LƯU THÔNG TIN ĐĂNG KÝ VÀO LOCAL STORAGE TẠM THỜI
+    localStorage.setItem(`reg_name_${regId.value}`, regName.value);
+    localStorage.setItem(`reg_class_${regId.value}`, regClass.value);
+
     successMsg.value = `Sinh viên ${regName.value} đăng ký thành công! Đang quay lại màn hình đăng nhập...`;
     username.value = regId.value;
     password.value = regPass.value;

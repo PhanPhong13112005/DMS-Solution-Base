@@ -93,6 +93,15 @@ const showToast = (message: string, type: 'success' | 'info' | 'error' = 'succes
   setTimeout(() => { toast.value = null; }, 4000);
 };
 
+const getInitials = (name: string) => {
+  if (!name || name === 'Sinh viên') return 'SV';
+  const parts = name.trim().split(' ');
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.substring(0, 2).toUpperCase();
+};
+
 // ============ UI STATES ============
 // Form Báo hỏng
 const maintTitle = ref('');
@@ -160,6 +169,7 @@ const handleMaintenanceSubmit = () => {
     category: maintCategory.value as any,
     priority: maintPriority.value,
     status: 'Pending',
+    imageUrl: maintImage.value ? URL.createObjectURL(maintImage.value) : undefined, // Gắn ảnh nếu có
     createdAt: new Date().toISOString().split('T')[0]
   };
 
@@ -303,7 +313,7 @@ const menuItems = [
         <div class="p-3 bg-white/10 rounded-2xl flex items-center gap-3 mb-3">
           <div
             class="w-9 h-9 rounded-full bg-[#CB997E] text-white font-extrabold flex items-center justify-center border border-white/10 font-mono text-sm leading-none">
-            SV</div>
+            {{ getInitials(studentUser.name) }}</div>
           <div class="overflow-hidden">
             <div class="font-bold text-xs truncate text-white">{{ studentUser.name }}</div>
             <div class="text-[10px] text-[#FDFBF7]/80 font-mono">MSSV: {{ studentUser.id }}</div>
@@ -330,7 +340,7 @@ const menuItems = [
           </div>
           <div
             class="w-10 h-10 rounded-full bg-[#6B705C] text-white border border-[#EAE7E1] flex items-center justify-center font-extrabold font-mono shadow-xs text-sm">
-            SV</div>
+            {{ getInitials(studentUser.name) }}</div>
         </div>
       </header>
 
@@ -464,8 +474,21 @@ const menuItems = [
                   <Receipt class="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 class="font-bold text-[#4A4A4A] text-base">{{ inv.type }}</h4>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h4 class="font-bold text-[#4A4A4A] text-base">{{ inv.type }}</h4>
+                    <span v-if="inv.billType === 'EXTRA_FEE'" class="text-[9px] font-extrabold uppercase bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded">Phát sinh</span>
+                  </div>
                   <p class="text-xs text-[#8B8B8B] font-mono mt-1">Phòng: {{ inv.roomNumber }} • Hóa đơn: {{ inv.id }}</p>
+                  <!-- Hạn đóng tiền (nếu chưa trả) -->
+                  <p v-if="inv.status === 'Unpaid' && inv.dueDate" class="text-[10px] font-bold text-rose-500 mt-0.5">
+                    ⏰ Hạn đóng: {{ new Date(inv.dueDate).toLocaleDateString('vi-VN') }}
+                  </p>
+                  <!-- Mã biên lai (nếu đã trả) -->
+                  <p v-if="inv.status === 'Paid' && inv.receiptCode" class="text-[10px] font-mono text-emerald-600 mt-0.5">
+                    🧾 Biên lai: {{ inv.receiptCode }}
+                  </p>
+                  <!-- Lý do thu (nếu là EXTRA_FEE) -->
+                  <p v-if="inv.feeReason" class="text-[10px] text-amber-700 mt-0.5">Lý do: {{ inv.feeReason }}</p>
                 </div>
               </div>
               <div class="flex flex-col items-end gap-2 shrink-0">

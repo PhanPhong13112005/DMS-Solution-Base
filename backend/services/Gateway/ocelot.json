@@ -43,16 +43,44 @@
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8081 }]
     },
     {
-      "UpstreamPathTemplate": "/api/Invoices/{everything}",
+      "UpstreamPathTemplate": "/api/bills",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
-      "DownstreamPathTemplate": "/api/Invoices/{everything}",
+      "DownstreamPathTemplate": "/api/v1/bills",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
     },
     {
-      "UpstreamPathTemplate": "/api/MaintenanceRequests/{everything}",
+      "UpstreamPathTemplate": "/api/bills/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
-      "DownstreamPathTemplate": "/api/MaintenanceRequests/{everything}",
+      "DownstreamPathTemplate": "/api/v1/bills/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/maintenance",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/v1/maintenance",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/maintenance/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/v1/maintenance/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/auth",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/v1/auth",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/auth/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/v1/auth/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
     }

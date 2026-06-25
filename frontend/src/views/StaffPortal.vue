@@ -4,6 +4,7 @@ import { usePagination } from '../composables/usePagination';
 import { LayoutDashboard, Users, UserPlus, Wrench, ShieldAlert, CheckCircle, LogOut, Search, Building, Receipt, FilePlus, AlertTriangle, Info, CheckCircle2, Landmark } from 'lucide-vue-next';
 import type { Room, BookingApplication, MaintenanceRequest, Invoice } from '../types';
 import { useAppData } from '../composables/useAppData';
+import { invoicesApi } from '../services/billing.service';
 
 const { user, rooms: _rooms, applications: _applications, maintenanceRequests: _maintenanceRequests, invoices: _invoices, actions } = useAppData();
 
@@ -110,7 +111,7 @@ const showToast = (message: string, type: 'success' | 'info' | 'error' = 'succes
   setTimeout(() => { toast.value = null; }, 4000);
 };
 
-const handleCreateBill = () => {
+const handleCreateBill = async () => {
   if (!billRoom.value || !billAmount.value || !billDesc.value) {
     showToast('Vui lòng khai báo đầy đủ thông tin (phòng, lý do chi tiết và số tiền)!', 'error');
     return;
@@ -120,20 +121,41 @@ const handleCreateBill = () => {
     showToast('Số tiền hóa đơn nhập vào chưa hợp lệ!', 'error');
     return;
   }
-  const newInvoice: Invoice = {
-    id: 'HD' + String(props.invoices.length + 1).padStart(3, '0'),
-    roomNumber: billRoom.value,
-    studentId: 'DNU-COMMON',
-    month: 'Lẻ phát sinh',
-    amount: amt,
-    type: 'EXTRA_FEE',
-    status: 'Unpaid',
-    createdAt: new Date().toISOString().split('T')[0]
-  };
-  emit('addInvoice', newInvoice);
-  showToast('Đã phát hành hóa đơn phát sinh lẻ thành công!', 'success');
+
+  try {
+    // Để App.vue gọi API, ở đây chỉ tạo cấu trúc dữ liệu và emit
+    const newInvoice: Invoice = {
+      id: 'HD' + String(props.invoices.length + 1).padStart(3, '0'),
+      roomNumber: billRoom.value,
+      studentId: '0', // Để App.vue tự phân giải
+      month: 'Lẻ phát sinh',
+      amount: amt,
+      type: billDesc.value || ('Phí phát sinh - ' + billReason.value),
+      billType: 'EXTRA_FEE',
+      feeReason: billReason.value,
+      status: 'Unpaid',
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    emit('addInvoice', newInvoice);
+    showToast('Đã phát hành hóa đơn phát sinh lẻ thành công!', 'success');
+  } catch (err) {
+    console.error('Lỗi tạo hóa đơn phát sinh:', err);
+    showToast('Lỗi, thử lại sau!', 'error');
+  }
+
   billAmount.value = '';
   billDesc.value = '';
+};
+
+/** Ghi nhận thu tiền mặt — gọi emit để App.vue xử lý API */
+const handlePayCash = async (invoiceId: string) => {
+  try {
+    emit('payInvoice', invoiceId);
+    showToast('Đã yêu cầu ghi nhận thanh toán!', 'info');
+  } catch (err) {
+    console.error('Lỗi ghi nhận thanh toán:', err);
+    showToast('Có lỗi xảy ra!', 'error');
+  }
 };
 
 const menuItems = [
@@ -354,7 +376,7 @@ const menuItems = [
               </div>
               <div class="flex flex-col items-end gap-2 shrink-0">
                 <div class="text-lg font-bold font-mono text-[#4A4A4A]">{{ new Intl.NumberFormat('vi-VN').format(inv.amount) }}đ</div>
-                <button @click="emit('payInvoice', inv.id); showToast('Đã ghi nhận thu Tiền Mặt thành công!', 'success');" class="px-5 py-2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold text-xs rounded-full shadow-xs cursor-pointer flex items-center gap-2">
+                <button @click="handlePayCash(inv.id)" class="px-5 py-2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold text-xs rounded-full shadow-xs cursor-pointer flex items-center gap-2">
                   <CheckCircle2 class="w-4 h-4" /> Ghi nhận thu Tiền Mặt
                 </button>
               </div>
