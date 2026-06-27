@@ -86,11 +86,11 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// TỰ ĐỘNG TẠO DATABASE VÀ SEED DATA NẾU CHƯA CÓ
+// TỰ ĐỘNG APPLY MIGRATION VÀ SEED DATA
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<BillingDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate(); // Dùng Migrate() thay vì EnsureCreated() để áp dụng migration schema mới
 }
 
 // ==============================================================================

@@ -1,18 +1,30 @@
 <script setup lang="ts">
-import { ref, computed, inject } from 'vue';
+import { ref, computed } from 'vue';
 import { usePagination } from '../composables/usePagination';
 import { LayoutDashboard, Users, UserPlus, Wrench, ShieldAlert, CheckCircle, LogOut, Search, Building, Receipt, FilePlus, AlertTriangle, Info, CheckCircle2, Landmark } from 'lucide-vue-next';
 import type { Room, BookingApplication, MaintenanceRequest, Invoice } from '../types';
+import { useAppData } from '../composables/useAppData';
+import { invoicesApi } from '../services/billing.service';
 
-// ============ INJECT GLOBAL DATA & ACTIONS ============
-const appData = inject<any>('appData');
-const appActions = inject<any>('appActions');
+const { user, rooms: _rooms, applications: _applications, maintenanceRequests: _maintenanceRequests, invoices: _invoices, actions } = useAppData();
 
-const staffUser = computed(() => appData?.user?.value ?? appData?.user ?? { name: 'Cán bộ', id: 'N/A' });
-const rooms = computed(() => appData?.rooms?.value ?? appData?.rooms ?? []);
-const applications = computed(() => appData?.applications?.value ?? appData?.applications ?? []);
-const maintenanceRequests = computed(() => appData?.maintenanceRequests?.value ?? appData?.maintenanceRequests ?? []);
-const invoices = computed(() => appData?.invoices?.value ?? appData?.invoices ?? []);
+const staffUser = computed(() => user.value || { name: 'Cán bộ', id: 'N/A' });
+
+const props = {
+  get rooms() { return _rooms.value || []; },
+  get applications() { return _applications.value || []; },
+  get maintenanceRequests() { return _maintenanceRequests.value || []; },
+  get invoices() { return _invoices.value || []; }
+};
+
+const emit = (event: string, ...args: any[]) => {
+  if (event === 'logout') actions.logout();
+  if (event === 'approveApplication') actions.approveApplication(args[0]);
+  if (event === 'rejectApplication') actions.rejectApplication(args[0]);
+  if (event === 'updateMaintenanceStatus') actions.updateMaintenanceStatus(args[0], args[1]);
+  if (event === 'addInvoice') actions.addInvoice(args[0]);
+  if (event === 'payInvoice') actions.payInvoice(args[0]);
+};
 
 const activeTab = ref('Tổng quan');
 const searchQuery = ref('');
@@ -26,14 +38,14 @@ const billAmount = ref('');
 
 const searchInvoice = ref('');
 const unpaidInvoices = computed(() => {
-  return invoices.value.filter((i: Invoice) => 
+  return props.invoices.filter(i => 
     i.status === 'Unpaid' && 
     (i.roomNumber.toLowerCase().includes(searchInvoice.value.toLowerCase()) || 
      i.studentId.toLowerCase().includes(searchInvoice.value.toLowerCase()))
   );
 });
 
-const pendingApps = computed(() => applications.value.filter((a: BookingApplication) => a.status === 'Pending'));
+const pendingApps = computed(() => props.applications.filter(a => a.status === 'Pending'));
 
 const searchRoomIssue = ref('');
 const showAssignModal = ref(false);
@@ -43,7 +55,7 @@ const selectedTech = ref('tech_1');
 const rejectReason = ref('');
 
 const activeIssues = computed(() => {
-  const filtered = maintenanceRequests.value.filter((m: MaintenanceRequest) => 
+  const filtered = props.maintenanceRequests.filter(m => 
     m.status !== 'Resolved' && 
     m.status !== 'Cancelled' && 
     m.status !== 'Rejected' && 
@@ -74,7 +86,7 @@ const openRejectModal = (issue: MaintenanceRequest) => {
 
 const handleAssign = () => {
   if (selectedIssue.value) {
-    if (appActions?.updateMaintenanceStatus) appActions.updateMaintenanceStatus(selectedIssue.value.id, 'In Progress');
+    emit('updateMaintenanceStatus', selectedIssue.value.id, 'In Progress');
     showToast('Đã phân công thợ thành công!', 'success');
     showAssignModal.value = false;
   }
@@ -86,20 +98,20 @@ const handleReject = () => {
       showToast('Vui lòng nhập lý do từ chối!', 'error');
       return;
     }
-    if (appActions?.updateMaintenanceStatus) appActions.updateMaintenanceStatus(selectedIssue.value.id, 'Rejected');
+    emit('updateMaintenanceStatus', selectedIssue.value.id, 'Rejected');
     showToast('Đã từ chối phiếu yêu cầu!', 'info');
     showRejectModal.value = false;
   }
 };
 
-const totalVacantSlots = computed(() => rooms.value.reduce((accum: number, r: Room) => accum + r.available, 0));
+const totalVacantSlots = computed(() => props.rooms.reduce((accum, r) => accum + r.available, 0));
 
 const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
   toast.value = { message, type };
   setTimeout(() => { toast.value = null; }, 4000);
 };
 
-const handleCreateBill = () => {
+const handleCreateBill = async () => {
   if (!billRoom.value || !billAmount.value || !billDesc.value) {
     showToast('Vui lòng khai báo đầy đủ thông tin (phòng, lý do chi tiết và số tiền)!', 'error');
     return;
@@ -109,20 +121,41 @@ const handleCreateBill = () => {
     showToast('Số tiền hóa đơn nhập vào chưa hợp lệ!', 'error');
     return;
   }
-  const newInvoice: Invoice = {
-    id: 'HD' + String(invoices.value.length + 1).padStart(3, '0'),
-    roomNumber: billRoom.value,
-    studentId: 'DNU-COMMON',
-    month: 'Lẻ phát sinh',
-    amount: amt,
-    type: 'EXTRA_FEE',
-    status: 'Unpaid',
-    createdAt: new Date().toISOString().split('T')[0]
-  };
-  if (appActions?.addInvoice) appActions.addInvoice(newInvoice);
-  showToast('Đã phát hành hóa đơn phát sinh lẻ thành công!', 'success');
+
+  try {
+    // Để App.vue gọi API, ở đây chỉ tạo cấu trúc dữ liệu và emit
+    const newInvoice: Invoice = {
+      id: 'HD' + String(props.invoices.length + 1).padStart(3, '0'),
+      roomNumber: billRoom.value,
+      studentId: '0', // Để App.vue tự phân giải
+      month: 'Lẻ phát sinh',
+      amount: amt,
+      type: billDesc.value || ('Phí phát sinh - ' + billReason.value),
+      billType: 'EXTRA_FEE',
+      feeReason: billReason.value,
+      status: 'Unpaid',
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    emit('addInvoice', newInvoice);
+    showToast('Đã phát hành hóa đơn phát sinh lẻ thành công!', 'success');
+  } catch (err) {
+    console.error('Lỗi tạo hóa đơn phát sinh:', err);
+    showToast('Lỗi, thử lại sau!', 'error');
+  }
+
   billAmount.value = '';
   billDesc.value = '';
+};
+
+/** Ghi nhận thu tiền mặt — gọi emit để App.vue xử lý API */
+const handlePayCash = async (invoiceId: string) => {
+  try {
+    emit('payInvoice', invoiceId);
+    showToast('Đã yêu cầu ghi nhận thanh toán!', 'info');
+  } catch (err) {
+    console.error('Lỗi ghi nhận thanh toán:', err);
+    showToast('Có lỗi xảy ra!', 'error');
+  }
 };
 
 const menuItems = [
@@ -172,10 +205,10 @@ const menuItems = [
           <div class="w-9 h-9 rounded-full bg-[#CB997E] text-white font-extrabold flex items-center justify-center font-mono text-sm">CB</div>
           <div class="overflow-hidden">
             <div class="font-bold text-xs truncate text-white">{{ staffUser.name }}</div>
-            <div class="text-[10px] text-[#FDFBF7]/80 font-mono">ID: {{ staffUser.id }}</div>
+            <div class="text-[10px] text-[#FDFBF7]/80">Cán bộ trực ban</div>
           </div>
         </div>
-        <button @click="if (appActions?.logout) appActions.logout();" class="w-full py-2.5 bg-white/15 hover:bg-white/20 text-white rounded-full text-xs font-bold flex items-center justify-center gap-2 cursor-pointer">
+        <button @click="emit('logout')" class="w-full py-2.5 bg-white/15 hover:bg-white/20 text-white rounded-full text-xs font-bold flex items-center justify-center gap-2 cursor-pointer">
           <LogOut class="w-4 h-4" /> <span>Thoát cán bộ</span>
         </button>
       </div>
@@ -204,7 +237,7 @@ const menuItems = [
                 <p class="text-xs text-[#8B8B8B] font-light mt-1">Mô tả thực trạng: {{ urgentIssues[0].description }} (Vị trí: {{ urgentIssues[0].roomNumber }})</p>
               </div>
             </div>
-            <button @click="appActions?.updateMaintenanceStatus && appActions.updateMaintenanceStatus(urgentIssues[0].id, 'In Progress'); showToast('Đã cử kĩ sư hiện trường!', 'success');" class="px-5 py-2.5 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold text-xs rounded-full shadow-xs cursor-pointer">
+            <button @click="emit('updateMaintenanceStatus', urgentIssues[0].id, 'In Progress'); showToast('Đã cử kĩ sư hiện trường!', 'success');" class="px-5 py-2.5 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold text-xs rounded-full shadow-xs cursor-pointer">
               Cử kỹ sư xử lý ngay
             </button>
           </div>
@@ -212,7 +245,7 @@ const menuItems = [
           <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div class="bg-white p-5 rounded-[24px] border border-[#EAE7E1] shadow-xs hover:border-[#6B705C]/30 transition-colors cursor-pointer" @click="activeTab = 'Duyệt hồ sơ'">
               <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block mb-1 tracking-wider">Đơn tuyển ký phòng</span>
-              <div class="text-3xl font-serif text-[#4A4A4A] mb-1 leading-none">{{ applications.length }}</div> đơn chờ
+              <div class="text-xl font-bold text-[#4A4A4A] font-mono mt-1.5">{{ pendingApps.length }} đơn chờ</div>
             </div>
             <div class="bg-white p-5 rounded-[24px] border border-[#EAE7E1] shadow-xs hover:border-[#CB997E]/30 transition-colors cursor-pointer" @click="activeTab = 'Sự cố bảo trì'">
               <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block mb-1 tracking-wider">Phiếu trình sự cố</span>
@@ -220,11 +253,11 @@ const menuItems = [
             </div>
             <div class="bg-white p-5 rounded-[24px] border border-[#EAE7E1] shadow-xs hover:border-[#6B705C]/30 transition-colors cursor-pointer" @click="activeTab = 'Trưng cứu Phòng'">
               <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block mb-1 tracking-wider">Lượng giường trống</span>
-              <div class="text-3xl font-serif text-[#6B705C] mb-1 leading-none">{{ maintenanceRequests.length }}</div>
+              <div class="text-xl font-bold text-[#6B705C] font-mono mt-1.5">{{ totalVacantSlots }} giường</div>
             </div>
             <div class="bg-white p-5 rounded-[24px] border border-[#EAE7E1] shadow-xs hover:border-[#CB997E]/30 transition-colors cursor-pointer" @click="activeTab = 'Ghi nhận thu tiền'">
               <span class="text-[10px] text-[#8B8B8B] font-bold uppercase block mb-1 tracking-wider">Hóa đơn cần thu</span>
-              <div class="text-3xl font-serif text-[#CB997E] mb-1 leading-none">{{ invoices.filter((i: Invoice) => i.status === 'Unpaid').length }}</div> hóa đơn
+              <div class="text-xl font-bold text-[#CB997E] font-mono mt-1.5">{{ props.invoices.filter(i => i.status === 'Unpaid').length }} hóa đơn</div>
             </div>
           </div>
         </div>
@@ -259,7 +292,7 @@ const menuItems = [
                   </button>
                 </template>
                 <template v-else-if="issue.status === 'In Progress'">
-                  <button @click="if (appActions?.updateMaintenanceStatus) appActions.updateMaintenanceStatus(issue.id, 'Waiting for Acceptance'); showToast('Đã báo sinh viên nghiệm thu!', 'success');" class="w-1/2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold py-2 rounded-full cursor-pointer text-center">
+                  <button @click="emit('updateMaintenanceStatus', issue.id, 'Waiting for Acceptance'); showToast('Đã báo sinh viên nghiệm thu!', 'success');" class="w-1/2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold py-2 rounded-full cursor-pointer text-center">
                     Báo chờ nghiệm thu
                   </button>
                   <span class="flex items-center justify-center font-bold text-[10px] w-1/2 uppercase tracking-wide border rounded-full bg-[#6B705C]/10 text-[#6B705C] border-[#6B705C]/20">
@@ -343,7 +376,7 @@ const menuItems = [
               </div>
               <div class="flex flex-col items-end gap-2 shrink-0">
                 <div class="text-lg font-bold font-mono text-[#4A4A4A]">{{ new Intl.NumberFormat('vi-VN').format(inv.amount) }}đ</div>
-                <button @click="if (appActions?.payInvoice) appActions.payInvoice(inv.id); showToast('Đã ghi nhận thu Tiền Mặt thành công!', 'success');" class="px-5 py-2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold text-xs rounded-full shadow-xs cursor-pointer flex items-center gap-2">
+                <button @click="handlePayCash(inv.id)" class="px-5 py-2 bg-[#6B705C] hover:bg-[#8B9178] text-white font-bold text-xs rounded-full shadow-xs cursor-pointer flex items-center gap-2">
                   <CheckCircle2 class="w-4 h-4" /> Ghi nhận thu Tiền Mặt
                 </button>
               </div>

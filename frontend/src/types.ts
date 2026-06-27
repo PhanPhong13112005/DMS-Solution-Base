@@ -93,11 +93,13 @@ export interface MaintenanceRequest {
   id: string;
   displayId?: string;
   roomNumber: string;
+  studentId?: number;    // MSSV sinh viên gửi phiếu (MỚI)
   title: string;
   description: string;
   category: string;
   priority: 'Critical' | 'Normal';
   status: 'Pending' | 'In Progress' | 'Waiting for Acceptance' | 'Resolved' | 'Cancelled' | 'Rejected';
+  imageUrl?: string;     // URL/Base64 ảnh đính kèm (MỚI)
   createdAt: string;
 }
 
@@ -125,6 +127,11 @@ export interface Invoice {
   type: string;
   status: 'Unpaid' | 'Paid';
   createdAt: string;
+  // --- Trường mới (đồng bộ với backend N3) ---
+  billType?: 'MONTHLY' | 'EXTRA_FEE'; // Phân loại hóa đơn
+  feeReason?: string;                  // Lý do thu (chỉ cho EXTRA_FEE)
+  dueDate?: string;                    // Hạn chót đóng tiền (ISO date string)
+  receiptCode?: string;                // Mã biên lai (sinh sau khi thanh toán)
 }
 
 export interface TransferRequest {

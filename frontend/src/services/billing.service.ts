@@ -1,120 +1,149 @@
 /**
- * Billing & Maintenance Service API
- * N3 Service - Quản lý hóa đơn, yêu cầu bảo trì
+ * Billing & Maintenance Service API - Nhóm 3
+ * Backend N3 chạy tại: http://localhost:8082/api/v1
  *
- * Endpoints (từ OpenAPI spec N3):
- * - Invoices: GET/POST, GET/PUT/{id}
- * - MaintenanceRequests: GET/POST, GET/PUT/{id}
+ * Endpoints thực tế (khớp với BillsController & MaintenanceController):
+ * - Bills:       GET/POST /bills, GET/PUT/{id}, PUT/{id}/pay, DELETE/{id}
+ *                GET /bills/unpaid, /bills/stats, /bills/student/{id}
+ *                GET /bills/type/{type}, /bills/due-soon?days=N  [MỚI]
+ *                POST /bills/extra-fee                            [MỚI]
+ * - Maintenance: GET/POST /maintenance, GET/PUT/{id}/status, DELETE/{id}
+ *                GET /maintenance/pending, /maintenance/room/{id}
+ *                GET /maintenance/category/{cat}, /maintenance/student/{id} [MỚI]
+ *                GET /maintenance/stats                                      [MỚI]
  */
 
-import { apiRequest } from './api.service';
+import apiClient from '../api/axios'; // axios instance trỏ đúng port 8082
 import type { Invoice, MaintenanceRequest } from '../types';
 
-// ============ INVOICES API ============
+// ============================================================
+// HELPERS
+// ============================================================
+
+/** Trích dữ liệu thực từ response wrapper { IsSuccess, Data } của backend N3 */
+const extractData = <T>(res: any): T => res.data?.Data ?? res.data?.data ?? res.data;
+
+// ============================================================
+// INVOICES API (/api/v1/bills)
+// ============================================================
 
 export const invoicesApi = {
-  /**
-   * GET: Lấy danh sách tất cả hóa đơn
-   */
-  getAll: () => apiRequest.get<Invoice[]>('/Invoices'),
+  /** GET /bills — Lấy tất cả hóa đơn */
+  getAll: () =>
+    apiClient.get('/bills').then(extractData<Invoice[]>),
 
-  /**
-   * GET: Lấy thông tin chi tiết một hóa đơn
-   * @param id - Invoice ID
-   */
-  getById: (id: string) => apiRequest.get<Invoice>(`/Invoices/${id}`),
+  /** GET /bills/{id} — Lấy hóa đơn theo ID */
+  getById: (id: string) =>
+    apiClient.get(`/bills/${id}`).then(extractData<Invoice>),
 
-  /**
-   * GET: Lấy danh sách hóa đơn của sinh viên
-   * @param studentId - Student ID (MSSV)
-   */
-  getByStudent: (studentId: string) =>
-    apiRequest.get<Invoice[]>(`/Invoices/student/${studentId}`),
+  /** GET /bills/room/{roomId} — Lấy hóa đơn theo phòng */
+  getByRoom: (roomId: number) =>
+    apiClient.get(`/bills/room/${roomId}`).then(extractData<Invoice[]>),
 
-  /**
-   * POST: Tạo hóa đơn mới
-   * @param data - Invoice data
-   */
+  /** GET /bills/student/{studentId} — Lấy hóa đơn của sinh viên */
+  getByStudent: (studentId: string | number) =>
+    apiClient.get(`/bills/student/${studentId}`).then(extractData<Invoice[]>),
+
+  /** GET /bills/unpaid — Lấy tất cả hóa đơn chưa thanh toán */
+  getUnpaid: () =>
+    apiClient.get('/bills/unpaid').then(extractData<Invoice[]>),
+
+  /** GET /bills/stats — Thống kê doanh thu tổng hợp */
+  getStats: () =>
+    apiClient.get('/bills/stats').then(extractData<any>),
+
+  /** GET /bills/type/{type} — Lọc theo loại: MONTHLY hoặc EXTRA_FEE */
+  getByType: (type: 'MONTHLY' | 'EXTRA_FEE') =>
+    apiClient.get(`/bills/type/${type}`).then(extractData<Invoice[]>),
+
+  /** GET /bills/due-soon?days=N — Lấy hóa đơn sắp tới hạn (trong N ngày) */
+  getDueSoon: (days = 3) =>
+    apiClient.get(`/bills/due-soon?days=${days}`).then(extractData<Invoice[]>),
+
+  /** POST /bills — Tạo hóa đơn tháng mới (MONTHLY) */
   create: (data: Omit<Invoice, 'id' | 'createdAt'>) =>
-    apiRequest.post<Invoice>('/Invoices', data),
+    apiClient.post('/bills', data).then(extractData<Invoice>),
 
-  /**
-   * PUT: Cập nhật hóa đơn
-   * @param id - Invoice ID
-   * @param data - Updated invoice data
-   */
-  update: (id: string, data: Partial<Invoice>) =>
-    apiRequest.put<void>(`/Invoices/${id}`, data),
+  /** POST /bills/extra-fee — Tạo hóa đơn phát sinh lẻ (phạt, đền bù...) */
+  createExtraFee: (data: {
+    roomId: number;
+    studentId: number;
+    reason: string;
+    description: string;
+    amount: number;
+  }) =>
+    apiClient.post('/bills/extra-fee', data).then(extractData<Invoice>),
 
-  /**
-   * PUT: Đánh dấu hóa đơn là đã thanh toán
-   * @param id - Invoice ID
-   */
+  /** PUT /bills/{id}/pay — Thanh toán hóa đơn (sinh mã biên lai tự động) */
   markAsPaid: (id: string) =>
-    apiRequest.put<void>(`/Invoices/${id}`, { status: 'Paid' }),
+    apiClient.put(`/bills/${id}/pay`, {}).then(extractData<Invoice>),
 
-  /**
-   * DELETE: Xóa hóa đơn
-   * @param id - Invoice ID
-   */
-  delete: (id: string) => apiRequest.delete<void>(`/Invoices/${id}`),
+  /** DELETE /bills/{id} — Xóa hóa đơn */
+  delete: (id: string) =>
+    apiClient.delete(`/bills/${id}`).then(extractData<void>),
 };
 
-// ============ MAINTENANCE REQUESTS API ============
+// ============================================================
+// MAINTENANCE API (/api/v1/maintenance)
+// ============================================================
 
-export const maintenanceRequestsApi = {
-  /**
-   * GET: Lấy danh sách tất cả yêu cầu bảo trì
-   */
-  getAll: () => apiRequest.get<MaintenanceRequest[]>('/MaintenanceRequests'),
+export const maintenanceApi = {
+  /** GET /maintenance — Lấy tất cả yêu cầu bảo trì */
+  getAll: () =>
+    apiClient.get('/maintenance').then(extractData<MaintenanceRequest[]>),
 
-  /**
-   * GET: Lấy thông tin chi tiết một yêu cầu
-   * @param id - Maintenance Request ID
-   */
-  getById: (id: string) => apiRequest.get<MaintenanceRequest>(`/MaintenanceRequests/${id}`),
+  /** GET /maintenance/{id} — Lấy yêu cầu theo ID */
+  getById: (id: string) =>
+    apiClient.get(`/maintenance/${id}`).then(extractData<MaintenanceRequest>),
 
-  /**
-   * GET: Lấy danh sách yêu cầu bảo trì của một phòng
-   * @param roomNumber - Room number
-   */
-  getByRoom: (roomNumber: string) =>
-    apiRequest.get<MaintenanceRequest[]>(`/MaintenanceRequests/room/${roomNumber}`),
+  /** GET /maintenance/room/{roomId} — Lấy yêu cầu theo phòng */
+  getByRoom: (roomId: number) =>
+    apiClient.get(`/maintenance/room/${roomId}`).then(extractData<MaintenanceRequest[]>),
 
-  /**
-   * POST: Tạo yêu cầu bảo trì mới
-   * @param data - Maintenance request data
-   */
+  /** GET /maintenance/pending — Lấy các phiếu đang chờ xử lý */
+  getPending: () =>
+    apiClient.get('/maintenance/pending').then(extractData<MaintenanceRequest[]>),
+
+  /** GET /maintenance/category/{cat} — Lọc theo danh mục: Điện, Nước, Thiết bị, Khác */
+  getByCategory: (category: string) =>
+    apiClient.get(`/maintenance/category/${encodeURIComponent(category)}`).then(extractData<MaintenanceRequest[]>),
+
+  /** GET /maintenance/student/{studentId} — Lấy phiếu của sinh viên cụ thể */
+  getByStudent: (studentId: string | number) =>
+    apiClient.get(`/maintenance/student/${studentId}`).then(extractData<MaintenanceRequest[]>),
+
+  /** GET /maintenance/stats — Thống kê hiệu suất bộ phận kỹ thuật (dành cho Admin) */
+  getStats: () =>
+    apiClient.get('/maintenance/stats').then(extractData<{
+      totalRequests: number;
+      pendingCount: number;
+      processingCount: number;
+      completedCount: number;
+      criticalCount: number;
+      resolutionRate: number;
+      avgResolutionHours: number;
+      byCategory: { category: string; count: number }[];
+    }>),
+
+  /** POST /maintenance — Tạo yêu cầu bảo trì mới */
   create: (data: Omit<MaintenanceRequest, 'id' | 'createdAt'>) =>
-    apiRequest.post<MaintenanceRequest>('/MaintenanceRequests', data),
+    apiClient.post('/maintenance', data).then(extractData<MaintenanceRequest>),
 
-  /**
-   * PUT: Cập nhật yêu cầu bảo trì
-   * @param id - Maintenance Request ID
-   * @param data - Updated data (status, feedback, etc.)
-   */
-  update: (id: string, data: Partial<MaintenanceRequest>) =>
-    apiRequest.put<void>(`/MaintenanceRequests/${id}`, data),
+  /** PUT /maintenance/{id}/status — Cập nhật trạng thái phiếu */
+  updateStatus: (id: string, status: string) =>
+    apiClient.put(`/maintenance/${id}/status`, { status }).then(extractData<MaintenanceRequest>),
 
-  /**
-   * PUT: Cập nhật trạng thái yêu cầu bảo trì
-   * @param id - Maintenance Request ID
-   * @param status - New status (Pending, In Progress, Resolved)
-   */
-  updateStatus: (id: string, status: 'Pending' | 'In Progress' | 'Resolved') =>
-    apiRequest.put<void>(`/MaintenanceRequests/${id}`, { status }),
-
-  /**
-   * DELETE: Xóa yêu cầu bảo trì
-   * @param id - Maintenance Request ID
-   */
-  delete: (id: string) => apiRequest.delete<void>(`/MaintenanceRequests/${id}`),
+  /** DELETE /maintenance/{id} — Xóa yêu cầu bảo trì */
+  delete: (id: string) =>
+    apiClient.delete(`/maintenance/${id}`).then(extractData<void>),
 };
 
-// ============ EXPORT GROUPED API ============
+// ============================================================
+// EXPORT GROUPED API
+// ============================================================
 export const billingApi = {
   invoices: invoicesApi,
-  maintenance: maintenanceRequestsApi,
+  maintenance: maintenanceApi,
 };
 
 export default billingApi;

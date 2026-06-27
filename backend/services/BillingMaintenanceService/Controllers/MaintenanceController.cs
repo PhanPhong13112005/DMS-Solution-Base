@@ -54,6 +54,23 @@ namespace BillingMaintenanceService.Controllers
             return Ok(new { StatusCode = 200, IsSuccess = true, Data = _maintenanceService.GetByCategory(category) });
         }
 
+        /// <summary>Lấy danh sách phiếu bảo trì gửi bởi một sinh viên cụ thể</summary>
+        [HttpGet("student/{studentId}")]
+        public IActionResult GetByStudentId(int studentId)
+        {
+            return Ok(new { StatusCode = 200, IsSuccess = true, Data = _maintenanceService.GetByStudentId(studentId) });
+        }
+
+        /// <summary>
+        /// Thống kê hiệu suất bộ phận kỹ thuật (dành cho Admin).
+        /// Trả về: tổng phiếu, đang xử lý, hoàn thành, tỷ lệ giải quyết, thời gian xử lý TB.
+        /// </summary>
+        [HttpGet("stats")]
+        public IActionResult GetStats()
+        {
+            return Ok(new { StatusCode = 200, IsSuccess = true, Data = _maintenanceService.GetMaintenanceStats() });
+        }
+
         // =======================================================
         // COMMANDS (MUTATIONS)
         // =======================================================
@@ -93,4 +110,4 @@ namespace BillingMaintenanceService.Controllers
             return Ok(new { IsSuccess = true, Message = "Đã xóa yêu cầu bảo trì thành công!" });
         }
     }
-}
+}

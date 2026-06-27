@@ -210,21 +210,45 @@ const appActions: AppActions = {
   },
 
   // Student Portal Actions
-  addMaintenance: (req: MaintenanceRequest) => {
-    maintenanceRequests.value.push(req);
-  },
-
-  updateMaintenanceStatus: (id: string, status: MaintenanceRequest['status']) => {
-    const idx = maintenanceRequests.value.findIndex((r) => r.id === id);
-    if (idx !== -1) {
-      maintenanceRequests.value[idx].status = status;
+  addMaintenance: async (req: MaintenanceRequest) => {
+    try {
+      const newReq = await billingApi.maintenance.create(req);
+      maintenanceRequests.value.push(newReq);
+    } catch (error) {
+      console.error('Failed to create maintenance request:', error);
+      maintenanceRequests.value.push(req);
     }
   },
 
-  payInvoice: (invoiceId: string) => {
-    const idx = invoices.value.findIndex((inv) => inv.id === invoiceId);
-    if (idx !== -1) {
-      invoices.value[idx].status = 'Paid';
+  updateMaintenanceStatus: async (id: string, status: MaintenanceRequest['status']) => {
+    try {
+      await billingApi.maintenance.updateStatus(id, status);
+      const idx = maintenanceRequests.value.findIndex((r) => r.id === id);
+      if (idx !== -1) {
+        maintenanceRequests.value[idx].status = status;
+      }
+    } catch (error) {
+      console.error('Failed to update maintenance request:', error);
+      const idx = maintenanceRequests.value.findIndex((r) => r.id === id);
+      if (idx !== -1) {
+        maintenanceRequests.value[idx].status = status;
+      }
+    }
+  },
+
+  payInvoice: async (invoiceId: string) => {
+    try {
+      await billingApi.invoices.markAsPaid(invoiceId);
+      const idx = invoices.value.findIndex((inv) => inv.id === invoiceId);
+      if (idx !== -1) {
+        invoices.value[idx].status = 'Paid';
+      }
+    } catch (error) {
+      console.error('Failed to pay invoice:', error);
+      const idx = invoices.value.findIndex((inv) => inv.id === invoiceId);
+      if (idx !== -1) {
+        invoices.value[idx].status = 'Paid';
+      }
     }
   },
 
@@ -256,8 +280,26 @@ const appActions: AppActions = {
   },
 
   // Staff Portal Actions
-  addInvoice: (invoice: Invoice) => {
-    invoices.value.push(invoice);
+  addInvoice: async (invoice: Invoice) => {
+    try {
+      // Phân tách nếu là hóa đơn thêm
+      if (invoice.billType === 'EXTRA_FEE') {
+        const newInv = await billingApi.invoices.createExtraFee({
+          roomId: Number(invoice.roomNumber) || 0,
+          studentId: Number(invoice.studentId) || 0,
+          reason: invoice.feeReason || 'Khác',
+          description: invoice.type,
+          amount: invoice.amount
+        });
+        invoices.value.push(newInv);
+      } else {
+        const newInv = await billingApi.invoices.create(invoice);
+        invoices.value.push(newInv);
+      }
+    } catch (error) {
+      console.error('Failed to add invoice:', error);
+      invoices.value.push(invoice);
+    }
   },
 
   // Data Management

@@ -60,6 +60,26 @@ namespace BillingMaintenanceService.Controllers
             return Ok(new { StatusCode = 200, IsSuccess = true, Data = _billingService.GetRevenueStats() });
         }
 
+        /// <summary>Lấy hóa đơn theo loại: MONTHLY hoặc EXTRA_FEE</summary>
+        [HttpGet("type/{type}")]
+        public IActionResult GetByType(string type)
+        {
+            if (!BillTypes.IsValid(type))
+                return BadRequest(new { IsSuccess = false, Message = $"Loại hóa đơn không hợp lệ. Chỉ chấp nhận: {string.Join(", ", BillTypes.All)}" });
+
+            return Ok(new { StatusCode = 200, IsSuccess = true, Data = _billingService.GetBillsByType(type) });
+        }
+
+        /// <summary>Lấy hóa đơn sắp tới hạn đóng tiền (trong N ngày tới, mặc định 3 ngày)</summary>
+        [HttpGet("due-soon")]
+        public IActionResult GetDueSoon([FromQuery] int days = 3)
+        {
+            if (days <= 0 || days > 30)
+                return BadRequest(new { IsSuccess = false, Message = "Số ngày phải trong khoảng 1-30!" });
+
+            return Ok(new { StatusCode = 200, IsSuccess = true, Data = _billingService.GetBillsDueSoon(days) });
+        }
+
         // =======================================================
         // COMMANDS (MUTATIONS)
         // =======================================================
@@ -68,6 +88,26 @@ namespace BillingMaintenanceService.Controllers
         public IActionResult CreateBill([FromBody] Bill newBill)
         {
             var result = _billingService.CreateBill(newBill);
+            return Ok(new { StatusCode = 201, IsSuccess = true, Data = result });
+        }
+
+        /// <summary>Tạo hóa đơn phát sinh lẻ (tiền phạt, đền bù, làm lại chìa khóa...)</summary>
+        public class CreateExtraFeeRequest
+        {
+            public int RoomId { get; set; }
+            public int StudentId { get; set; }
+            public string Reason { get; set; } = ExtraFeeReasons.Other;      // Lý do thu
+            public string Description { get; set; } = string.Empty; // Mô tả chi tiết
+            public decimal Amount { get; set; }                      // Số tiền (VNĐ)
+        }
+
+        [HttpPost("extra-fee")]
+        public IActionResult CreateExtraFee([FromBody] CreateExtraFeeRequest req)
+        {
+            if (req.Amount <= 0)
+                return BadRequest(new { IsSuccess = false, Message = "Số tiền phải lớn hơn 0!" });
+
+            var result = _billingService.CreateExtraFeeBill(req.RoomId, req.StudentId, req.Reason, req.Description, req.Amount);
             return Ok(new { StatusCode = 201, IsSuccess = true, Data = result });
         }
 
@@ -87,4 +127,4 @@ namespace BillingMaintenanceService.Controllers
             return Ok(new { IsSuccess = true, Message = "Đã xóa hóa đơn thành công!" });
         }
     }
-}
+}
