@@ -5,28 +5,35 @@
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/Buildings/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8080 }]
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }]
     },
     {
       "UpstreamPathTemplate": "/api/Rooms/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/Rooms/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8080 }]
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }]
     },
     {
       "UpstreamPathTemplate": "/api/Beds/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/Beds/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8080 }]
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }]
     },
     {
       "UpstreamPathTemplate": "/api/RoomAmenities/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/RoomAmenities/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8080 }]
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/News/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/News/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }]
     },
     {
       "UpstreamPathTemplate": "/api/BookingApplications/{everything}",

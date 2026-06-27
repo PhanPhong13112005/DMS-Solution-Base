@@ -32,7 +32,7 @@ const emit = defineEmits<{
             TỔNG QUAN VỀ KÝ TÚC XÁ DNU
           </h2>
           
-          <div class="space-y-4 text-[#8B8B8B] text-sm leading-relaxed mb-8 font-light">
+          <div class="space-y-4 text-[#4A4A4A] text-[15px] leading-relaxed mb-8">
             <p>
               Ký túc xá Đại học Đại Nam (DNU) được xây dựng với mục tiêu mang đến một môi trường sống tiện nghi, an toàn và thân thiện cho sinh viên. Tọa lạc ngay trong khuôn viên trường, KTX giúp sinh viên tiết kiệm thời gian di chuyển, tạo điều kiện thuận lợi nhất cho việc học tập và tham gia các hoạt động ngoại khóa.
             </p>

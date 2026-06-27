@@ -5,7 +5,7 @@
 Dự án áp dụng kiến trúc Microservices trong một Monorepo theo đúng tiêu chuẩn kỹ thuật phân tán:
 
 - **Frontend:** VueJS 3 + Tailwind CSS.
-- **Backend:** ASP.NET Core Web API (.NET 8).
+- **Backend:** ASP.NET Core Web API (.NET 9).
 - **Database:** SQL Server.
 - **API Gateway:** Ocelot (Xử lý JWT Token & Routing).
 - **Event Bus:** RabbitMQ + MassTransit (Xử lý giao tiếp bất đồng bộ).
@@ -61,3 +61,29 @@ Hệ thống tuân thủ nghiêm ngặt các quy tắc thiết kế Microservice
 # Khởi động hạ tầng (RabbitMQ Management sẽ chạy ở port 15672)
 docker compose -f infra/docker-compose.yml up -d
 ```
+
+### 4.2. Chạy Local (Quá trình phát triển)
+Các nhóm tự chạy Service của mình trên các port quy chuẩn sau:
+- **API Gateway:** `http://localhost:5000`
+- **Room Service (Nhóm 1):** `http://localhost:8080`
+- **Student Service (Nhóm 2):** `http://localhost:8081`
+- **Billing Service (Nhóm 3):** `http://localhost:8082`
+
+> **Lưu ý test API:** Nhóm 1 và Nhóm 3 cần chuẩn bị sẵn Mock Data (dữ liệu giả lập) trả về chuẩn JSON để các nhóm khác có thể test `HttpClient` thông qua Gateway trước khi ghép nối hoàn thiện Database.
+
+## 5. Quy trình làm việc với Git
+
+Để tránh xung đột (conflict) mã nguồn, tất cả thành viên tuân thủ luồng làm việc:
+
+1. **Làm việc trên nhánh tính năng riêng**:
+   ```bash
+   git checkout -b feature/[tên-nhóm]
+   ```
+
+2. **Đẩy code lên Repository**:
+   ```bash
+   git push origin feature/[tên-nhóm]
+   ```
+
+3. **Gộp code (Merge)**:
+   Lên giao diện GitHub tạo **Pull Request (PR)** để các thành viên review chéo. **Nghiêm cấm push code trực tiếp vào nhánh master.**

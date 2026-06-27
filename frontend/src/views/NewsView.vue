@@ -1,45 +1,59 @@
 <script setup lang="ts">
-import { ref, computed, inject } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Calendar, ArrowRight, ChevronRight, Mail, Search, AlertCircle, Undo2, Check } from 'lucide-vue-next';
-import type { NewsArticle } from '../types';
+import type { News } from '../types';
+import { newsApi } from '../services/room-building.service';
 
-// Lấy dữ liệu từ "đường ống" provide trong App.vue
-const appData: any = inject('appData');
-
-// Sửa lỗi: Truy cập an toàn vào appData.news (đảm bảo là mảng)
-const articlesList = computed(() => {
-  if (appData && appData.news) {
-    // Nếu appData.news là một ref, lấy .value, nếu là mảng thường thì lấy trực tiếp
-    const data = appData.news.value || appData.news;
-    return Array.isArray(data) ? data : [];
-  }
-  return [];
-});
-
+const newsList = ref<News[]>([]);
 const selectedCategory = ref<string>('Tất cả');
-const selectedArticle = ref<NewsArticle | null>(null);
-const emailInput = ref<string>('');
-const subscribeStatus = ref<'idle' | 'success' | 'error'>('idle');
+const selectedArticle = ref<News | null>(null);
 const searchQuery = ref<string>('');
 
-const categories = computed(() => [
-  { name: 'Tất cả', count: articlesList.value.length },
-  { name: 'Thông báo chung', count: articlesList.value.filter((a: any) => a.category === 'THÔNG BÁO').length + 5 },
-  { name: 'Tin tức sự kiện', count: articlesList.value.filter((a: any) => a.category === 'SỰ KIỆN').length + 3 },
-  { name: 'Hoạt động SV', count: articlesList.value.filter((a: any) => a.category === 'HOẠT ĐỘNG SV').length + 4 },
-  { name: 'Quy định - Thủ tục', count: articlesList.value.filter((a: any) => a.category === 'Quy định - Thủ tục').length + 2 }
-]);
+const loadNewsData = async () => {
+  try {
+    const res = await newsApi.getAll();
+    if (res) newsList.value = res;
+  } catch (error) {
+    console.error('Lỗi tải dữ liệu tin tức:', error);
+  }
+};
 
-const filteredArticles = computed(() => {
-  return articlesList.value.filter((art: any) => {
-    const matchCat = selectedCategory.value === 'Tất cả' || 
-                    (selectedCategory.value === 'Thông báo chung' && art.category === 'THÔNG BÁO') ||
-                    (selectedCategory.value === 'Tin tức sự kiện' && art.category === 'SỰ KIỆN') ||
-                    (selectedCategory.value === 'Hoạt động SV' && art.category === 'HOẠT ĐỘNG SV') ||
-                    (selectedCategory.value === 'Quy định - Thủ tục' && art.category === 'Quy định - Thủ tục');
+onMounted(() => {
+  loadNewsData();
+});
 
-    const matchSearch = art.title.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
-                        art.summary.toLowerCase().includes(searchQuery.value.toLowerCase());
+const getCategoryName = (cat?: string) => {
+  if (!cat || cat.trim() === '' || cat === 'string') {
+    return 'Khác';
+  }
+  return cat;
+};
+
+const categories = computed(() => {
+  // Tạo danh sách danh mục động dựa vào data có sẵn
+  const cats = ['Tất cả'];
+  newsList.value.forEach(item => {
+    const catName = getCategoryName(item.category);
+    if (!cats.includes(catName)) {
+      cats.push(catName);
+    }
+  });
+  
+  return cats.map(name => ({
+    name,
+    count: name === 'Tất cả' 
+      ? newsList.value.length 
+      : newsList.value.filter(a => getCategoryName(a.category) === name).length
+  }));
+});
+
+const filteredNews = computed(() => {
+  return newsList.value.filter(item => {
+    const itemCat = getCategoryName(item.category);
+    const matchCat = selectedCategory.value === 'Tất cả' || selectedCategory.value === itemCat;
+    
+    const matchSearch = item.title.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
+                        item.content.toLowerCase().includes(searchQuery.value.toLowerCase());
 
     return matchCat && matchSearch;
   });
@@ -62,17 +76,17 @@ const filteredArticles = computed(() => {
           <input type="text" v-model="searchQuery" placeholder="Tìm kiếm tin tức..." class="w-full bg-white border border-[#EAE7E1] rounded-2xl pl-12 pr-4 py-3.5 text-sm outline-none focus:border-[#6B705C]" />
         </div>
 
-        <div v-if="filteredArticles.length > 0" class="space-y-6">
-          <article v-for="article in filteredArticles" :key="article.id" class="flex flex-col md:flex-row bg-white rounded-[32px] border border-[#EAE7E1] overflow-hidden shadow-xs">
+        <div v-if="filteredNews.length > 0" class="space-y-6">
+          <article v-for="item in filteredNews" :key="item.id" class="flex flex-col md:flex-row bg-white rounded-[32px] border border-[#EAE7E1] overflow-hidden shadow-xs">
             <div class="md:w-1/3 h-48 overflow-hidden">
-              <img :src="article.image" class="w-full h-full object-cover" />
+              <img :src="item.imageUrl || 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=400&q=80'" class="w-full h-full object-cover" />
             </div>
             <div class="md:w-2/3 p-6 flex flex-col justify-between">
               <div>
-                <div class="text-xs font-bold text-[#CB997E] mb-2">{{ article.category }}</div>
-                <h2 class="text-lg font-serif text-[#4A4A4A]">{{ article.title }}</h2>
+                <div class="text-xs font-bold text-[#CB997E] mb-2">{{ getCategoryName(item.category) }}</div>
+                <h2 class="text-lg font-serif text-[#4A4A4A]">{{ item.title === 'string' ? 'Tiêu đề chưa cập nhật' : item.title }}</h2>
               </div>
-              <button @click="selectedArticle = article" class="text-xs font-bold text-[#6B705C] mt-4 flex items-center">
+              <button @click="selectedArticle = item" class="text-xs font-bold text-[#6B705C] mt-4 flex items-center">
                 Đọc tiếp <ArrowRight class="w-4 h-4 ml-2" />
               </button>
             </div>
@@ -88,7 +102,7 @@ const filteredArticles = computed(() => {
           <h3 class="font-serif mb-4 text-[#4A4A4A]">Danh mục</h3>
           <ul class="space-y-2">
             <li v-for="cat in categories" :key="cat.name">
-              <button @click="selectedCategory = cat.name" class="w-full flex justify-between p-3 rounded-xl hover:bg-[#FDFBF7] text-sm">
+              <button @click="selectedCategory = cat.name" :class="['w-full flex justify-between p-3 rounded-xl text-sm transition-colors', selectedCategory === cat.name ? 'bg-[#FDFBF7] font-bold text-[#CB997E]' : 'hover:bg-[#FDFBF7]']">
                 {{ cat.name }} <span class="text-[#8B8B8B] text-xs">({{ cat.count }})</span>
               </button>
             </li>
