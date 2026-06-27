@@ -1,18 +1,19 @@
-﻿using MassTransit;
-using BillingMaintenanceService;
+﻿using BillingMaintenanceService;
+using BillingMaintenanceService.Consumers;
+using MassTransit;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Cấu hình MassTransit & RabbitMQ
 builder.Services.AddMassTransit(x =>
 {
     x.AddConsumer<ContractApprovedConsumer>();
+    x.AddConsumer<RoomTransferBillingConsumer>(); // Chỉ cần đăng ký ở đây
 
     x.UsingRabbitMq((context, cfg) =>
     {
         cfg.Host("localhost", "/");
-        cfg.ConfigureEndpoints(context);
+        cfg.ConfigureEndpoints(context); // Để dòng này tự lo tất cả là xong!
     });
 });
 

@@ -1,103 +1,123 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MassTransit;
 using StudentContractService.Data;
 using StudentContractService.Models;
-using StudentContractService.Services;
-using StudentContractService.DTOs;
+using MassTransit;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using DMS.Shared;
+
 namespace StudentContractService.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class ContractController : ControllerBase
     {
-        private readonly ContractDbContext _context;
-        private readonly RoomServiceClient _roomService;
+        private readonly StudentDbContext _context;
         private readonly IPublishEndpoint _publishEndpoint;
 
-        public ContractController(ContractDbContext context, RoomServiceClient roomService, IPublishEndpoint publishEndpoint)
+        public ContractController(StudentDbContext context, IPublishEndpoint publishEndpoint)
         {
             _context = context;
-            _roomService = roomService;
             _publishEndpoint = publishEndpoint;
         }
 
-        // 1. Sinh viên đăng ký phòng Online
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RoomRegistrationDto dto)
+        // 1. LẤY DANH SÁCH TẤT CẢ HỢP ĐỒNG
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Contract>>> GetContracts()
         {
-            if (!await _context.Students.AnyAsync(s => s.StudentId == dto.StudentId))
-                return BadRequest("Sinh viên chưa có hồ sơ trên hệ thống.");
+            return await _context.Contracts.ToListAsync();
+        }
 
-            var contract = new Contract
-            {
-                StudentId = dto.StudentId,
-                BuildingId = dto.BuildingId,
-                RoomType = dto.RoomType,
-                DurationMonths = dto.DurationMonths,
-                Status = "Pending"
-            };
+        // 2. XEM CHI TIẾT MỘT HỢP ĐỒNG THEO ID
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetContract(Guid id)
+        {
+            var contract = await _context.Contracts.FindAsync(id);
+            if (contract == null) return NotFound(new { message = "Không tìm thấy hợp đồng này!" });
+            return Ok(contract);
+        }
+
+        // 3. TẠO MỚI HỢP ĐỒNG LƯU TRÚ (Trạng thái mặc định là Chờ Duyệt)
+        [HttpPost]
+        public async Task<IActionResult> CreateContract([FromBody] Contract contract)
+        {
+            var student = await _context.Students.FindAsync(contract.StudentId);
+            if (student == null) return NotFound(new { message = "Không tìm thấy sinh viên tương ứng!" });
+
+            contract.Id = Guid.NewGuid();
+
+            // 🔥 ĐỔI THÀNH PENDING: Chờ Admin bấm duyệt chứ chưa thể Active ngay được
+            contract.Status = "Pending";
+
+            contract.Student = null; // Ép EF Core không tự động INSERT lại bản ghi Sinh viên
+            student.CurrentRoomId = contract.RoomId;
 
             _context.Contracts.Add(contract);
             await _context.SaveChangesAsync();
-            return Ok(new { Message = "Đăng ký thành công, vui lòng chờ duyệt.", ContractId = contract.Id });
-        }
 
-        // 2. Admin duyệt đơn, xếp phòng -> Bắn sự kiện qua RabbitMQ sang Nhóm 3 để sinh hóa đơn
-        [HttpPost("{id}/approve")]
-        public async Task<IActionResult> Approve(int id, [FromBody] ApproveContractDto dto)
-        {
-            var contract = await _context.Contracts.FindAsync(id);
-            if (contract == null || contract.Status != "Pending") return BadRequest("Đơn không hợp lệ.");
-
-            var isRoomAvailable = await _roomService.CheckRoomAvailableAsync(dto.RoomId);
-            if (!isRoomAvailable) return BadRequest("Phòng đầy hoặc không tồn tại.");
-
-            contract.RoomId = dto.RoomId;
-            contract.PricePerMonth = dto.PricePerMonth;
-            contract.StartDate = DateTime.UtcNow;
-            contract.EndDate = DateTime.UtcNow.AddMonths(contract.DurationMonths);
-            contract.Status = "Approved";
-
-            await _context.SaveChangesAsync();
-
-            // Phát sự kiện lên RabbitMQ sử dụng Interface chuẩn của MassTransit
-            await _publishEndpoint.Publish<IContractApprovedEvent>(new
+            // (Tùy chọn) Bắn tin thông báo có hợp đồng mới tạo nếu cần, hiện tại giữ nguyên logic của bạn
+            await _publishEndpoint.Publish<ContractCreated>(new ContractCreated
             {
-                ContractId = contract.Id,
+                Id = contract.Id,
                 StudentId = contract.StudentId,
-                RoomId = contract.RoomId.Value,
-                PricePerMonth = contract.PricePerMonth.Value,
-                StartDate = contract.StartDate.Value,
-                EndDate = contract.EndDate.Value
+                RoomId = contract.RoomId,
+                RoomPrice = contract.RoomPrice,
+                StartDate = contract.StartDate,
+                EndDate = contract.EndDate
             });
 
-            return Ok(new { Message = "Hợp đồng đã kích hoạt thành công.", Contract = contract });
+            return CreatedAtAction(nameof(GetContract), new { id = contract.Id }, contract);
         }
 
-        // 3. Kết thúc/Hủy hợp đồng
-        [HttpPost("{id}/expire")]
-        public async Task<IActionResult> Expire(int id)
+        // 4. THANH LÝ / CHẤM DỨT HỢP ĐỒNG
+        [HttpPut("terminate/{id}")]
+        public async Task<IActionResult> TerminateContract(Guid id)
         {
             var contract = await _context.Contracts.FindAsync(id);
-            if (contract == null || contract.Status != "Approved") return BadRequest("Hợp đồng không thể thao tác.");
+            if (contract == null) return NotFound(new { message = "Không tìm thấy hợp đồng!" });
 
-            contract.Status = "Expired";
+            contract.Status = "Terminated";
+            var student = await _context.Students.FindAsync(contract.StudentId);
+            if (student != null) student.CurrentRoomId = null;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đã chấm dứt hợp đồng thành công!" });
+        }
+
+        
+        // 5. API DUYỆT HỢP ĐỒNG & TỰ ĐỘNG PHÁT SỰ KIỆN SANG BÊN HÓA ĐƠN
+        [HttpPut("approve/{id}")]
+        public async Task<IActionResult> ApproveContract(Guid id)
+        {
+            // 1. Tìm hợp đồng
+            var contract = await _context.Contracts.FindAsync(id);
+            if (contract == null)
+                return NotFound(new { message = "Không tìm thấy hợp đồng này!" });
+
+            if (contract.Status == "Approved" || contract.Status == "Active")
+                return BadRequest(new { message = "Hợp đồng này đã được xử lý hoặc đã kích hoạt từ trước." });
+
+            // 2. Chuyển trạng thái sang Approved
+            contract.Status = "Approved";
+            _context.Contracts.Update(contract);
             await _context.SaveChangesAsync();
 
-            await _publishEndpoint.Publish<dynamic>(new
+            // 3. BẮN TIN SANG RABBITMQ (ĐÃ SỬA TÊN VÀ KIỂU DỮ LIỆU ĐỂ KHỚP BÊN BILLING)
+            await _publishEndpoint.Publish<DMS.Shared.IContractApprovedEvent>(new
             {
-                EventName = "contract.expired",
-                ContractId = contract.Id
+                // Mẹo biến Guid thành số int dương để khớp với kiểu Int32 bên Hóa đơn
+                ContractId = Math.Abs(contract.Id.GetHashCode()),
+
+                StudentId = contract.StudentId.ToString(),
+
+                // ĐỔI TỪ RoomPrice THÀNH Amount ĐỂ KHỚP VỚI BẢNG INVOICES
+                Amount = contract.RoomPrice,
+
+                Content = $"Hóa đơn tiền phòng cho hợp đồng mới của sinh viên mã số {contract.StudentId}"
             });
 
-            return Ok(new { Message = "Hợp đồng đã kết thúc hiệu lực." });
+            return Ok(new { message = "Đã duyệt hợp đồng thành công! Hệ thống đang tự động lập hóa đơn thanh toán.", data = contract });
         }
-    } // 👈 ĐÂY LÀ NƠI KẾT THÚC CỦA CLASS CONTRACTCONTROLLER
-
-    // 👇 ĐÃ ĐƯA INTERFACE RA NGOÀI CLASS (NHƯNG VẪN NẰM TRONG NAMESPACE) 👇
-    
+    }
 }
