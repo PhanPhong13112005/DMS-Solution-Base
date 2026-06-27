@@ -1,14 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
 
 namespace StudentContractService.Models
 {
     public class Student
     {
-        [Key]
-        public string? StudentId { get; set; } // Mã SV (Ví dụ: B21DCCN123)
-        [Required]
-        public string? FullName { get; set; }   // Họ tên
-        public string? Faculty { get; set; }    // Khoa
-        public string? Contact { get; set; }    // Số điện thoại hoặc Email
+        public Guid Id { get; set; }
+        public string StudentCode { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string IdCard { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public int? CurrentRoomId { get; set; }
     }
 }

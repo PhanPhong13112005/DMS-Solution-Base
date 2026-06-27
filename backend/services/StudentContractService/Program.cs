@@ -1,5 +1,6 @@
 ﻿using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using StudentContractService.Consumers;
 using StudentContractService.Controllers;
 using StudentContractService.Data;
 using StudentContractService.Services;
@@ -7,9 +8,7 @@ using StudentContractService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Cấu hình kết nối SQL Server (ContractDB)
-builder.Services.AddDbContext<ContractDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
 // 2. Cấu hình Client để gọi đồng bộ qua API Gateway (Cổng 5000)
 builder.Services.AddHttpClient<RoomServiceClient>(client =>
@@ -35,7 +34,8 @@ builder.Services.AddMassTransit(x =>
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
+builder.Services.AddDbContext<StudentDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
