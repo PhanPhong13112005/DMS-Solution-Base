@@ -29,6 +29,13 @@
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }]
     },
     {
+      "UpstreamPathTemplate": "/api/News/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/News/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }]
+    },
+    {
       "UpstreamPathTemplate": "/api/BookingApplications/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/BookingApplications/{everything}",

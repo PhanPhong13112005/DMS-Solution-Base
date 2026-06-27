@@ -10,7 +10,7 @@
  */
 
 import { apiRequest } from './api.service';
-import type { Building, Room, Bed, RoomAmenity } from '../types';
+import type { Building, Room, Bed, RoomAmenity, News } from '../types';
 
 // ============ BUILDINGS API ============
 
@@ -29,6 +29,7 @@ export const roomsApi = {
   getById: (id: number) => apiRequest.get<Room>(`/Rooms/${id}`),
   getByBuilding: (buildingId: number) => apiRequest.get<Room[]>(`/Rooms/ByBuilding/${buildingId}`),
   getAvailable: (gender?: string) => apiRequest.get<Room[]>('/Rooms/available', { params: { gender } }),
+  getMyRoom: (studentId: string) => apiRequest.get<any>(`/Rooms/my-room/${studentId}`),
   create: (data: Omit<Room, 'id'>) => apiRequest.post<Room>('/Rooms', data),
   update: (id: number, data: Partial<Room>) => apiRequest.put<void>(`/Rooms/${id}`, data),
   delete: (id: number) => apiRequest.delete<void>(`/Rooms/${id}`),
@@ -56,6 +57,16 @@ export const roomAmenitiesApi = {
   delete: (id: number) => apiRequest.delete<void>(`/RoomAmenities/${id}`),
 };
 
+// ============ NEWS API ============
+
+export const newsApi = {
+  getAll: () => apiRequest.get<News[]>('/News'),
+  getById: (id: number) => apiRequest.get<News>(`/News/${id}`),
+  create: (data: Omit<News, 'id'>) => apiRequest.post<News>('/News', data),
+  update: (id: number, data: News) => apiRequest.put<void>(`/News/${id}`, data),
+  delete: (id: number) => apiRequest.delete<void>(`/News/${id}`),
+};
+
 // ============ EXPORT GROUPED API ============
 
 export const roomBuildingApi = {
@@ -63,6 +74,7 @@ export const roomBuildingApi = {
   rooms: roomsApi,
   beds: bedsApi,
   amenities: roomAmenitiesApi,
+  news: newsApi,
 };
 
 export default roomBuildingApi;

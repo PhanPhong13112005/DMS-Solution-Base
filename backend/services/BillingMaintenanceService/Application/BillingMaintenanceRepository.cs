@@ -49,4 +49,4 @@ namespace BillingMaintenanceService.Infrastructure
         public void UpdateRequest(MaintenanceRequest request) { _context.MaintenanceRequests.Update(request); _context.SaveChanges(); }
         public void DeleteRequest(MaintenanceRequest request) { _context.MaintenanceRequests.Remove(request); _context.SaveChanges(); }
     }
-}
+}

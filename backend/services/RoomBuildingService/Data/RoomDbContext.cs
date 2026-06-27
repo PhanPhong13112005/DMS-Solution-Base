@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using RoomBuildingService.Models;
@@ -23,6 +23,10 @@ public partial class RoomDbContext : DbContext
     public virtual DbSet<Room> Rooms { get; set; }
 
     public virtual DbSet<RoomAmenity> RoomAmenities { get; set; }
+
+    public virtual DbSet<News> News { get; set; }
+
+    public virtual DbSet<SystemSetting> SystemSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -77,6 +81,14 @@ public partial class RoomDbContext : DbContext
             entity.HasOne(d => d.Room).WithMany(p => p.RoomAmenities)
                 .HasForeignKey(d => d.RoomId)
                 .HasConstraintName("FK_RoomAmenities_Rooms");
+        });
+
+        modelBuilder.Entity<News>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.Author).HasMaxLength(100);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
 
         OnModelCreatingPartial(modelBuilder);

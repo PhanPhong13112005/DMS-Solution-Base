@@ -18,7 +18,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // 3. Cấu hình CORS: Cho phép Frontend (React/Vite) gọi API
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowWebUI", policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
         // Cho phép mọi nguồn (hoặc thay bằng "http://localhost:5173" để bảo mật hơn)
         policy.AllowAnyOrigin()
@@ -60,7 +60,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 
-app.UseCors("AllowWebUI");
+app.UseCors("AllowAll");
 
 
 app.UseDefaultFiles();

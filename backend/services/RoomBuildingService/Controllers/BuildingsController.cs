@@ -22,7 +22,9 @@ namespace RoomBuildingService.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Building>>> GetBuildings()
         {
-            return await _context.Buildings.ToListAsync();
+            var list = await _context.Buildings.ToListAsync();
+            System.Console.WriteLine("---- SO LUONG TOA NHA: " + list.Count + " ----");
+            return list;
         }
 
         // 2. LẤY THÔNG TIN 1 TÒA NHÀ THEO ID

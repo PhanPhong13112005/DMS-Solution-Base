@@ -3,10 +3,9 @@ import { ref, computed, onMounted } from 'vue';
 import { usePagination } from '../composables/usePagination';
 import apiClient from '../api/axios';
 import { X, Save, Pencil, ChartSpline, Users, Shield, LogOut, ArrowUpRight, ArrowDownRight, Settings, PlusCircle, Trash2, Calendar, Newspaper, Activity, Landmark, BellRing, Info, AlertTriangle, CheckCircle, Receipt, Search, Eye, Copy, Inbox, ClipboardList, Download, ArrowUp, ArrowDown, Wrench, UserPlus, Calculator, FileText, Home, CircleDollarSign, Building2, Banknote, BarChart3, Plus } from 'lucide-vue-next';
-import type { Room, BookingApplication, MaintenanceRequest, NewsArticle, Invoice, Bed } from '../types';
+import type { Room, BookingApplication, MaintenanceRequest, NewsArticle, Invoice, Bed, News } from '../types';
 import { useAppData } from '../composables/useAppData';
-import { roomBuildingApi } from '../services/room-building.service'; 
-import { invoicesApi, maintenanceApi } from '../services/billing.service';
+import { roomBuildingApi, newsApi } from '../services/room-building.service'; 
 
 const { user, applications: _applications, maintenanceRequests: _maintenanceRequests, invoices: _invoices, news: _news, actions, rooms: _rooms } = useAppData();
 
@@ -69,28 +68,90 @@ const loadFacilitiesData = async () => {
   }
 };
 
-// ============ REAL DATA (DỮ LIỆU THẬT NHÓM 3) ============
-const dueSoonBills = ref<Invoice[]>([]);
-const maintStats = ref<any>(null);
+// ============ NEWS DATA (DỮ LIỆU THẬT NHÓM 1) ============
+const newsList = ref<News[]>([]);
+const showNewsModal = ref(false);
+const isEditingNews = ref(false);
+const newsFormData = ref<{ id: number | null; title: string; content: string; author: string }>({
+  id: null,
+  title: '',
+  content: '',
+  author: ''
+});
 
-const loadN3Data = async () => {
+const loadNewsData = async () => {
   try {
-    const [dueRes, statsRes] = await Promise.all([
-      invoicesApi.getDueSoon(5),
-      maintenanceApi.getStats()
-    ]);
-    if (dueRes) dueSoonBills.value = dueRes;
-    if (statsRes) maintStats.value = statsRes;
+    const res = await newsApi.getAll();
+    if (res) newsList.value = res;
   } catch (error) {
-    console.error("Lỗi tải dữ liệu N3:", error);
+    console.error('Lỗi tải dữ liệu tin tức từ N1:', error);
   }
 };
 
-onMounted(() => {
-  loadDashboardStats();
-  loadFacilitiesData();
-  loadN3Data();
-});
+const openCreateNewsModal = () => {
+  isEditingNews.value = false;
+  newsFormData.value = { id: null, title: '', content: '', author: '' };
+  showNewsModal.value = true;
+};
+
+const openEditNewsModal = (item: News) => {
+  isEditingNews.value = true;
+  newsFormData.value = { id: item.id, title: item.title, content: item.content, author: item.author || '' };
+  showNewsModal.value = true;
+};
+
+const handleSaveNews = async () => {
+  if (!newsFormData.value.title || !newsFormData.value.content) {
+    showToast('Vui lòng nhập tiêu đề và nội dung!', 'error');
+    return;
+  }
+  try {
+    if (isEditingNews.value && newsFormData.value.id !== null) {
+      const existing = newsList.value.find(n => n.id === newsFormData.value.id);
+      await newsApi.update(newsFormData.value.id, {
+        id: newsFormData.value.id,
+        title: newsFormData.value.title,
+        content: newsFormData.value.content,
+        author: newsFormData.value.author || undefined,
+        createdAt: existing?.createdAt
+      });
+      showToast('Cập nhật tin tức thành công!', 'success');
+    } else {
+      await newsApi.create({
+        title: newsFormData.value.title,
+        content: newsFormData.value.content,
+        author: newsFormData.value.author || undefined
+      });
+      showToast('Tạo tin tức mới thành công!', 'success');
+    }
+    showNewsModal.value = false;
+    await loadNewsData();
+  } catch (err) {
+    showToast('Có lỗi xảy ra khi lưu tin tức!', 'error');
+  }
+};
+
+const showDeleteNewsConfirm = ref(false);
+const newsToDeleteId = ref<number | null>(null);
+
+const handleDeleteNews = (id: number) => {
+  newsToDeleteId.value = id;
+  showDeleteNewsConfirm.value = true;
+};
+
+const confirmDeleteNews = async () => {
+  if (newsToDeleteId.value === null) return;
+  try {
+    await newsApi.delete(newsToDeleteId.value);
+    showToast('Xóa tin tức thành công!', 'success');
+    await loadNewsData();
+  } catch (err) {
+    showToast('Không thể xóa tin tức!', 'error');
+  } finally {
+    showDeleteNewsConfirm.value = false;
+    newsToDeleteId.value = null;
+  }
+};
 
 const activeTab = ref<string>('Bảng điều khiển');
 const toast = ref<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -174,6 +235,7 @@ onMounted(() => {
   fetchStats();
   loadDashboardStats();
   loadFacilitiesData();
+  loadNewsData();
 });
 
 const handleCreateNews = () => {
@@ -198,6 +260,9 @@ const handleCreateNews = () => {
   newsSummary.value = '';
   newsContent.value = '';
 };
+
+
+
 
 const menuItems = [
   { id: 'Bảng điều khiển', icon: ChartSpline },
@@ -1311,31 +1376,6 @@ const confirmDeleteRoom = async () => {
             </div>
           </div>
 
-          <!-- MỚI: Section Sắp hết hạn (N3) -->
-          <div v-if="dueSoonBills && dueSoonBills.length > 0" class="mb-6 bg-rose-50 border border-rose-200 rounded-2xl p-5 shadow-sm">
-            <div class="flex items-center gap-2 mb-4 text-rose-700">
-              <AlertTriangle class="w-5 h-5" />
-              <h4 class="font-bold text-sm">Cảnh báo: Có {{ dueSoonBills.length }} khoản nợ sắp đến hạn thu (trong 5 ngày tới)!</h4>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div v-for="inv in dueSoonBills" :key="inv.id" class="bg-white border border-rose-100 rounded-xl p-4 shadow-sm flex items-center justify-between hover:-translate-y-1 transition-transform">
-                <div>
-                  <div class="text-xs font-bold text-[#4A4A4A]">{{ inv.type === 'EXTRA_FEE' ? 'Nợ phát sinh' : 'Nợ tháng' }}</div>
-                  <div class="text-[10px] text-[#8B8B8B]">Phòng: {{ inv.roomNumber }}</div>
-                  <div class="text-rose-500 font-mono text-sm font-bold mt-1">{{ new Intl.NumberFormat('vi-VN').format(inv.amount) }}đ</div>
-                </div>
-                <div class="text-right">
-                  <div class="text-[10px] text-rose-700 bg-rose-100 px-2 py-1 rounded font-mono">
-                    Hạn: {{ inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('vi-VN') : 'Sắp tới' }}
-                  </div>
-                  <button @click="showToast('Đã gửi SMS hối thúc thu nợ!', 'info')" class="mt-2 text-[10px] font-bold text-white bg-rose-500 hover:bg-rose-600 px-3 py-1.5 rounded-full cursor-pointer transition-colors shadow-xs">
-                    Nhắc nhở
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div class="bg-white rounded-2xl border border-[#EAE7E1] shadow-sm p-4">
             <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
               <div class="relative w-full max-w-md">
@@ -1568,26 +1608,6 @@ const confirmDeleteRoom = async () => {
             </div>
           </div>
 
-          <!-- MỚI: Dashboard Thống kê Kỹ thuật (N3) -->
-          <div v-if="maintStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white border border-[#EAE7E1] rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center hover:border-[#CB997E]/30 transition-colors">
-              <div class="text-[#8B8B8B] text-[10px] font-bold uppercase">Tổng Yêu Cầu</div>
-              <div class="text-3xl font-mono font-bold text-[#4A4A4A] mt-1">{{ maintStats.totalRequests }}</div>
-            </div>
-            <div class="bg-white border border-[#EAE7E1] rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center hover:border-[#CB997E]/30 transition-colors">
-              <div class="text-[#8B8B8B] text-[10px] font-bold uppercase">Tỷ lệ Giải quyết</div>
-              <div class="text-3xl font-mono font-bold text-emerald-500 mt-1">{{ Math.round(maintStats.resolutionRate) }}%</div>
-            </div>
-            <div class="bg-white border border-[#EAE7E1] rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center hover:border-[#CB997E]/30 transition-colors">
-              <div class="text-[#8B8B8B] text-[10px] font-bold uppercase">Xử lý trung bình</div>
-              <div class="text-3xl font-mono font-bold text-[#CB997E] mt-1">{{ Math.round(maintStats.avgResolutionHours) }}h</div>
-            </div>
-            <div class="bg-white border border-[#EAE7E1] rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center hover:border-[#CB997E]/30 transition-colors">
-              <div class="text-[#8B8B8B] text-[10px] font-bold uppercase">Sự cố khẩn cấp</div>
-              <div class="text-3xl font-mono font-bold text-rose-500 mt-1">{{ maintStats.criticalCount }}</div>
-            </div>
-          </div>
-
           <!-- Bộ lọc -->
           <div class="bg-white rounded-xl border border-[#EAE7E1] shadow-sm p-4 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1802,6 +1822,57 @@ const confirmDeleteRoom = async () => {
                     <td class="px-6 py-4 text-right space-x-3">
                       <button @click="openEditRoomModal(room)" class="p-1.5 text-[#8B8B8B] hover:text-[#4A4A4A] hover:bg-[#EAE7E1]/50 rounded-md transition-colors cursor-pointer" title="Chỉnh sửa"><Pencil class="w-4 h-4" /></button>
                       <button @click="handleDeleteRoom(room.id)" class="p-1.5 text-[#8B8B8B] hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer" title="Xóa"><Trash2 class="w-4 h-4" /></button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB QUẢN LÝ TIN TỨC (DỮ LIỆU THẬT TỪ API N1) -->
+        <div v-if="activeTab === 'Quản lý tin tức'" class="bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm space-y-6 text-left">
+          <div class="flex justify-between items-center border-b border-[#EAE7E1] pb-4">
+            <div>
+              <h3 class="font-bold text-[#CB997E] text-xl">Quản lý Tin tức & Thông báo</h3>
+              <p class="text-xs text-[#8B8B8B] mt-1">Tổng số: {{ newsList.length }} bài viết</p>
+            </div>
+            <button @click="openCreateNewsModal" class="px-4 py-2 bg-[#CB997E] hover:bg-[#A47148] text-white font-bold text-xs rounded-full shadow-sm transition-colors flex items-center gap-2 cursor-pointer">
+              <Plus class="w-4 h-4" /> Thêm tin tức
+            </button>
+          </div>
+          <div class="bg-white border border-[#EAE7E1] rounded-2xl overflow-hidden mt-6">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm text-left">
+                <thead class="text-xs text-gray-500 uppercase bg-[#FDFBF7] border-b border-[#EAE7E1]">
+                  <tr>
+                    <th scope="col" class="px-6 py-4 font-bold text-[#6B705C] w-16">ID</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-[#6B705C]">Tiêu đề</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-[#6B705C]">Tác giả</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-[#6B705C]">Ngày tạo</th>
+                    <th scope="col" class="px-6 py-4 font-bold text-right text-[#6B705C]">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="newsList.length === 0" class="bg-white border-b border-[#EAE7E1]">
+                    <td colspan="5" class="px-6 py-12 text-center text-gray-500 italic">
+                      <Newspaper class="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      Chưa có bài tin tức nào trong Database. Hãy bấm "Thêm tin tức" để tạo mới.
+                    </td>
+                  </tr>
+
+                  <tr v-for="item in newsList" :key="item.id" class="bg-white border-b border-[#EAE7E1] hover:bg-[#FDFBF7]/50 transition-colors">
+                    <td class="px-6 py-4 font-mono text-[#8B8B8B]">{{ item.id }}</td>
+                    <td class="px-6 py-4 font-bold text-gray-800">
+                      <div class="max-w-xs truncate">{{ item.title }}</div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600 font-medium">{{ item.author || 'Ẩn danh' }}</td>
+                    <td class="px-6 py-4 text-gray-600 text-xs font-mono">
+                      {{ item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN') : 'N/A' }}
+                    </td>
+                    <td class="px-6 py-4 text-right space-x-3">
+                      <button @click="openEditNewsModal(item)" class="p-1.5 text-[#8B8B8B] hover:text-[#4A4A4A] hover:bg-[#EAE7E1]/50 rounded-md transition-colors cursor-pointer" title="Sửa"><Pencil class="w-4 h-4" /></button>
+                      <button @click="handleDeleteNews(item.id)" class="p-1.5 text-[#8B8B8B] hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer" title="Xóa"><Trash2 class="w-4 h-4" /></button>
                     </td>
                   </tr>
                 </tbody>
@@ -2500,6 +2571,65 @@ const confirmDeleteRoom = async () => {
             Hủy bỏ
           </button>
           <button @click="confirmDeleteRoom" class="px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-full shadow-sm transition-colors cursor-pointer">
+            Đồng ý xóa
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Tạo / Sửa Tin Tức -->
+    <div v-if="showNewsModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showNewsModal = false"></div>
+      <div class="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[32px] shadow-2xl relative z-10 p-8 border border-[#EAE7E1] text-left animate-fade-in custom-scrollbar">
+        <div class="flex justify-between items-center mb-6 pb-4 border-b border-[#EAE7E1]">
+          <h3 class="font-serif text-xl text-[#4A4A4A]">{{ isEditingNews ? 'Sửa Tin Tức' : 'Thêm Tin Tức Mới' }}</h3>
+          <button @click="showNewsModal = false" class="text-[#8B8B8B] hover:text-rose-500 transition-colors cursor-pointer">
+            <span class="text-xl leading-none">&times;</span>
+          </button>
+        </div>
+        <div class="space-y-5">
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-[#4A4A4A]">Tiêu đề <span class="text-[#CB997E]">*</span></label>
+            <input type="text" v-model="newsFormData.title" placeholder="Nhập tiêu đề bài viết..." class="w-full bg-white border border-[#EAE7E1] rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-[#6B705C] transition-colors" />
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-[#4A4A4A]">Nội dung <span class="text-[#CB997E]">*</span></label>
+            <textarea v-model="newsFormData.content" placeholder="Nhập nội dung chi tiết..." rows="6" class="w-full bg-white border border-[#EAE7E1] rounded-2xl px-4 py-3 text-sm outline-none focus:border-[#6B705C] resize-none transition-colors"></textarea>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-[#4A4A4A]">Tác giả</label>
+            <input type="text" v-model="newsFormData.author" placeholder="Tên tác giả (không bắt buộc)..." class="w-full bg-white border border-[#EAE7E1] rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-[#6B705C] transition-colors" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-[#EAE7E1]">
+          <button @click="showNewsModal = false" class="px-6 py-2.5 border border-[#EAE7E1] text-[#4A4A4A] hover:bg-[#FDFBF7] font-bold text-xs rounded-full transition-colors cursor-pointer">
+            Hủy
+          </button>
+          <button @click="handleSaveNews" class="px-6 py-2.5 bg-[#CB997E] hover:bg-[#A47148] text-white font-bold text-xs rounded-full shadow-sm transition-colors cursor-pointer">
+            {{ isEditingNews ? 'Cập nhật' : 'Tạo mới' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Xác nhận Xóa Tin Tức -->
+    <div v-if="showDeleteNewsConfirm" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showDeleteNewsConfirm = false"></div>
+      <div class="bg-white w-full max-w-md rounded-[32px] shadow-2xl relative z-10 p-8 border border-[#EAE7E1] text-left animate-fade-in">
+        <div class="flex items-start gap-4 mb-6">
+          <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center shrink-0">
+            <Trash2 class="w-6 h-6" />
+          </div>
+          <div>
+            <h3 class="font-serif text-lg font-bold text-[#4A4A4A]">Xác nhận xóa tin tức</h3>
+            <p class="text-sm text-[#8B8B8B] mt-2">Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa bài tin tức này?</p>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-8">
+          <button @click="showDeleteNewsConfirm = false" class="px-6 py-2.5 border border-[#EAE7E1] text-[#4A4A4A] hover:bg-[#FDFBF7] font-bold text-xs rounded-full transition-colors cursor-pointer">
+            Hủy bỏ
+          </button>
+          <button @click="confirmDeleteNews" class="px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-full shadow-sm transition-colors cursor-pointer">
             Đồng ý xóa
           </button>
         </div>

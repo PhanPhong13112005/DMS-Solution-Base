@@ -21,4 +21,4 @@ namespace BillingMaintenanceService.Domain
         public DateTime? UpdatedAt { get; set; }                 // Cập nhật khi đổi trạng thái
     }
 }
-
+

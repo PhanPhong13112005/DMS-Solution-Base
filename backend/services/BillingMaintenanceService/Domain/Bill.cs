@@ -35,4 +35,4 @@ namespace BillingMaintenanceService.Domain
         // --- Mã biên lai (sinh tự động khi thanh toán) ---
         public string? ReceiptCode { get; set; }      // Ví dụ: "BR-20260625-ABC12345"
     }
-}
+}

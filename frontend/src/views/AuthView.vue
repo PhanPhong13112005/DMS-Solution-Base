@@ -44,22 +44,10 @@ const handleAuthSubmit = async () => {
         // 2. LƯU TOKEN VÀO LOCALSTORAGE
         localStorage.setItem('jwt_token', userData.token);
         
-        const regName = localStorage.getItem(`reg_name_${userData.username}`);
-        const regClass = localStorage.getItem(`reg_class_${userData.username}`);
-        
-        let displayName = regName || userData.username;
-        let displayClass = regClass || 'K16-IT';
-
-        if (userData.username === 'student1001') {
-          displayName = regName || 'Nguyễn Văn Hùng';
-          displayClass = regClass || 'CNTT-K15';
-        }
-
         // 3. LƯU CURRENT USER VÀO LOCALSTORAGE
         const userPayload = { 
-          name: displayName, 
+          name: userData.username, 
           id: userData.username, 
-          className: displayClass,
           role: userData.role,
           referenceId: userData.referenceId
         };

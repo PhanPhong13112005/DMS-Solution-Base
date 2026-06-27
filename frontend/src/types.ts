@@ -72,6 +72,20 @@ export interface RoomAmenity {
   condition: string; // Good, Fair, Poor
 }
 
+/**
+ * News model from Room Building Service (Database First - bảng News)
+ * Field mapping: id, title, content, createdAt, author
+ */
+export interface News {
+  id: number;
+  title: string;
+  content: string;
+  createdAt?: string;
+  author?: string;
+  category?: string;
+  imageUrl?: string;
+}
+
 export interface BookingApplication {
   id: string;
   fullName: string;
@@ -99,7 +113,6 @@ export interface MaintenanceRequest {
   category: string;
   priority: 'Critical' | 'Normal';
   status: 'Pending' | 'In Progress' | 'Waiting for Acceptance' | 'Resolved' | 'Cancelled' | 'Rejected';
-  imageUrl?: string;     // URL/Base64 ảnh đính kèm (MỚI)
   createdAt: string;
 }
 

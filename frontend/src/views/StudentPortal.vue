@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Home, ClipboardList, BedDouble, Receipt, Wrench, BellRing, LogOut, Settings2, Sparkles, Send, CheckCircle2, ShieldAlert, Landmark, UserMinus, CheckCircle, Info, AlertTriangle } from 'lucide-vue-next';
 import type { MaintenanceRequest, Invoice, TransferRequest, Room } from '../types';
 import { useAppData } from '../composables/useAppData';
@@ -55,13 +55,47 @@ const myInvoices = computed<Invoice[]>(() => {
 });
 
 /**
- * Current room assignment info
- * Matches current student's roomNumber with actual room record
+ * Current room assignment info fetched from API
  */
-const myRoom = computed(() => {
-  const studentRoomNumber = studentUser.value?.roomNumber;
-  if (!studentRoomNumber) return null;
-  return roomsList.value?.find((room) => room?.roomNumber === studentRoomNumber) ?? null;
+const myRoom = ref<any>(null);
+
+import { roomBuildingApi } from '../services/room-building.service';
+
+onMounted(async () => {
+  const studentId = studentUser.value?.id;
+  if (studentId && studentId !== 'N/A') {
+    try {
+      const res = await roomBuildingApi.rooms.getMyRoom(studentId);
+      if (res) {
+        myRoom.value = res;
+      }
+    } catch (e) {
+      console.error('Không tải được thông tin phòng:', e);
+    }
+  }
+});
+
+// Student contact info with safe defaults
+const phone = computed(() => studentUser.value?.phone ?? '0978.112.551');
+const email = computed(() => studentUser.value?.email ?? 'hungnguyen@dainam.edu.vn');
+const className = computed(() => studentUser.value?.className ?? 'CNTT-K15');
+
+// Bổ sung các ref cho tính năng thanh toán gộp và lọc
+const filterStatus = ref<'All' | 'Unpaid' | 'Paid'>('All');
+const filterMonth = ref<string>('All');
+const selectedInvoiceIds = ref<string[]>([]);
+
+const filteredInvoices = computed(() => {
+  return myInvoices.value.filter((inv: Invoice) => {
+    const matchStatus = filterStatus.value === 'All' ? true : inv.status === filterStatus.value;
+    const matchMonth = filterMonth.value === 'All' ? true : inv.month === filterMonth.value;
+    return matchStatus && matchMonth;
+  });
+});
+
+const availableMonths = computed(() => {
+  const months = new Set(myInvoices.value.map((inv: Invoice) => inv.month));
+  return Array.from(months);
 });
 
 // Student contact info with safe defaults
@@ -91,15 +125,6 @@ const availableMonths = computed(() => {
 const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
   toast.value = { message, type };
   setTimeout(() => { toast.value = null; }, 4000);
-};
-
-const getInitials = (name: string) => {
-  if (!name || name === 'Sinh viên') return 'SV';
-  const parts = name.trim().split(' ');
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
 };
 
 // ============ UI STATES ============
@@ -369,7 +394,7 @@ const menuItems = [
               </div>
               <div>
                 <div class="text-[10px] text-[#8B8B8B] font-bold uppercase tracking-wider">Phòng nội trú</div>
-                <div class="text-lg font-bold text-[#4A4A4A] font-mono mt-0.5">{{ myRoom ? `${myRoom.roomNumber} (${myRoom.building})` : 'Chưa xếp' }}</div>
+                <div class="text-lg font-bold text-[#4A4A4A] font-mono mt-0.5">{{ myRoom ? `${myRoom.roomNumber} (${myRoom.building || myRoom.buildingName})` : 'Chưa xếp' }}</div>
               </div>
             </div>
 
@@ -411,7 +436,27 @@ const menuItems = [
                 </div>
                 <div class="bg-[#FDFBF7] p-4 rounded-2xl border border-[#EAE7E1]">
                   <span class="text-[10px] text-[#8B8B8B] uppercase font-bold">Thuộc phân khu</span>
-                  <div class="text-lg font-bold text-[#4A4A4A] mt-1">{{ myRoom.building }}</div>
+                  <div class="text-lg font-bold text-[#4A4A4A] mt-1">{{ myRoom.building || myRoom.buildingName }}</div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="bg-[#FDFBF7] p-4 rounded-2xl border border-[#EAE7E1]">
+                  <span class="text-[10px] text-[#8B8B8B] uppercase font-bold">Vị trí giường</span>
+                  <div class="text-lg font-bold text-[#4A4A4A] font-mono mt-1">{{ myRoom.myBed ? myRoom.myBed.bedName : 'N/A' }}</div>
+                </div>
+                <div class="bg-[#FDFBF7] p-4 rounded-2xl border border-[#EAE7E1]">
+                  <span class="text-[10px] text-[#8B8B8B] uppercase font-bold">Bạn cùng phòng</span>
+                  <div class="text-lg font-bold text-[#4A4A4A] mt-1">{{ myRoom.roommates ? myRoom.roommates.length : 0 }} người</div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div class="bg-[#FDFBF7] p-4 rounded-2xl border border-[#EAE7E1]">
+                  <span class="text-[10px] text-[#8B8B8B] uppercase font-bold">Loại phòng</span>
+                  <div class="text-lg font-bold text-[#4A4A4A] mt-1">{{ myRoom.roomType }}</div>
+                </div>
+                <div class="bg-[#CB997E]/10 p-4 rounded-2xl border border-[#CB997E]/20">
+                  <span class="text-[10px] text-[#CB997E] uppercase font-bold">Giá phòng / Tháng</span>
+                  <div class="text-lg font-bold text-[#CB997E] font-mono mt-1">{{ myRoom.price ? new Intl.NumberFormat('vi-VN').format(myRoom.price) : 0 }}đ</div>
                 </div>
               </div>
             </div>
@@ -474,21 +519,8 @@ const menuItems = [
                   <Receipt class="w-6 h-6" />
                 </div>
                 <div>
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <h4 class="font-bold text-[#4A4A4A] text-base">{{ inv.type }}</h4>
-                    <span v-if="inv.billType === 'EXTRA_FEE'" class="text-[9px] font-extrabold uppercase bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded">Phát sinh</span>
-                  </div>
+                  <h4 class="font-bold text-[#4A4A4A] text-base">{{ inv.type }}</h4>
                   <p class="text-xs text-[#8B8B8B] font-mono mt-1">Phòng: {{ inv.roomNumber }} • Hóa đơn: {{ inv.id }}</p>
-                  <!-- Hạn đóng tiền (nếu chưa trả) -->
-                  <p v-if="inv.status === 'Unpaid' && inv.dueDate" class="text-[10px] font-bold text-rose-500 mt-0.5">
-                    ⏰ Hạn đóng: {{ new Date(inv.dueDate).toLocaleDateString('vi-VN') }}
-                  </p>
-                  <!-- Mã biên lai (nếu đã trả) -->
-                  <p v-if="inv.status === 'Paid' && inv.receiptCode" class="text-[10px] font-mono text-emerald-600 mt-0.5">
-                    🧾 Biên lai: {{ inv.receiptCode }}
-                  </p>
-                  <!-- Lý do thu (nếu là EXTRA_FEE) -->
-                  <p v-if="inv.feeReason" class="text-[10px] text-amber-700 mt-0.5">Lý do: {{ inv.feeReason }}</p>
                 </div>
               </div>
               <div class="flex flex-col items-end gap-2 shrink-0">
