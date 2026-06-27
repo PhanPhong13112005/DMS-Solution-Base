@@ -98,6 +98,29 @@ const availableMonths = computed(() => {
   return Array.from(months);
 });
 
+// Student contact info with safe defaults
+const phone = computed(() => studentUser.value?.phone ?? '0978.112.551');
+const email = computed(() => studentUser.value?.email ?? 'hungnguyen@dainam.edu.vn');
+const className = computed(() => studentUser.value?.className ?? 'CNTT-K15');
+
+// Bổ sung các ref cho tính năng thanh toán gộp và lọc
+const filterStatus = ref<'All' | 'Unpaid' | 'Paid'>('All');
+const filterMonth = ref<string>('All');
+const selectedInvoiceIds = ref<string[]>([]);
+
+const filteredInvoices = computed(() => {
+  return myInvoices.value.filter((inv: Invoice) => {
+    const matchStatus = filterStatus.value === 'All' ? true : inv.status === filterStatus.value;
+    const matchMonth = filterMonth.value === 'All' ? true : inv.month === filterMonth.value;
+    return matchStatus && matchMonth;
+  });
+});
+
+const availableMonths = computed(() => {
+  const months = new Set(myInvoices.value.map((inv: Invoice) => inv.month));
+  return Array.from(months);
+});
+
 // ============ HELPER FUNCTIONS ============
 const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
   toast.value = { message, type };
@@ -171,6 +194,7 @@ const handleMaintenanceSubmit = () => {
     category: maintCategory.value as any,
     priority: maintPriority.value,
     status: 'Pending',
+    imageUrl: maintImage.value ? URL.createObjectURL(maintImage.value) : undefined, // Gắn ảnh nếu có
     createdAt: new Date().toISOString().split('T')[0]
   };
 
@@ -314,7 +338,7 @@ const menuItems = [
         <div class="p-3 bg-white/10 rounded-2xl flex items-center gap-3 mb-3">
           <div
             class="w-9 h-9 rounded-full bg-[#CB997E] text-white font-extrabold flex items-center justify-center border border-white/10 font-mono text-sm leading-none">
-            SV</div>
+            {{ getInitials(studentUser.name) }}</div>
           <div class="overflow-hidden">
             <div class="font-bold text-xs truncate text-white">{{ studentUser.name }}</div>
             <div class="text-[10px] text-[#FDFBF7]/80 font-mono">MSSV: {{ studentUser.id }}</div>
@@ -341,7 +365,7 @@ const menuItems = [
           </div>
           <div
             class="w-10 h-10 rounded-full bg-[#6B705C] text-white border border-[#EAE7E1] flex items-center justify-center font-extrabold font-mono shadow-xs text-sm">
-            SV</div>
+            {{ getInitials(studentUser.name) }}</div>
         </div>
       </header>
 

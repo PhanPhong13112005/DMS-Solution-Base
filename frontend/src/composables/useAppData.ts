@@ -51,19 +51,19 @@ export interface AppActions {
   navigate: (screenName: string) => void;
 
   // Student Portal
-  addMaintenance: (req: MaintenanceRequest) => void;
-  updateMaintenanceStatus: (id: string, status: MaintenanceRequest['status']) => void;
-  payInvoice: (invoiceId: string) => void;
-  addTransfer: (req: TransferRequest) => void;
+  addMaintenance: (req: MaintenanceRequest) => Promise<void> | void;
+  updateMaintenanceStatus: (id: string, status: MaintenanceRequest['status']) => Promise<void> | void;
+  payInvoice: (invoiceId: string) => Promise<void> | void;
+  addTransfer: (req: TransferRequest) => Promise<void> | void;
 
   // Admin Portal
-  approveApplication: (appId: string) => void;
-  rejectApplication: (appId: string) => void;
-  addNewsArticle: (article: NewsArticle) => void;
-  deleteNewsArticle: (id: string) => void;
+  approveApplication: (appId: string) => Promise<void> | void;
+  rejectApplication: (appId: string) => Promise<void> | void;
+  addNewsArticle: (article: NewsArticle) => Promise<void> | void;
+  deleteNewsArticle: (id: string) => Promise<void> | void;
 
   // Staff Portal
-  addInvoice: (invoice: Invoice) => void;
+  addInvoice: (invoice: Invoice) => Promise<void> | void;
 
   // Data Management
   loadData: () => Promise<void>;
@@ -141,20 +141,21 @@ export const useAppData = () => {
     navigate: (screenName: string) => appActions?.navigate?.(screenName),
 
     // Student Portal
-    addMaintenance: (req: MaintenanceRequest) => appActions?.addMaintenance?.(req),
-    updateMaintenanceStatus: (id: string, status: MaintenanceRequest['status']) =>
-      appActions?.updateMaintenanceStatus?.(id, status),
-    payInvoice: (invoiceId: string) => appActions?.payInvoice?.(invoiceId),
-    addTransfer: (req: TransferRequest) => appActions?.addTransfer?.(req),
+    addMaintenance: async (req: MaintenanceRequest) => { await appActions?.addMaintenance?.(req); },
+    updateMaintenanceStatus: async (id: string, status: MaintenanceRequest['status']) => {
+      await appActions?.updateMaintenanceStatus?.(id, status);
+    },
+    payInvoice: async (invoiceId: string) => { await appActions?.payInvoice?.(invoiceId); },
+    addTransfer: async (req: TransferRequest) => { await appActions?.addTransfer?.(req); },
 
     // Admin Portal
-    approveApplication: (appId: string) => appActions?.approveApplication?.(appId),
-    rejectApplication: (appId: string) => appActions?.rejectApplication?.(appId),
-    addNewsArticle: (article: NewsArticle) => appActions?.addNewsArticle?.(article),
-    deleteNewsArticle: (id: string) => appActions?.deleteNewsArticle?.(id),
+    approveApplication: async (appId: string) => { await appActions?.approveApplication?.(appId); },
+    rejectApplication: async (appId: string) => { await appActions?.rejectApplication?.(appId); },
+    addNewsArticle: async (article: NewsArticle) => { await appActions?.addNewsArticle?.(article); },
+    deleteNewsArticle: async (id: string) => { await appActions?.deleteNewsArticle?.(id); },
 
     // Staff Portal
-    addInvoice: (invoice: Invoice) => appActions?.addInvoice?.(invoice),
+    addInvoice: async (invoice: Invoice) => { await appActions?.addInvoice?.(invoice); },
 
     // Data Management
     loadData: async () => {

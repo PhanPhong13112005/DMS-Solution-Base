@@ -65,7 +65,7 @@ docker compose -f infra/docker-compose.yml up -d
 ### 4.2. Chạy Local (Quá trình phát triển)
 Các nhóm tự chạy Service của mình trên các port quy chuẩn sau:
 - **API Gateway:** `http://localhost:5000`
-- **Room Service (Nhóm 1):** `http://localhost:8080`
+- **Room Service (Nhóm 1):** `http://localhost:8083`
 - **Student Service (Nhóm 2):** `http://localhost:8081`
 - **Billing Service (Nhóm 3):** `http://localhost:8082`
 

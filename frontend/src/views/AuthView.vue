@@ -73,6 +73,11 @@ const handleAuthSubmit = async () => {
       errorMsg.value = 'Vui lòng khai báo đúng đủ tất cả các trường dữ liệu!';
       return;
     }
+
+    // LƯU THÔNG TIN ĐĂNG KÝ VÀO LOCAL STORAGE TẠM THỜI
+    localStorage.setItem(`reg_name_${regId.value}`, regName.value);
+    localStorage.setItem(`reg_class_${regId.value}`, regClass.value);
+
     successMsg.value = `Sinh viên ${regName.value} đăng ký thành công! Đang quay lại màn hình đăng nhập...`;
     username.value = regId.value;
     password.value = regPass.value;
