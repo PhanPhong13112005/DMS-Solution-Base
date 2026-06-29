@@ -1,26 +1,51 @@
+﻿using MassTransit;
+using Microsoft.EntityFrameworkCore;
+using StudentContractService.Consumers;
+using StudentContractService.Controllers;
+using StudentContractService.Data;
+using StudentContractService.Services;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+
+
+// 2. Cấu hình Client để gọi đồng bộ qua API Gateway (Cổng 5000)
+builder.Services.AddHttpClient<RoomServiceClient>(client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5000");
+});
+
+// 3. Tích hợp MassTransit kết nối với Message Broker RabbitMQ của hệ thống
+// 3. Tích hợp MassTransit kết nối với Message Broker RabbitMQ của hệ thống
+builder.Services.AddMassTransit(x =>
+{
+    // Đăng ký Consumer nhận sự kiện thanh toán hóa đơn
+    x.AddConsumer<InvoicePaidConsumer>();
+
+    // Cấu hình kết nối tới RabbitMQ (CHỈ GIỮ LẠI 1 KHỐI NÀY DUY NHẤT)
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("localhost", "/");
+        cfg.ConfigureEndpoints(context);
+    });
+});
+
 builder.Services.AddControllers();
-
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddDbContext<StudentDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-app.UseDefaultFiles(); // Tự động tìm và chạy file index.html
-app.UseStaticFiles();  // Cho phép trình duyệt đọc CSS, JS, Hình ảnh trong wwwroot
-
 app.UseAuthorization();
-
 app.MapControllers();
 
-app.Run();
+// Khởi chạy chính xác trên port 8081 dành cho Nhóm 2
+app.Run("http://localhost:8081");
