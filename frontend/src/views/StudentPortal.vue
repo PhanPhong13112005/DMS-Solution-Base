@@ -96,6 +96,8 @@ const filteredInvoices = computed(() => {
 const availableMonths = computed(() => {
   const months = new Set(myInvoices.value.map((inv: Invoice) => inv.month));
   return Array.from(months);
+<<<<<<< HEAD
+=======
 });
 
 // Student contact info with safe defaults
@@ -119,6 +121,7 @@ const filteredInvoices = computed(() => {
 const availableMonths = computed(() => {
   const months = new Set(myInvoices.value.map((inv: Invoice) => inv.month));
   return Array.from(months);
+>>>>>>> 00efd2b7e3197f2e97ff439553b3cb596c359c57
 });
 
 // ============ HELPER FUNCTIONS ============
