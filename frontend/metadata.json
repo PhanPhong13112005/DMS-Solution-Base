@@ -1,6 +1,0 @@
-{
-  "name": "DNU KTX",
-  "description": "Hệ thống Quản lý Ký túc xá Đại học Đại Nam - Cổng thông tin đăng ký phòng và quản trị nội trú dành cho sinh viên và ban quản lý.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
