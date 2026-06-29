@@ -40,8 +40,8 @@ const searchInvoice = ref('');
 const unpaidInvoices = computed(() => {
   return props.invoices.filter(i => 
     i.status === 'Unpaid' && 
-    (i.roomNumber.toLowerCase().includes(searchInvoice.value.toLowerCase()) || 
-     i.studentId.toLowerCase().includes(searchInvoice.value.toLowerCase()))
+    ((i.roomNumber || '').toLowerCase().includes(searchInvoice.value.toLowerCase()) || 
+     (i.studentId || '').toLowerCase().includes(searchInvoice.value.toLowerCase()))
   );
 });
 
@@ -59,7 +59,7 @@ const activeIssues = computed(() => {
     m.status !== 'Resolved' && 
     m.status !== 'Cancelled' && 
     m.status !== 'Rejected' && 
-    m.roomNumber.toLowerCase().includes(searchRoomIssue.value.toLowerCase())
+    (m.roomNumber || '').toLowerCase().includes(searchRoomIssue.value.toLowerCase())
   );
   
   return filtered.sort((a, b) => {

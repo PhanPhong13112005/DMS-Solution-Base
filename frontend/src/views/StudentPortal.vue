@@ -96,35 +96,16 @@ const filteredInvoices = computed(() => {
 const availableMonths = computed(() => {
   const months = new Set(myInvoices.value.map((inv: Invoice) => inv.month));
   return Array.from(months);
-<<<<<<< HEAD
-=======
-});
-
-// Student contact info with safe defaults
-const phone = computed(() => studentUser.value?.phone ?? '0978.112.551');
-const email = computed(() => studentUser.value?.email ?? 'hungnguyen@dainam.edu.vn');
-const className = computed(() => studentUser.value?.className ?? 'CNTT-K15');
-
-// Bổ sung các ref cho tính năng thanh toán gộp và lọc
-const filterStatus = ref<'All' | 'Unpaid' | 'Paid'>('All');
-const filterMonth = ref<string>('All');
-const selectedInvoiceIds = ref<string[]>([]);
-
-const filteredInvoices = computed(() => {
-  return myInvoices.value.filter((inv: Invoice) => {
-    const matchStatus = filterStatus.value === 'All' ? true : inv.status === filterStatus.value;
-    const matchMonth = filterMonth.value === 'All' ? true : inv.month === filterMonth.value;
-    return matchStatus && matchMonth;
-  });
-});
-
-const availableMonths = computed(() => {
-  const months = new Set(myInvoices.value.map((inv: Invoice) => inv.month));
-  return Array.from(months);
->>>>>>> 00efd2b7e3197f2e97ff439553b3cb596c359c57
 });
 
 // ============ HELPER FUNCTIONS ============
+const getInitials = (name?: string) => {
+  if (!name) return 'SV';
+  const parts = name.trim().split(' ');
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+};
+
 const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
   toast.value = { message, type };
   setTimeout(() => { toast.value = null; }, 4000);
@@ -197,7 +178,6 @@ const handleMaintenanceSubmit = () => {
     category: maintCategory.value as any,
     priority: maintPriority.value,
     status: 'Pending',
-    imageUrl: maintImage.value ? URL.createObjectURL(maintImage.value) : undefined, // Gắn ảnh nếu có
     createdAt: new Date().toISOString().split('T')[0]
   };
 
