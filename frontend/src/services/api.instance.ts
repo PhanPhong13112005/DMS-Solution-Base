@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api', // Đi qua Ocelot Gateway
+  baseURL: 'http://143.198.83.224:5000/api', // Đi qua Ocelot Gateway
   headers: { 'Content-Type': 'application/json' }
 });
 

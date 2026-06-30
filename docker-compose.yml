@@ -112,3 +112,15 @@ networks:
 
 volumes:
   sqlserver_data:
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dms-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - gateway
+    networks:
+      - dms-network
