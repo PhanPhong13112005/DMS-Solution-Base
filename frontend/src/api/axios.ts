@@ -30,7 +30,7 @@ apiClient.interceptors.response.use(
     if (error.response && error.response.status === 401 && !error.config.url?.includes('/auth/login')) {
       localStorage.removeItem('jwt_token');
       localStorage.removeItem('current_user');
-      window.location.href = '/auth'; // Đá văng ra màn đăng nhập
+      // Không dùng window.location.href để tránh vòng lặp vô tận (infinite reload loop)
     }
     return Promise.reject(error);
   }

@@ -18,7 +18,7 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('jwt_token');
-      window.location.href = '/auth'; // Đá về trang login nếu hết hạn token
+      // Không dùng window.location.href để tránh vòng lặp vô tận (infinite reload loop)
     }
     return Promise.reject(error);
   }
