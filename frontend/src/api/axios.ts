@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Backend Nhóm 3 chạy ở cổng 8082
+// Backend Nhóm 3 chạy qua Gateway ở cổng 5000
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8082/api/v1',
+  baseURL: 'http://143.198.83.224:5000/api',
   headers: {
     'Content-Type': 'application/json',
   },
