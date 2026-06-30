@@ -106,13 +106,6 @@ services:
     networks:
       - dms-network
 
-networks:
-  dms-network:
-    driver: bridge
-
-volumes:
-  sqlserver_data:
-
   frontend:
     build:
       context: ./frontend
@@ -124,3 +117,10 @@ volumes:
       - gateway
     networks:
       - dms-network
+
+networks:
+  dms-network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
