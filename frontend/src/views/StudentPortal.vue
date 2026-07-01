@@ -3,9 +3,11 @@ import { ref, computed, onMounted } from 'vue';
 import { Home, ClipboardList, BedDouble, Receipt, Wrench, BellRing, LogOut, Settings2, Sparkles, Send, CheckCircle2, ShieldAlert, Landmark, UserMinus, CheckCircle, Info, AlertTriangle } from 'lucide-vue-next';
 import type { MaintenanceRequest, Invoice, TransferRequest, Room } from '../types';
 import { useAppData } from '../composables/useAppData';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 // ============ USE TYPE-SAFE APP DATA & ACTIONS ============
-const { user, rooms, invoices, maintenanceRequests, transfers, actions, apiError, isLoading } = useAppData();
+const { user, rooms, invoices, maintenanceRequests, transfers, applications, actions, apiError, isLoading } = useAppData();
 
 const activeTab = ref('Trang chủ');
 const toast = ref<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
@@ -57,6 +59,12 @@ const myInvoices = computed<Invoice[]>(() => {
 /**
  * Current room assignment info fetched from API
  */
+const myApplication = computed(() => {
+  const studentId = studentUser.value?.id;
+  if (!studentId || studentId === 'N/A') return null;
+  return applications.value?.find((app: any) => app.studentId === studentId) || null;
+});
+
 const myRoom = ref<any>(null);
 
 import { roomBuildingApi } from '../services/room-building.service';
@@ -327,9 +335,9 @@ const menuItems = [
             <div class="text-[10px] text-background/80 font-mono">MSSV: {{ studentUser.id }}</div>
           </div>
         </div>
-        <button @click="handleLogout()"
+        <button @click="router.push('/')"
           class="w-full py-2.5 bg-white/15 hover:bg-white/20 text-white rounded-full transition-colors font-bold text-xs flex items-center justify-center gap-2 cursor-pointer">
-          <LogOut class="w-4 h-4" /> <span>Thoát cổng sinh viên</span>
+          <Home class="w-4 h-4" /> <span>Quay lại trang chủ</span>
         </button>
       </div>
     </aside>
@@ -367,6 +375,21 @@ const menuItems = [
                 Chào mừng bạn đến với văn phòng số hóa Ký túc xá Đại học Đại Nam. Theo dõi lịch hoạt động, thanh toán
                 các khoản phí lưu trú trực tuyến chính xác và báo lỗi cơ sở vật chất.
               </p>
+            </div>
+          </div>
+
+          <div v-if="myApplication && !myRoom" class="bg-orange-50 border border-orange-200 text-orange-800 p-5 rounded-[24px] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
+                <ClipboardList class="w-6 h-6" />
+              </div>
+              <div>
+                <h4 class="font-bold text-sm text-orange-900">Hồ sơ đăng ký lưu trú đang chờ duyệt</h4>
+                <p class="text-xs md:text-sm opacity-90 mt-0.5 leading-relaxed">Bạn đã nộp đơn đăng ký <strong>Phòng {{ myApplication.roomNumber }} - {{ myApplication.building }}</strong>. Vui lòng chờ Ban Quản Lý phê duyệt.</p>
+              </div>
+            </div>
+            <div class="px-4 py-2 bg-orange-100 text-orange-700 text-xs font-bold rounded-full border border-orange-200 whitespace-nowrap shadow-sm">
+              Đang xử lý
             </div>
           </div>
 
