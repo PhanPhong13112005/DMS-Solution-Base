@@ -44,27 +44,44 @@ const loadDashboardStats = async () => {
     if (beds && beds.length > 0) {
         allBedsList.value = beds;
         realTotalBeds.value = beds.length;
-        realOccupiedBeds.value = beds.filter((b) => !b.isAvailable).length; 
-        realAvailableBeds.value = beds.filter((b) => b.isAvailable).length;
+        realOccupiedBeds.value = beds.filter((b: any) => !b.isAvailable).length; 
+        realAvailableBeds.value = beds.filter((b: any) => b.isAvailable).length;
     }
   } catch (error) {
     console.error("Lỗi khi tải dữ liệu thống kê từ N1:", error);
   }
 };
 
-const roomsList = ref([]);
-const buildingsList = ref([]);
+const roomsList = ref<any[]>([]);
+const buildingsList = ref<any[]>([]);
+const roomTypesList = ref<any[]>([]);
+const hierarchyData = ref<any[]>([]);
 
 const loadFacilitiesData = async () => {
   try {
-    const [bRes, rRes] = await Promise.all([
+    const [bRes, rRes, tRes, hRes] = await Promise.all([
       roomBuildingApi.buildings.getAll(),
-      roomBuildingApi.rooms.getAll()
+      roomBuildingApi.rooms.getAll(),
+      roomBuildingApi.roomTypes.getAll(),
+      roomBuildingApi.buildings.getHierarchy()
     ]);
     if (bRes) buildingsList.value = bRes;
     if (rRes) roomsList.value = rRes;
+    if (tRes) roomTypesList.value = tRes;
+    if (hRes) hierarchyData.value = hRes;
   } catch (error) {
     console.error("Lỗi tải dữ liệu phòng:", error);
+  }
+};
+
+const toggleBedMaintenance = async (bedId: number) => {
+  try {
+    await roomBuildingApi.beds.maintenance(bedId, "Admin yêu cầu khóa giường");
+    showToast('Đã khóa giường thành công!', 'success');
+    await loadFacilitiesData(); // Reload data
+  } catch(error) {
+    console.error("Lỗi khóa giường:", error);
+    showToast('Lỗi khi khóa giường', 'error');
   }
 };
 
@@ -273,6 +290,8 @@ const menuItems = [
   { id: 'Sự cố bảo trì', icon: Activity },
   { id: 'Duyệt lưu trú', icon: Users },
   { id: 'Cơ sở vật chất', icon: Building2 },
+  { id: 'Loại phòng', icon: Building2 },
+  { id: 'Sơ đồ KTX', icon: CircleDollarSign },
   { id: 'Cài đặt hệ thống', icon: Settings }
 ];
 
@@ -1830,7 +1849,79 @@ const confirmDeleteRoom = async () => {
           </div>
         </div>
 
-        <!-- TAB QUẢN LÝ TIN TỨC (DỮ LIỆU THẬT TỪ API N1) -->
+        <!-- TAB QUẢN LÝ TIN TỨC (DỮ LIỆU THẬT TỪ API N1) -->        <!-- LOẠI PHÒNG (MASTER DATA) -->
+        <div v-if="activeTab === 'Loại phòng'" class="bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm space-y-6 text-left">
+          <div class="flex justify-between items-center border-b border-[#EAE7E1] pb-4">
+            <h3 class="font-bold text-[#CB997E] text-xl">Quản lý Loại Phòng (Master Data)</h3>
+            <button class="px-4 py-2 bg-[#CB997E] hover:bg-[#A47148] text-white font-bold text-xs rounded-full shadow-sm transition-colors flex items-center gap-2 cursor-pointer">
+              <Plus class="w-4 h-4" /> Thêm Loại Phòng
+            </button>
+          </div>
+          <div class="bg-white border border-[#EAE7E1] rounded-2xl overflow-hidden mt-6">
+            <table class="w-full text-sm text-left">
+              <thead class="text-xs text-gray-500 uppercase bg-[#FDFBF7] border-b border-[#EAE7E1]">
+                <tr>
+                  <th class="px-6 py-4">Tên loại phòng</th>
+                  <th class="px-6 py-4">Sức chứa</th>
+                  <th class="px-6 py-4">Đơn giá (Tháng)</th>
+                  <th class="px-6 py-4 text-center">Tiện ích</th>
+                  <th class="px-6 py-4 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="t in roomTypesList" :key="t.id" class="bg-white border-b border-[#EAE7E1] hover:bg-[#FDFBF7]/50">
+                  <td class="px-6 py-4 font-bold">{{ t.name }}</td>
+                  <td class="px-6 py-4">{{ t.maxOccupants }} người</td>
+                  <td class="px-6 py-4 text-rose-600 font-bold">{{ t.monthlyPrice.toLocaleString() }}đ</td>
+                  <td class="px-6 py-4 text-center">
+                    <span v-if="t.hasAirConditioner" class="px-2 bg-blue-100 text-blue-700 rounded text-xs inline-block mb-1">Điều hòa</span>
+                    <span v-if="t.hasPrivateBathroom" class="px-2 bg-emerald-100 text-emerald-700 rounded text-xs ml-1 inline-block mb-1">WC Riêng</span>
+                  </td>
+                  <td class="px-6 py-4 text-right">
+                    <button class="p-1.5 text-[#8B8B8B] hover:text-[#4A4A4A] cursor-pointer"><Pencil class="w-4 h-4" /></button>
+                  </td>
+                </tr>
+                <tr v-if="roomTypesList.length === 0">
+                  <td colspan="5" class="px-6 py-8 text-center text-gray-500 italic">Chưa có dữ liệu Loại phòng</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SƠ ĐỒ KTX (HIERARCHY) -->
+        <div v-if="activeTab === 'Sơ đồ KTX'" class="bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm space-y-6 text-left">
+          <div class="border-b border-[#EAE7E1] pb-4">
+            <h3 class="font-bold text-[#CB997E] text-xl">Sơ đồ Phân cấp KTX (Hierarchy)</h3>
+            <p class="text-sm text-gray-500 mt-1">Cấu trúc vật lý: Tòa nhà &rarr; Phòng &rarr; Giường</p>
+          </div>
+          <div class="bg-[#FDFBF7] p-6 rounded-2xl border border-[#EAE7E1] max-h-[600px] overflow-y-auto">
+            <div v-if="hierarchyData.length === 0" class="text-gray-500 text-center italic py-4">Chưa tải được sơ đồ KTX... (Lưu ý phải bật backend)</div>
+            <div v-for="b in hierarchyData" :key="b.buildingId" class="mb-6">
+              <div class="font-bold text-lg text-emerald-700 mb-2 flex items-center gap-2">
+                <Building2 class="w-5 h-5"/> Tòa {{ b.buildingName }} 
+                <span class="text-xs font-normal text-gray-500 bg-gray-200 px-2 py-0.5 rounded">{{ b.totalRooms }} Phòng</span>
+              </div>
+              <div class="ml-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div v-for="r in b.rooms" :key="r.roomId" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                  <div class="font-bold text-blue-700 mb-2 border-b border-gray-100 pb-2">Phòng {{ r.roomNumber }} <span class="text-xs font-normal text-gray-500">({{ r.roomType }})</span></div>
+                  <div class="space-y-1">
+                    <div v-for="bed in r.beds" :key="bed.bedId" class="text-sm flex items-center gap-2 group">
+                      <div class="w-2 h-2 rounded-full" :class="bed.status === 'Available' ? 'bg-emerald-500' : (bed.status === 'Under Maintenance' ? 'bg-rose-500' : 'bg-gray-400')"></div>
+                      {{ bed.bedName }} 
+                      <span v-if="bed.studentId" class="text-xs text-gray-400 ml-auto flex-shrink-0">SV: {{ bed.studentId }}</span>
+                      <span v-if="bed.status === 'Under Maintenance'" class="text-[10px] text-rose-500 ml-auto font-bold flex-shrink-0">BẢO TRÌ</span>
+                      <button v-if="bed.status !== 'Under Maintenance'" @click="toggleBedMaintenance(bed.bedId)" class="opacity-0 group-hover:opacity-100 ml-auto text-[10px] bg-rose-100 hover:bg-rose-200 text-rose-700 px-2 py-0.5 rounded transition-opacity cursor-pointer">
+                        Khóa
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div v-if="activeTab === 'Quản lý tin tức'" class="bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-sm space-y-6 text-left">
           <div class="flex justify-between items-center border-b border-[#EAE7E1] pb-4">
             <div>
