@@ -330,6 +330,12 @@ const appData: AppData = {
   news,
 };
 
+const handleLogout = () => {
+  loggedInUser.value = null;
+  localStorage.removeItem('current_user');
+  router.push('/');
+};
+
 provide('appData', appData);
 provide('appActions', appActions);
 </script>
@@ -360,10 +366,28 @@ provide('appActions', appActions);
         </div>
 
         <div class="flex items-center gap-3">
-          <router-link to="/auth" class="hidden md:flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-[#F97316] bg-[#F97316]/10 border border-[#F97316]/20 hover:bg-[#F97316] hover:text-white hover:border-[#F97316] rounded-full transition-all duration-300 shadow-xs hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
+          <router-link v-if="!loggedInUser" to="/auth" class="hidden md:flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-[#F97316] bg-[#F97316]/10 border border-[#F97316]/20 hover:bg-[#F97316] hover:text-white hover:border-[#F97316] rounded-full transition-all duration-300 shadow-xs hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
             <LogIn class="w-4 h-4" />
             <span>Cổng đăng nhập</span>
           </router-link>
+
+          <div v-else class="relative group hidden md:block">
+            <button class="flex items-center gap-2 px-4 py-2 bg-[#FDFBF7] rounded-full hover:bg-[#EAE7E1] transition-colors border border-[#EAE7E1]">
+              <div class="w-7 h-7 rounded-full bg-[#6B705C] text-white flex items-center justify-center font-bold text-xs uppercase">
+                {{ loggedInUser.id.substring(0, 2) }}
+              </div>
+              <span class="text-sm font-semibold text-[#4A4A4A]">{{ loggedInUser.id }}</span>
+            </button>
+            
+            <div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-[#EAE7E1] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2">
+              <router-link :to="loggedInUser.role === 'Admin' ? '/admin' : loggedInUser.role === 'Staff' ? '/staff' : '/student'" class="block px-4 py-2 text-sm text-[#4A4A4A] hover:bg-[#FDFBF7] hover:text-[#CB997E]">
+                Thông tin của tôi
+              </router-link>
+              <button @click="handleLogout" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                Đăng xuất
+              </button>
+            </div>
+          </div>
 
         </div>
 

@@ -56,7 +56,8 @@ const router = createRouter({
     { 
       path: '/booking', 
       name: 'Booking',
-      component: BookingView 
+      component: BookingView,
+      meta: { requiresAuth: true }
     },
 
     // --- NHÓM TRANG NỘI BỘ (PRIVATE PORTALS) ---
@@ -76,6 +77,20 @@ const router = createRouter({
       component: StudentPortal 
     }
   ]
+});
+
+router.beforeEach((to, from, next) => {
+  if (to.meta.requiresAuth) {
+    const cachedUser = localStorage.getItem('current_user');
+    if (!cachedUser) {
+      alert('Vui lòng đăng nhập để đăng ký phòng!');
+      next('/auth');
+    } else {
+      next();
+    }
+  } else {
+    next();
+  }
 });
 
 export default router;

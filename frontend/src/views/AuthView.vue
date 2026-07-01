@@ -60,7 +60,7 @@ const handleAuthSubmit = async () => {
           } else if (userData.role === 'Staff') {
             router.push('/staff');
           } else {
-            router.push('/student');
+            router.push('/');
           }
         }, 1000);
       }
