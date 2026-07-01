@@ -210,6 +210,10 @@ const appActions: AppActions = {
   },
 
   // Student Portal Actions
+  addApplication: (app: BookingApplication) => {
+    applications.value.unshift(app);
+  },
+
   addMaintenance: async (req: MaintenanceRequest) => {
     try {
       const newReq = await billingApi.maintenance.create(req);

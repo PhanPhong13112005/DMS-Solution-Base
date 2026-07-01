@@ -125,6 +125,25 @@ const submitBooking = () => {
   isSubmitting.value = true;
   
   setTimeout(() => {
+    const newApp: BookingApplication = {
+      id: 'app-' + Math.random().toString(36).substr(2, 9),
+      fullName: fullName.value,
+      studentId: studentId.value,
+      className: className.value,
+      phone: phone.value,
+      email: email.value,
+      roomId: selectedRoom.value!.id,
+      roomNumber: selectedRoom.value!.roomNumber,
+      building: selectedRoom.value!.building,
+      paymentMethod: paymentMethod.value,
+      status: 'Pending',
+      createdAt: new Date().toISOString().replace('T', ' ').substr(0, 16),
+      evidenceCCCD: 'cccd_front_' + studentId.value + '.jpg',
+      evidenceStudentCard: 'student_card_' + studentId.value + '.jpg'
+    };
+
+    actions.addApplication(newApp);
+    
     isSubmitting.value = false;
     step.value = 5;
   }, 1000);
