@@ -7,7 +7,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="w-full text-left bg-[#FDFBF7] text-[#4A4A4A]">
+  <div class="w-full text-left bg-background text-text-main">
     <section class="bg-[#A5A58D] text-white py-12 px-6 relative overflow-hidden">
       <div class="absolute inset-0 opacity-10 pointer-events-none" :style="{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '16px 16px' }"></div>
       <div class="max-w-7xl mx-auto relative z-10">
@@ -15,7 +15,7 @@ const emit = defineEmits<{
           <span>Trang chủ</span> &gt; <span class="text-white font-semibold">Giới thiệu</span>
         </div>
         <h1 class="text-3xl md:text-5xl font-serif font-light uppercase mb-3 text-white tracking-tight leading-none">
-          Giới thiệu <span class="italic font-normal text-[#CB997E]">Ký túc xá</span>
+          Giới thiệu <span class="italic font-normal text-secondary">Ký túc xá</span>
         </h1>
         <p class="text-base md:text-lg text-white/90 font-light max-w-2xl">
           Môi trường sống hiện đại, an toàn và chuyên nghiệp dành cho sinh viên nội trú Đại học Đại Nam.
@@ -23,16 +23,16 @@ const emit = defineEmits<{
       </div>
     </section>
 
-    <section class="py-16 bg-[#FDFBF7]">
+    <section class="py-16 bg-background">
       <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        <div class="lg:col-span-2 bg-white rounded-[32px] border border-[#EAE7E1] p-8 shadow-xs">
-          <h2 class="text-2xl font-serif font-light text-[#4A4A4A] mb-6 border-b border-[#EAE7E1] pb-3 flex items-center gap-2">
-            <span class="w-1.5 h-6 bg-[#6B705C] rounded-full"></span>
+        <div class="lg:col-span-2 bg-white rounded-[32px] border border-border p-8 shadow-xs">
+          <h2 class="text-2xl font-serif font-light text-text-main mb-6 border-b border-border pb-3 flex items-center gap-2">
+            <span class="w-1.5 h-6 bg-primary rounded-full"></span>
             TỔNG QUAN VỀ KÝ TÚC XÁ DNU
           </h2>
           
-          <div class="space-y-4 text-[#4A4A4A] text-[15px] leading-relaxed mb-8">
+          <div class="space-y-4 text-text-main text-[15px] leading-relaxed mb-8">
             <p>
               Ký túc xá Đại học Đại Nam (DNU) được xây dựng với mục tiêu mang đến một môi trường sống tiện nghi, an toàn và thân thiện cho sinh viên. Tọa lạc ngay trong khuôn viên trường, KTX giúp sinh viên tiết kiệm thời gian di chuyển, tạo điều kiện thuận lợi nhất cho việc học tập và tham gia các hoạt động ngoại khóa.
             </p>
@@ -52,71 +52,71 @@ const emit = defineEmits<{
             </div>
           </div>
 
-          <h3 class="text-xl font-serif text-[#4A4A4A] mb-4 flex items-center gap-2">Mục tiêu & Tầm nhìn</h3>
-          <ul class="space-y-4 text-sm text-[#4A4A4A]">
+          <h3 class="text-xl font-serif text-text-main mb-4 flex items-center gap-2">Mục tiêu & Tầm nhìn</h3>
+          <ul class="space-y-4 text-sm text-text-main">
             <li class="flex items-start gap-3">
-              <CheckCircle class="w-5 h-5 text-[#CB997E] shrink-0 mt-0.5" />
+              <CheckCircle class="w-5 h-5 text-secondary shrink-0 mt-0.5" />
               <div>
-                <strong class="text-[#4A4A4A] block font-semibold">Đảm bảo an toàn tuyệt đối</strong>
-                <span class="text-[#8B8B8B] font-light">Duy trì trật tự và hệ thống giám sát cổng ra vào thông minh liên tục 24/24 giờ để tạo môi trường an tâm.</span>
+                <strong class="text-text-main block font-semibold">Đảm bảo an toàn tuyệt đối</strong>
+                <span class="text-text-muted font-light">Duy trì trật tự và hệ thống giám sát cổng ra vào thông minh liên tục 24/24 giờ để tạo môi trường an tâm.</span>
               </div>
             </li>
             <li class="flex items-start gap-3">
-              <CheckCircle class="w-5 h-5 text-[#CB997E] shrink-0 mt-0.5" />
+              <CheckCircle class="w-5 h-5 text-secondary shrink-0 mt-0.5" />
               <div>
-                <strong class="text-[#4A4A4A] block font-semibold">Tối ưu hóa môi trường tự học</strong>
-                <span class="text-[#8B8B8B] font-light">Cung cấp máy móc, phòng đọc, wifi ổn định hỗ trợ chuẩn mực tinh thần học tập nhóm và tự nghiên cứu.</span>
+                <strong class="text-text-main block font-semibold">Tối ưu hóa môi trường tự học</strong>
+                <span class="text-text-muted font-light">Cung cấp máy móc, phòng đọc, wifi ổn định hỗ trợ chuẩn mực tinh thần học tập nhóm và tự nghiên cứu.</span>
               </div>
             </li>
             <li class="flex items-start gap-3">
-              <CheckCircle class="w-5 h-5 text-[#CB997E] shrink-0 mt-0.5" />
+              <CheckCircle class="w-5 h-5 text-secondary shrink-0 mt-0.5" />
               <div>
-                <strong class="text-[#4A4A4A] block font-semibold">Phương châm phục vụ chuyên nghiệp</strong>
-                <span class="text-[#8B8B8B] font-light">Luôn tiếp thu phản hồi, phản ứng lập tức với hư hỏng điện nước và bảo đảm nếp sống vệ sinh văn hóa.</span>
+                <strong class="text-text-main block font-semibold">Phương châm phục vụ chuyên nghiệp</strong>
+                <span class="text-text-muted font-light">Luôn tiếp thu phản hồi, phản ứng lập tức với hư hỏng điện nước và bảo đảm nếp sống vệ sinh văn hóa.</span>
               </div>
             </li>
           </ul>
         </div>
 
         <div class="space-y-6">
-          <div class="bg-white rounded-[32px] border border-[#EAE7E1] overflow-hidden shadow-xs">
-            <div class="bg-[#6B705C] text-white p-6">
+          <div class="bg-white rounded-[32px] border border-border overflow-hidden shadow-xs">
+            <div class="bg-primary text-white p-6">
               <h3 class="font-serif font-light text-lg">BAN QUẢN LÝ KTX</h3>
-              <p class="text-xs text-[#FDFBF7]/80 mt-1">Hỗ trợ trực tiếp các nhu cầu phát sinh</p>
+              <p class="text-xs text-background/80 mt-1">Hỗ trợ trực tiếp các nhu cầu phát sinh</p>
             </div>
             <div class="p-6 space-y-6">
               <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-[#FDFBF7] border border-[#EAE7E1] flex items-center justify-center text-[#6B705C] shrink-0">
+                <div class="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center text-primary shrink-0">
                   <Phone class="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <div class="text-xs text-[#8B8B8B]">Hotline hỗ trợ</div>
-                  <div class="text-sm text-[#4A4A4A] font-semibold font-mono">0243.859.1484</div>
+                  <div class="text-xs text-text-muted">Hotline hỗ trợ</div>
+                  <div class="text-sm text-text-main font-semibold font-mono">0243.859.1484</div>
                 </div>
               </div>
 
               <div class="flex items-center gap-4">
-                <div class="w-10 h-10 rounded-full bg-[#FDFBF7] border border-[#EAE7E1] flex items-center justify-center text-[#6B705C] shrink-0">
+                <div class="w-10 h-10 rounded-full bg-background border border-border flex items-center justify-center text-primary shrink-0">
                   <Mail class="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <div class="text-xs text-[#8B8B8B]">Email liên hệ</div>
-                  <div class="text-sm text-[#4A4A4A] font-semibold font-mono">ktx@dainam.edu.vn</div>
+                  <div class="text-xs text-text-muted">Email liên hệ</div>
+                  <div class="text-sm text-text-main font-semibold font-mono">ktx@dainam.edu.vn</div>
                 </div>
               </div>
 
-              <button @click="emit('navigate', 'Contact')" class="w-full py-3.5 bg-[#CB997E] hover:bg-[#A47148] text-white font-bold rounded-full shadow-sm shadow-[#CB997E]/10 transition-all cursor-pointer">
+              <button @click="emit('navigate', 'Contact')" class="w-full py-3.5 bg-secondary hover:bg-[#A47148] text-white font-bold rounded-full shadow-sm shadow-secondary/10 transition-all cursor-pointer">
                 Liên hệ trực tiếp
               </button>
             </div>
           </div>
 
-          <div class="bg-[#8B9178] text-white rounded-[32px] p-6 relative overflow-hidden shadow-xs">
+          <div class="bg-primary-hover text-white rounded-[32px] p-6 relative overflow-hidden shadow-xs">
             <div class="absolute right-0 bottom-0 opacity-10 pointer-events-none translate-x-3 translate-y-3">
               <ShieldCheck class="w-40 h-40" />
             </div>
-            <h3 class="font-serif font-light text-lg mb-2 flex items-center gap-2 text-[#FDFBF7]">
-              <ShieldCheck class="w-5 h-5 text-[#CB997E]" />
+            <h3 class="font-serif font-light text-lg mb-2 flex items-center gap-2 text-background">
+              <ShieldCheck class="w-5 h-5 text-secondary" />
               Cam kết 100%
             </h3>
             <p class="text-xs text-white/95 font-light leading-relaxed mb-4">
@@ -124,7 +124,7 @@ const emit = defineEmits<{
             </p>
             <div class="flex items-center gap-4 border-t border-white/10 pt-4 mt-4">
               <div class="flex items-center gap-1">
-                <Award class="w-4 h-4 text-[#CB997E]" />
+                <Award class="w-4 h-4 text-secondary" />
                 <span class="text-xs font-semibold">Chuẩn quốc tế</span>
               </div>
               <div class="flex items-center gap-1">
