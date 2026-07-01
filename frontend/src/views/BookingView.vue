@@ -3,7 +3,6 @@ import { ref, computed } from 'vue';
 import { Search, MapPin, Users, Heart, ClipboardCheck, ArrowRight, ShieldAlert, Upload, HelpCircle, CheckCircle2, UserCheck, CreditCard, Landmark, Coins, AlertCircle } from 'lucide-vue-next';
 import type { BookingApplication } from '../types';
 import { useAppData } from '../composables/useAppData';
-import { contractApi } from '../services/contract.service';
 
 // ============ USE TYPE-SAFE APP DATA & ACTIONS ============
 const { rooms, actions } = useAppData();
@@ -115,7 +114,7 @@ const handleNextStep = () => {
   }
 };
 
-const submitBooking = async () => {
+const submitBooking = () => {
   localError.value = null;
   if (!agreeRules.value) {
     localError.value = 'Bạn phải tích chọn đồng ý cam kết với nội quy KTX mới có thể tiếp tục!';
@@ -125,31 +124,10 @@ const submitBooking = async () => {
 
   isSubmitting.value = true;
   
-  try {
-    const newApp = {
-      fullName: fullName.value,
-      studentId: studentId.value,
-      className: className.value,
-      phone: phone.value,
-      email: email.value,
-      roomId: selectedRoom.value!.id,
-      roomNumber: selectedRoom.value!.roomNumber,
-      building: selectedRoom.value!.building,
-      paymentMethod: paymentMethod.value,
-      status: 'Pending' as const,
-      evidenceCCCD: 'cccd_front_' + studentId.value + '.jpg',
-      evidenceStudentCard: 'student_card_' + studentId.value + '.jpg'
-    };
-    
-    await contractApi.applications.create(newApp);
-    
+  setTimeout(() => {
     isSubmitting.value = false;
     step.value = 5;
-  } catch (error) {
-    console.error('Lỗi khi gửi đơn đăng ký:', error);
-    localError.value = 'Có lỗi xảy ra khi gửi đơn đăng ký. Vui lòng thử lại sau.';
-    isSubmitting.value = false;
-  }
+  }, 1000);
 };
 
 const formatCurrency = (amount: number) => {
