@@ -65,10 +65,10 @@ const loadFacilitiesData = async () => {
       roomBuildingApi.roomTypes.getAll(),
       roomBuildingApi.buildings.getHierarchy()
     ]);
-    if (bRes) buildingsList.value = bRes;
-    if (rRes) roomsList.value = rRes;
-    if (tRes) roomTypesList.value = tRes;
-    if (hRes) hierarchyData.value = hRes;
+    if (bRes) buildingsList.value = bRes.data || bRes.Data || (Array.isArray(bRes) ? bRes : []);
+    if (rRes) roomsList.value = rRes.data || rRes.Data || (Array.isArray(rRes) ? rRes : []);
+    if (tRes) roomTypesList.value = tRes.data || tRes.Data || (Array.isArray(tRes) ? tRes : []);
+    if (hRes) hierarchyData.value = hRes.data || hRes.Data || (Array.isArray(hRes) ? hRes : []);
   } catch (error) {
     console.error("Lỗi tải dữ liệu phòng:", error);
   }
