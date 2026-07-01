@@ -44,8 +44,7 @@ builder.Services.AddCors(options =>
 });
 
 // 5. CẤU HÌNH RABBITMQ (Nhận sự kiện ContractCreatedEvent từ Nhóm 2)
-// TẠM THỜI COMMENT ĐỂ CHẠY LOCAL KHÔNG LỖI RABBITMQ
-/*
+// TẠM THỜI MỞ LẠI RABBITMQ ĐỂ CHẠY ĐỒNG BỘ
 builder.Services.AddMassTransit(x =>
 {
     // Đăng ký Consumer
@@ -64,7 +63,7 @@ builder.Services.AddMassTransit(x =>
         });
     });
 });
-*/
+
 
 // 6. CẤU HÌNH JWT AUTHENTICATION
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

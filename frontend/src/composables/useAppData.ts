@@ -51,6 +51,7 @@ export interface AppActions {
   navigate: (screenName: string) => void;
 
   // Student Portal
+  addApplication: (app: BookingApplication) => void;
   addMaintenance: (req: MaintenanceRequest) => Promise<void> | void;
   updateMaintenanceStatus: (id: string, status: MaintenanceRequest['status']) => Promise<void> | void;
   payInvoice: (invoiceId: string) => Promise<void> | void;
@@ -141,6 +142,7 @@ export const useAppData = () => {
     navigate: (screenName: string) => appActions?.navigate?.(screenName),
 
     // Student Portal
+    addApplication: (app: BookingApplication) => appActions?.addApplication?.(app),
     addMaintenance: async (req: MaintenanceRequest) => { await appActions?.addMaintenance?.(req); },
     updateMaintenanceStatus: async (id: string, status: MaintenanceRequest['status']) => {
       await appActions?.updateMaintenanceStatus?.(id, status);

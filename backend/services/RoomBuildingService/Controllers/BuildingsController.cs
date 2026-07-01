@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RoomBuildingService.Data;
 using RoomBuildingService.Models;
@@ -106,6 +106,39 @@ namespace RoomBuildingService.Controllers
         private bool BuildingExists(int id)
         {
             return _context.Buildings.Any(e => e.Id == id);
+        }
+
+        // 6. LẤY SƠ ĐỒ TÒA NHÀ - PHÒNG - GIƯỜNG (HIERARCHY)
+        // GET: api/Buildings/hierarchy
+        [HttpGet("hierarchy")]
+        public async Task<ActionResult<IEnumerable<object>>> GetHierarchy()
+        {
+            var hierarchy = await _context.Buildings
+                .Select(b => new
+                {
+                    buildingId = b.Id,
+                    buildingName = b.Name,
+                    rooms = _context.Rooms
+                        .Where(r => r.BuildingId == b.Id)
+                        .Select(r => new
+                        {
+                            roomId = r.Id,
+                            roomNumber = r.RoomNumber,
+                            floor = r.FloorNumber,
+                            beds = _context.Beds
+                                .Where(bed => bed.RoomId == r.Id)
+                                .Select(bed => new
+                                {
+                                    bedId = bed.Id,
+                                    bedName = bed.BedName,
+                                    status = bed.Status,
+                                    studentId = bed.AssignedStudentId
+                                }).ToList()
+                        }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(hierarchy);
         }
     }
 }

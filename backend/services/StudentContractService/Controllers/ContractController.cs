@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StudentContractService.Data;
 using StudentContractService.Models;
@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace StudentContractService.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/StudentContracts")]
     [ApiController]
     public class ContractController : ControllerBase
     {
@@ -71,7 +71,7 @@ namespace StudentContractService.Controllers
         }
 
         // 4. THANH LÝ / CHẤM DỨT HỢP ĐỒNG
-        [HttpPut("terminate/{id}")]
+        [HttpPut("{id}/terminate")]
         public async Task<IActionResult> TerminateContract(Guid id)
         {
             var contract = await _context.Contracts.FindAsync(id);
@@ -87,7 +87,7 @@ namespace StudentContractService.Controllers
 
         
         // 5. API DUYỆT HỢP ĐỒNG & TỰ ĐỘNG PHÁT SỰ KIỆN SANG BÊN HÓA ĐƠN
-        [HttpPut("approve/{id}")]
+        [HttpPut("{id}/approve")]
         public async Task<IActionResult> ApproveContract(Guid id)
         {
             // 1. Tìm hợp đồng
@@ -106,18 +106,25 @@ namespace StudentContractService.Controllers
             // 3. BẮN TIN SANG RABBITMQ (ĐÃ SỬA TÊN VÀ KIỂU DỮ LIỆU ĐỂ KHỚP BÊN BILLING)
             await _publishEndpoint.Publish<DMS.Shared.IContractApprovedEvent>(new
             {
-                // Mẹo biến Guid thành số int dương để khớp với kiểu Int32 bên Hóa đơn
                 ContractId = Math.Abs(contract.Id.GetHashCode()),
-
                 StudentId = contract.StudentId.ToString(),
-
-                // ĐỔI TỪ RoomPrice THÀNH Amount ĐỂ KHỚP VỚI BẢNG INVOICES
+                RoomId = contract.RoomId,
                 Amount = contract.RoomPrice,
-
-                Content = $"Hóa đơn tiền phòng cho hợp đồng mới của sinh viên mã số {contract.StudentId}"
+                Content = $"Hóa đơn tiền phòng cho hợp đồng mới của sinh viên mã số {contract.StudentId}",
+                StartDate = contract.StartDate
             });
 
             return Ok(new { message = "Đã duyệt hợp đồng thành công! Hệ thống đang tự động lập hóa đơn thanh toán.", data = contract });
+        }
+
+        [HttpPut("{id}/reject")]
+        public async Task<IActionResult> RejectContract(Guid id)
+        {
+            var contract = await _context.Contracts.FindAsync(id);
+            if (contract == null) return NotFound(new { message = "Không tìm thấy hợp đồng!" });
+            contract.Status = "Rejected";
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Đã từ chối hợp đồng!" });
         }
     }
 }

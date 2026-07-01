@@ -8,7 +8,7 @@ import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
  * - Request/Response type safety
  */
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://143.198.83.224:5000/api';
 const tokenKey = import.meta.env.VITE_JWT_TOKEN_KEY || 'auth_token';
 const storageType = import.meta.env.VITE_JWT_STORAGE_TYPE || 'localStorage';
 

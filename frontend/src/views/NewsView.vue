@@ -110,5 +110,43 @@ const filteredNews = computed(() => {
         </div>
       </aside>
     </section>
+
+    <!-- Modal Chi tiết bài báo -->
+    <div v-if="selectedArticle" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="selectedArticle = null">
+      <div class="bg-white rounded-[32px] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl relative animate-in fade-in zoom-in duration-300">
+        <button @click="selectedArticle = null" class="absolute top-4 right-4 md:top-6 md:right-6 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-[#4A4A4A] hover:bg-white transition-colors z-10 shadow-sm cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        
+        <img :src="selectedArticle.imageUrl || 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=1200&q=80'" class="w-full h-64 object-cover" />
+        
+        <div class="p-8 md:p-10 text-left">
+          <div class="flex flex-wrap items-center gap-3 mb-4">
+            <span class="text-[10px] font-bold text-[#CB997E] uppercase px-3 py-1 bg-[#CB997E]/10 rounded-full">
+              {{ getCategoryName(selectedArticle.category) }}
+            </span>
+            <span class="flex items-center text-xs text-[#8B8B8B] font-medium uppercase tracking-wider">
+              <Calendar class="w-3.5 h-3.5 mr-1.5" />
+              {{ new Date(selectedArticle.createdAt).toLocaleDateString('vi-VN') }}
+            </span>
+          </div>
+          
+          <h2 class="text-2xl md:text-3xl font-serif text-[#4A4A4A] mb-6 leading-tight">
+            {{ selectedArticle.title === 'string' ? 'Tiêu đề chưa cập nhật' : selectedArticle.title }}
+          </h2>
+          
+          <div class="text-[#4A4A4A]/90 font-light leading-relaxed whitespace-pre-line text-sm md:text-base">
+            {{ selectedArticle.content }}
+          </div>
+          
+          <div class="mt-10 pt-6 border-t border-[#EAE7E1] flex items-center justify-between">
+            <div class="text-sm">
+              <span class="text-[#8B8B8B] mr-2">Đăng bởi:</span>
+              <span class="font-bold text-[#6B705C]">{{ selectedArticle.author || 'Ban Quản Lý' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

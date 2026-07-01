@@ -5,91 +5,154 @@
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/Buildings/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }]
+      "DownstreamHostAndPorts": [{ "Host": "room-service", "Port": 8083 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/Buildings",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/Buildings",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "room-service", "Port": 8083 }]
     },
     {
       "UpstreamPathTemplate": "/api/Rooms/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/Rooms/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }]
+      "DownstreamHostAndPorts": [{ "Host": "room-service", "Port": 8083 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/Rooms",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/Rooms",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "room-service", "Port": 8083 }]
     },
     {
       "UpstreamPathTemplate": "/api/Beds/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/Beds/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }]
+      "DownstreamHostAndPorts": [{ "Host": "room-service", "Port": 8083 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/Beds",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/Beds",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "room-service", "Port": 8083 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/RoomTypes/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/RoomTypes/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "room-service", "Port": 8083 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/RoomTypes",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/RoomTypes",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "room-service", "Port": 8083 }]
     },
     {
       "UpstreamPathTemplate": "/api/RoomAmenities/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/RoomAmenities/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }]
+      "DownstreamHostAndPorts": [{ "Host": "room-service", "Port": 8083 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/RoomAmenities",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/RoomAmenities",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "room-service", "Port": 8083 }]
     },
     {
       "UpstreamPathTemplate": "/api/News/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/News/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8083 }]
+      "DownstreamHostAndPorts": [{ "Host": "room-service", "Port": 8083 }]
     },
     {
-      "UpstreamPathTemplate": "/api/BookingApplications/{everything}",
+      "UpstreamPathTemplate": "/api/News",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
-      "DownstreamPathTemplate": "/api/BookingApplications/{everything}",
+      "DownstreamPathTemplate": "/api/News",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8081 }]
+      "DownstreamHostAndPorts": [{ "Host": "room-service", "Port": 8083 }]
     },
     {
-      "UpstreamPathTemplate": "/api/TransferRequests/{everything}",
+      "UpstreamPathTemplate": "/api/StudentContracts/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
-      "DownstreamPathTemplate": "/api/TransferRequests/{everything}",
+      "DownstreamPathTemplate": "/api/StudentContracts/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8081 }]
+      "DownstreamHostAndPorts": [{ "Host": "student-service", "Port": 8081 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/StudentContracts",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/StudentContracts",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "student-service", "Port": 8081 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/Transfers/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/Transfers/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "student-service", "Port": 8081 }]
+    },
+    {
+      "UpstreamPathTemplate": "/api/Transfers",
+      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
+      "DownstreamPathTemplate": "/api/Transfers",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "student-service", "Port": 8081 }]
     },
     {
       "UpstreamPathTemplate": "/api/bills",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/v1/bills",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
+      "DownstreamHostAndPorts": [{ "Host": "billing-service", "Port": 8082 }]
     },
     {
       "UpstreamPathTemplate": "/api/bills/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/v1/bills/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
+      "DownstreamHostAndPorts": [{ "Host": "billing-service", "Port": 8082 }]
     },
     {
       "UpstreamPathTemplate": "/api/maintenance",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/v1/maintenance",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
+      "DownstreamHostAndPorts": [{ "Host": "billing-service", "Port": 8082 }]
     },
     {
       "UpstreamPathTemplate": "/api/maintenance/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/v1/maintenance/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
+      "DownstreamHostAndPorts": [{ "Host": "billing-service", "Port": 8082 }]
     },
     {
       "UpstreamPathTemplate": "/api/auth",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/v1/auth",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
+      "DownstreamHostAndPorts": [{ "Host": "billing-service", "Port": 8082 }]
     },
     {
       "UpstreamPathTemplate": "/api/auth/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
       "DownstreamPathTemplate": "/api/v1/auth/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 8082 }]
+      "DownstreamHostAndPorts": [{ "Host": "billing-service", "Port": 8082 }]
     }
   ],
   "GlobalConfiguration": { 

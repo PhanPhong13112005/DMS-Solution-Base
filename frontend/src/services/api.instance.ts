@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api', // Đi qua Ocelot Gateway
+  baseURL: 'http://143.198.83.224:5000/api', // Đi qua Ocelot Gateway
   headers: { 'Content-Type': 'application/json' }
 });
 
@@ -18,7 +18,7 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('jwt_token');
-      window.location.href = '/auth'; // Đá về trang login nếu hết hạn token
+      // Không dùng window.location.href để tránh vòng lặp vô tận (infinite reload loop)
     }
     return Promise.reject(error);
   }

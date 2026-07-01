@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Backend Nhóm 3 chạy ở cổng 8082
+// Backend Nhóm 3 chạy qua Gateway ở cổng 5000
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8082/api/v1',
+  baseURL: 'http://143.198.83.224:5000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -30,7 +30,7 @@ apiClient.interceptors.response.use(
     if (error.response && error.response.status === 401 && !error.config.url?.includes('/auth/login')) {
       localStorage.removeItem('jwt_token');
       localStorage.removeItem('current_user');
-      window.location.href = '/auth'; // Đá văng ra màn đăng nhập
+      // Không dùng window.location.href để tránh vòng lặp vô tận (infinite reload loop)
     }
     return Promise.reject(error);
   }

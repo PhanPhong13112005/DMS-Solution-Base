@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'; // Thêm dòng này
+import { ref, onMounted } from 'vue';
+import { Compass, BookOpen, ShieldCheck, HelpCircle, ArrowRight, Home, Users, Flame, Wind, Star, ChevronRight, MessageCircle, Calendar } from 'lucide-vue-next';
+import type { News } from '../types';
+import { newsApi } from '../services/room-building.service';
+
 const router = useRouter(); // Thêm dòng này
-import { ref } from 'vue';
-import { Compass, BookOpen, ShieldCheck, HelpCircle, ArrowRight, Home, Users, Flame, Wind, Star, ChevronRight, MessageCircle } from 'lucide-vue-next';
 
 // Định nghĩa các sự kiện để truyền lên App.vue (thay thế cho onNavigate của React)
 const emit = defineEmits<{
@@ -11,6 +14,23 @@ const emit = defineEmits<{
 }>();
 
 const activeSlide = ref(0);
+const recentNews = ref<News[]>([]);
+
+const loadNewsData = async () => {
+  try {
+    const res = await newsApi.getAll();
+    if (res && res.length > 0) {
+      // Chỉ lấy 3 tin tức mới nhất
+      recentNews.value = res.slice(0, 3);
+    }
+  } catch (error) {
+    console.error('Lỗi tải dữ liệu tin tức trên trang chủ:', error);
+  }
+};
+
+onMounted(() => {
+  loadNewsData();
+});
 
 const heroSlides = [
   {
@@ -297,6 +317,50 @@ const heroSlides = [
             <p class="text-xs text-[#8B8B8B] font-light leading-relaxed">Hệ thống camera AI giám sát thông minh góc rộng, tuần tra trực đêm phối hợp.</p>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="py-20 bg-white border-t border-[#EAE7E1]">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="flex justify-between items-end mb-12">
+          <div>
+            <h2 class="text-3xl font-serif font-light text-[#4A4A4A] tracking-tight">Tin tức & <span class="italic font-normal text-[#CB997E]">Sự kiện</span></h2>
+            <p class="text-[#8B8B8B] mt-3 font-light text-sm">Cập nhật những thông báo và hoạt động mới nhất tại Ký túc xá.</p>
+          </div>
+          <button @click="router.push('/news')" class="hidden md:flex items-center gap-2 text-sm font-bold text-[#6B705C] hover:text-[#CB997E] transition-colors cursor-pointer">
+            Xem tất cả <ArrowRight class="w-4 h-4" />
+          </button>
+        </div>
+
+        <div v-if="recentNews.length > 0" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <article v-for="news in recentNews" :key="news.id" class="group cursor-pointer bg-[#FDFBF7] rounded-[24px] border border-[#EAE7E1] overflow-hidden hover:shadow-md transition-all duration-300" @click="router.push('/news')">
+            <div class="h-48 overflow-hidden relative">
+              <img :src="news.imageUrl || 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=600&q=80'" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              <div class="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-[#CB997E] text-[10px] font-bold uppercase px-3 py-1 rounded-full shadow-sm">
+                {{ news.category || 'Thông báo' }}
+              </div>
+            </div>
+            <div class="p-6">
+              <h3 class="font-bold text-[#4A4A4A] text-lg mb-3 group-hover:text-[#CB997E] transition-colors line-clamp-2">
+                {{ news.title === 'string' ? 'Tin tức KTX' : news.title }}
+              </h3>
+              <p class="text-sm text-[#8B8B8B] font-light line-clamp-2 mb-4">
+                {{ news.content }}
+              </p>
+              <div class="flex items-center text-xs text-[#8B8B8B] font-medium uppercase tracking-wider">
+                <Calendar class="w-3.5 h-3.5 mr-1.5" />
+                {{ new Date(news.createdAt).toLocaleDateString('vi-VN') }}
+              </div>
+            </div>
+          </article>
+        </div>
+        <div v-else class="text-center py-12 text-[#8B8B8B] bg-[#FDFBF7] rounded-[24px] border border-[#EAE7E1]">
+          Đang tải tin tức...
+        </div>
+        
+        <button @click="router.push('/news')" class="mt-8 w-full md:hidden flex justify-center items-center gap-2 text-sm font-bold text-[#6B705C] bg-[#FDFBF7] border border-[#EAE7E1] py-3 rounded-xl hover:bg-[#EAE7E1] transition-colors cursor-pointer">
+          Xem tất cả tin tức <ArrowRight class="w-4 h-4" />
+        </button>
       </div>
     </section>
   </div>
