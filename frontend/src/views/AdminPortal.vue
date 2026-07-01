@@ -1786,6 +1786,7 @@ const confirmDeleteRoom = async () => {
               <div>
                 <h4 class="font-serif text-slate-950 text-base">{{ app.fullName }}</h4>
                 <p class="text-xs text-text-muted mt-1 font-mono">MSSV: {{ app.studentId }} • Lớp: {{ app.className }} • Phòng đăng ký: {{ app.roomNumber }}</p>
+                <p v-if="app.updatedAt" class="text-[10px] text-text-muted mt-1 font-mono italic">Lúc: {{ new Date(app.updatedAt).toLocaleString('vi-VN') }}</p>
               </div>
               <div class="flex gap-2">
                 <span :class="['px-4 py-2 font-bold text-xs rounded-full', app.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700']">

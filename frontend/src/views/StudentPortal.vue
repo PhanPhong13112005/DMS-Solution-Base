@@ -83,6 +83,29 @@ onMounted(async () => {
   }
 });
 
+import { watchEffect } from 'vue';
+
+watchEffect(() => {
+  if (!myRoom.value && myApplication.value && myApplication.value.status === 'Approved') {
+    // Mock room data from approved application to fix local state without backend
+    let capacity = 4;
+    let price = 800000;
+    const roomNumStr = String(myApplication.value.roomNumber || '');
+    if (roomNumStr.startsWith('2')) capacity = 2;
+    if (roomNumStr.startsWith('6')) capacity = 6;
+    
+    myRoom.value = {
+      id: 1,
+      roomNumber: myApplication.value.roomNumber,
+      buildingName: myApplication.value.building,
+      roomType: 'Phòng ' + capacity + ' người',
+      myBed: { bedName: 'Giường số 1' },
+      roommates: capacity === 4 ? [1,2,3] : (capacity === 2 ? [1] : [1,2,3,4,5]), // just a fake array length for roommates
+      price: price
+    };
+  }
+});
+
 // Student contact info with safe defaults
 const phone = computed(() => studentUser.value?.phone ?? '0978.112.551');
 const email = computed(() => studentUser.value?.email ?? 'hungnguyen@dainam.edu.vn');

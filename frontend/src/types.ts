@@ -99,6 +99,7 @@ export interface BookingApplication {
   paymentMethod: 'bank' | 'e-wallet' | 'direct';
   status: 'Pending' | 'Approved' | 'Rejected';
   createdAt: string;
+  updatedAt?: string;
   evidenceCCCD?: string;
   evidenceStudentCard?: string;
 }
