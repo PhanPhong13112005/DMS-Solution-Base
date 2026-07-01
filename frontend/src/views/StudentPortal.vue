@@ -321,7 +321,7 @@ const menuItems = [
         <div class="p-3 bg-white/10 rounded-2xl flex items-center gap-3 mb-3">
           <div
             class="w-9 h-9 rounded-full bg-[#CB997E] text-white font-extrabold flex items-center justify-center border border-white/10 font-mono text-sm leading-none">
-            {{ getInitials(studentUser.name) }}</div>
+            SV</div>
           <div class="overflow-hidden">
             <div class="font-bold text-xs truncate text-white">{{ studentUser.name }}</div>
             <div class="text-[10px] text-[#FDFBF7]/80 font-mono">MSSV: {{ studentUser.id }}</div>
@@ -348,7 +348,7 @@ const menuItems = [
           </div>
           <div
             class="w-10 h-10 rounded-full bg-[#6B705C] text-white border border-[#EAE7E1] flex items-center justify-center font-extrabold font-mono shadow-xs text-sm">
-            {{ getInitials(studentUser.name) }}</div>
+            SV</div>
         </div>
       </header>
 
