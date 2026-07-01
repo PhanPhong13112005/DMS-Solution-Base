@@ -85,7 +85,7 @@ export default {
   methods: {
     async fetchBuildings() {
       try {
-        const response = await axios.get('http://localhost:5000/api/Buildings');
+        const response = await axios.get('http://143.198.83.224:5000/api/Buildings');
         this.buildings = response.data;
       } catch (error) {
         console.error("Lỗi lấy danh sách tòa nhà:", error);
@@ -93,7 +93,7 @@ export default {
     },
     async handleSearch() {
       try {
-        const response = await axios.get('http://localhost:5000/api/Rooms/staff/search', {
+        const response = await axios.get('http://143.198.83.224:5000/api/Rooms/staff/search', {
           params: {
             buildingId: this.filters.buildingId || null,
             floor: this.filters.floor || null,
