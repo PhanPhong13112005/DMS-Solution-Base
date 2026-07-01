@@ -215,6 +215,8 @@ const filteredIssues = computed(() => {
 });
 
 const { paginatedItems: pApps, currentPage: cpApps, totalPages: tpApps, nextPage: npApps, prevPage: ppApps } = usePagination(pendingApps, 5);
+const historyApps = computed(() => (props.applications || []).filter(a => a.status !== 'Pending'));
+const { paginatedItems: pHistoryApps, currentPage: cpHistoryApps, totalPages: tpHistoryApps, nextPage: npHistoryApps, prevPage: ppHistoryApps } = usePagination(historyApps, 5);
 const { paginatedItems: pIssues, currentPage: cpIssues, totalPages: tpIssues, nextPage: npIssues, prevPage: ppIssues } = usePagination(filteredIssues, 5);
 const { paginatedItems: pNews, currentPage: cpNews, totalPages: tpNews, nextPage: npNews, prevPage: ppNews } = usePagination(computedNews, 4);
 
@@ -1774,6 +1776,31 @@ const confirmDeleteRoom = async () => {
             <div class="flex gap-2">
               <button @click="ppApps" :disabled="cpApps === 1" class="px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-bold text-text-main disabled:opacity-50 hover:bg-white transition-colors">Trước</button>
               <button @click="npApps" :disabled="cpApps === tpApps" class="px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-bold text-text-main disabled:opacity-50 hover:bg-white transition-colors">Sau</button>
+            </div>
+          </div>
+
+          <!-- Lịch sử phê duyệt -->
+          <h3 class="font-serif text-text-main text-lg border-b border-border pb-3.5 mt-8">Lịch sử phê duyệt</h3>
+          <div class="space-y-4">
+            <div v-for="app in pHistoryApps" :key="app.id" class="p-5 border border-border bg-background/30 rounded-2xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 opacity-75 hover:opacity-100 transition-opacity">
+              <div>
+                <h4 class="font-serif text-slate-950 text-base">{{ app.fullName }}</h4>
+                <p class="text-xs text-text-muted mt-1 font-mono">MSSV: {{ app.studentId }} • Lớp: {{ app.className }} • Phòng đăng ký: {{ app.roomNumber }}</p>
+              </div>
+              <div class="flex gap-2">
+                <span :class="['px-4 py-2 font-bold text-xs rounded-full', app.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700']">
+                  {{ app.status === 'Approved' ? 'Đã duyệt' : 'Đã từ chối' }}
+                </span>
+              </div>
+            </div>
+            <div v-if="historyApps.length === 0" class="text-center py-12 text-text-muted italic text-xs font-mono">Chưa có lịch sử phê duyệt nào.</div>
+          </div>
+          <!-- Phân trang Lịch sử -->
+          <div v-if="historyApps.length > 0" class="flex justify-between items-center mt-6 pt-4 border-t border-border">
+            <span class="text-xs text-text-muted">Trang {{ cpHistoryApps }} / {{ tpHistoryApps }}</span>
+            <div class="flex gap-2">
+              <button @click="ppHistoryApps" :disabled="cpHistoryApps === 1" class="px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-bold text-text-main disabled:opacity-50 hover:bg-white transition-colors cursor-pointer">Trước</button>
+              <button @click="npHistoryApps" :disabled="cpHistoryApps === tpHistoryApps" class="px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-bold text-text-main disabled:opacity-50 hover:bg-white transition-colors cursor-pointer">Sau</button>
             </div>
           </div>
         </div>
