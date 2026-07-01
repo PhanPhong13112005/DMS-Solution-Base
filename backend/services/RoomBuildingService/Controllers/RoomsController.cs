@@ -12,12 +12,14 @@ namespace RoomBuildingService.Controllers
     {
         private readonly RoomDbContext _context;
         private readonly IRoomService _roomService;
+        private readonly MassTransit.IPublishEndpoint _publishEndpoint;
 
         // Tiêm cả DbContext và IRoomService vào Controller
-        public RoomsController(RoomDbContext context, IRoomService roomService)
+        public RoomsController(RoomDbContext context, IRoomService roomService, MassTransit.IPublishEndpoint publishEndpoint)
         {
             _context = context;
             _roomService = roomService;
+            _publishEndpoint = publishEndpoint;
         }
 
         // GET: api/Rooms
@@ -257,5 +259,36 @@ namespace RoomBuildingService.Controllers
 
             return Ok(result);
         }
+
+        // ==========================================
+        // KHÓA/MỞ KHÓA PHÒNG
+        // PUT: api/Rooms/Maintenance/5
+        // ==========================================
+        [HttpPut("Maintenance/{id}")]
+        public async Task<IActionResult> RequestMaintenance(int id, [FromBody] RoomMaintenanceRequest request)
+        {
+            var room = await _context.Rooms.FindAsync(id);
+            if (room == null) return NotFound(new { message = "Không tìm thấy phòng." });
+
+            room.Status = request.Status; // VD: "Under Maintenance", "Còn chỗ", "Đầy"
+            await _context.SaveChangesAsync();
+
+            // Publish sự kiện
+            await _publishEndpoint.Publish(new RoomBuildingService.Events.RoomStatusChanged
+            {
+                RoomId = id,
+                Status = room.Status,
+                Reason = request.Reason,
+                ChangedAt = System.DateTime.UtcNow
+            });
+
+            return Ok(new { message = "Đã cập nhật trạng thái phòng thành công!" });
+        }
+    }
+
+    public class RoomMaintenanceRequest
+    {
+        public string Status { get; set; } = null!;
+        public string? Reason { get; set; }
     }
 }

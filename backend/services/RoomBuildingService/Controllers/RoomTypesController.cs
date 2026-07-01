@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RoomBuildingService.Data;
 using RoomBuildingService.Models;
@@ -10,10 +10,12 @@ namespace RoomBuildingService.Controllers
     public class RoomTypesController : ControllerBase
     {
         private readonly RoomDbContext _context;
+        private readonly MassTransit.IPublishEndpoint _publishEndpoint;
 
-        public RoomTypesController(RoomDbContext context)
+        public RoomTypesController(RoomDbContext context, MassTransit.IPublishEndpoint publishEndpoint)
         {
             _context = context;
+            _publishEndpoint = publishEndpoint;
         }
 
         [HttpGet]
@@ -57,6 +59,14 @@ namespace RoomBuildingService.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+
+                // Publish sự kiện thay đổi giá phòng
+                await _publishEndpoint.Publish(new RoomBuildingService.Events.RoomPriceUpdated
+                {
+                    RoomTypeId = id,
+                    NewPrice = roomType.MonthlyPrice,
+                    UpdatedAt = System.DateTime.UtcNow
+                });
             }
             catch (DbUpdateConcurrencyException)
             {

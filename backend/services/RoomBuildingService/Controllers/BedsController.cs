@@ -119,11 +119,12 @@ namespace RoomBuildingService.Controllers
             if (!result) return NotFound(new { message = "Không tìm thấy giường." });
 
             // 2. BẮN SỰ KIỆN LÊN RABBITMQ ĐỂ BÁO CHO NHÓM 2, NHÓM 3
-            await _publishEndpoint.Publish(new BedAssignedEvent
+            await _publishEndpoint.Publish(new BedStatusChanged
             {
                 BedId = id,
                 StudentId = request.StudentId,
-                IsAvailable = request.IsAvailable
+                Status = request.IsAvailable ? "Available" : "Occupied",
+                ChangedAt = System.DateTime.UtcNow
             });
 
             return Ok(new { message = "Đã cập nhật giường và gửi thông báo lên hệ thống thành công!" });
@@ -139,12 +140,12 @@ namespace RoomBuildingService.Controllers
             await _context.SaveChangesAsync();
 
             // Publish sự kiện bảo trì sang Nhóm 3 (BillingMaintenanceService)
-            await _publishEndpoint.Publish(new BedMaintenanceEvent
+            await _publishEndpoint.Publish(new BedStatusChanged
             {
                 BedId = id,
                 Status = bed.Status,
                 RequestDescription = requestDescription,
-                RequestedAt = System.DateTime.UtcNow
+                ChangedAt = System.DateTime.UtcNow
             });
 
             return Ok(new { message = "Đã gửi yêu cầu bảo trì giường thành công!" });
@@ -156,13 +157,5 @@ namespace RoomBuildingService.Controllers
     {
         public bool IsAvailable { get; set; }
         public string? StudentId { get; set; }
-    }
-
-    public class BedMaintenanceEvent
-    {
-        public int BedId { get; set; }
-        public string Status { get; set; } = null!;
-        public string RequestDescription { get; set; } = null!;
-        public DateTime RequestedAt { get; set; }
     }
 }
