@@ -1,4 +1,5 @@
 <script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { usePagination } from '../composables/usePagination';
 import apiClient from '../api/axios';
@@ -6,6 +7,8 @@ import { X, Save, Pencil, ChartSpline, Users, Shield, LogOut, ArrowUpRight, Arro
 import type { Room, BookingApplication, MaintenanceRequest, NewsArticle, Invoice, Bed, News } from '../types';
 import { useAppData } from '../composables/useAppData';
 import { roomBuildingApi, newsApi } from '../services/room-building.service'; 
+import AdminAccountManagement from './AdminAccountManagement.vue';
+import { billingApi } from '../services/billing.service';
 
 const { user, applications: _applications, maintenanceRequests: _maintenanceRequests, invoices: _invoices, news: _news, actions, rooms: _rooms } = useAppData();
 
@@ -250,8 +253,22 @@ const fetchStats = async () => {
   }
 };
 
+const adminMaintStats = ref<any>(null);
+
+const fetchMaintStats = async () => {
+  try {
+    const data = await billingApi.maintenance.getStats();
+    if (data) {
+      adminMaintStats.value = data;
+    }
+  } catch (err) {
+    console.error("Lỗi lấy thống kê bảo trì", err);
+  }
+};
+
 onMounted(() => {
   fetchStats();
+  fetchMaintStats();
   loadDashboardStats();
   loadFacilitiesData();
   loadNewsData();
@@ -284,169 +301,6 @@ const handleCreateNews = () => {
 
 
 const menuItems = [
-  { id: 'Bảng điều khiển', icon: ChartSpline },
-  { id: 'Hóa Đơn & Phiếu Thu', icon: Receipt },
-  { id: 'Quản lý Công nợ', icon: ClipboardList },
-  { id: 'Quản lý Thanh toán', icon: Landmark },
-  { id: 'Quản lý tin tức', icon: Newspaper },
-  { id: 'Sự cố bảo trì', icon: Activity },
-  { id: 'Duyệt lưu trú', icon: Users },
-  { id: 'Cơ sở vật chất', icon: Building2 },
-  { id: 'Loại phòng', icon: Building2 },
-  { id: 'Sơ đồ KTX', icon: CircleDollarSign },
-  { id: 'Cài đặt hệ thống', icon: Settings }
-];
-
-// =============================================
-// QUẢN LÝ HÓA ĐƠN
-// =============================================
-const invoiceSearch = ref('');
-const invoiceStatusFilter = ref('All');
-
-const filteredInvoices = computed(() => {
-  let list = props.invoices || [];
-  return list.filter(inv => {
-    const matchSearch = inv.id.toLowerCase().includes(invoiceSearch.value.toLowerCase()) || 
-                        inv.roomNumber.toLowerCase().includes(invoiceSearch.value.toLowerCase()) ||
-                        (inv.displayId && inv.displayId.toLowerCase().includes(invoiceSearch.value.toLowerCase()));
-    const matchStatus = invoiceStatusFilter.value === 'All' || 
-                        (invoiceStatusFilter.value === 'Paid' && inv.status === 'Paid') ||
-                        (invoiceStatusFilter.value === 'Unpaid' && inv.status === 'Unpaid');
-    return matchSearch && matchStatus;
-  });
-});
-
-const { paginatedItems: pInvoices, currentPage: cpInvoices, totalPages: tpInvoices, nextPage: npInvoices, prevPage: ppInvoices } = usePagination(filteredInvoices, 5);
-
-// Thống kê thẻ Hóa Đơn & Công Nợ
-const totalRevenue = computed(() => {
-  return (props.invoices || []).filter(i => i.status === 'Paid').reduce((sum, inv) => sum + inv.amount, 0);
-});
-const totalOutstanding = computed(() => {
-  return (props.invoices || []).filter(i => i.status === 'Unpaid').reduce((sum, inv) => sum + inv.amount, 0);
-});
-const totalCollectedThisMonth = computed(() => {
-  return (props.invoices || []).filter(i => i.status === 'Paid').reduce((sum, i) => sum + i.amount, 0);
-});
-const unpaidInvoicesCount = computed(() => (props.invoices || []).filter(i => i.status === 'Unpaid').length);
-const unpaidInvoices = computed(() => (props.invoices || []).filter(i => i.status === 'Unpaid'));
-const totalUnpaid = computed(() => unpaidInvoices.value.reduce((sum, i) => sum + i.amount, 0));
-const unpaidCount = computed(() => unpaidInvoices.value.length);
-
-const totalOverdue = computed(() => 0); // Giả định chưa có quá hạn
-const overdueCount = computed(() => 0);
-
-// =============================================
-// QUẢN LÝ CÔNG NỢ (GROUP THEO SINH VIÊN)
-// =============================================
-const debtSearch = ref('');
-
-const groupedDebts = computed(() => {
-  const map = new Map<string, any>();
-  unpaidInvoices.value.forEach(inv => {
-    const key = inv.studentId || inv.roomNumber;
-    if (!map.has(key)) {
-      map.set(key, {
-        id: inv.id,
-        studentId: inv.studentId || 'N/A',
-        roomNumber: inv.roomNumber,
-        totalDebt: 0,
-        invoiceCount: 0,
-        overdue: 0,
-        latestDeadline: '15/' + (inv.createdAt ? new Date(inv.createdAt).getMonth() + 2 : '07') + '/2026',
-        invoices: []
-      });
-    }
-    const group = map.get(key);
-    group.totalDebt += inv.amount;
-    group.invoiceCount += 1;
-    group.invoices.push(inv);
-  });
-  return Array.from(map.values());
-});
-
-const filteredGroupedDebts = computed(() => {
-  return groupedDebts.value.filter(group => {
-    const term = debtSearch.value.toLowerCase();
-    return group.studentId.toLowerCase().includes(term) || group.roomNumber.toLowerCase().includes(term);
-  }).sort((a, b) => b.totalDebt - a.totalDebt); // Mặc định Nợ nhiều nhất
-});
-
-const { paginatedItems: pGroupedDebts, currentPage: cpGroupedDebts, totalPages: tpGroupedDebts, nextPage: npGroupedDebts, prevPage: ppGroupedDebts } = usePagination(filteredGroupedDebts, 5);
-const studentDebtCount = computed(() => groupedDebts.value.length);
-
-// =============================================
-// QUẢN LÝ THANH TOÁN
-// =============================================
-const paymentSearch = ref('');
-const paymentMethodFilter = ref('All');
-
-const filteredPayments = computed(() => {
-  let list = (props.invoices || []).filter(i => i.status === 'Paid');
-  return list.filter(inv => {
-    const matchSearch = inv.id.toLowerCase().includes(paymentSearch.value.toLowerCase()) || 
-                        (inv.displayId && inv.displayId.toLowerCase().includes(paymentSearch.value.toLowerCase()));
-    return matchSearch;
-  });
-});
-
-const { paginatedItems: pPayments, currentPage: cpPayments, totalPages: tpPayments, nextPage: npPayments, prevPage: ppPayments } = usePagination(filteredPayments, 5);
-
-const showCreatePaymentModal = ref(false);
-const paymentForm = ref({
-  invoiceId: '',
-  amount: 0,
-  method: 'Tiền mặt',
-  date: new Date().toISOString().split('T')[0],
-  transactionId: '',
-  bankName: '',
-  accountNumber: '',
-  note: ''
-});
-
-const handleCollectPayment = (inv: any) => {
-  isEditingPayment.value = false;
-  paymentForm.value = {
-    invoiceId: inv.id,
-    amount: inv.amount,
-    method: 'Tiền mặt',
-    date: new Date().toISOString().split('T')[0],
-    transactionId: '',
-    bankName: '',
-    accountNumber: '',
-    note: ''
-  };
-  showCreatePaymentModal.value = true;
-};
-
-const showViewDebtModal = ref(false);
-const viewingDebtGroup = ref<any>(null);
-const handleViewDebt = (group: any) => {
-  viewingDebtGroup.value = group;
-  showViewDebtModal.value = true;
-};
-
-import { watch } from 'vue';
-watch(() => paymentForm.value.invoiceId, (newId) => {
-  if (newId) {
-    const inv = (props.invoices || []).find(i => i.id === newId);
-    if (inv) paymentForm.value.amount = inv.amount;
-  } else {
-    paymentForm.value.amount = 0;
-  }
-});
-
-const handleSavePayment = () => {
-  if (!paymentForm.value.invoiceId) {
-    showToast('Vui lòng chọn phiếu thu!', 'error');
-    return;
-  }
-  emit('payInvoice', paymentForm.value.invoiceId);
-  showToast('Ghi nhận thanh toán thành công!', 'success');
-  showCreatePaymentModal.value = false;
-  // Reset form
-  paymentForm.value = {
-    invoiceId: '', amount: 0, method: 'Tiền mặt', date: new Date().toISOString().split('T')[0], transactionId: '', bankName: '', accountNumber: '', note: ''
   };
 };
 
@@ -927,6 +781,8 @@ const confirmDeleteRoomType = async () => {
 
       <div class="p-8 flex-1 space-y-6">
         
+        <AdminAccountManagement v-if="activeTab === 'Quản lý Tài khoản'" />
+
         <div v-if="activeTab === 'Bảng điều khiển'" class="space-y-8 animate-fade-in text-left">
           
           <!-- Header -->

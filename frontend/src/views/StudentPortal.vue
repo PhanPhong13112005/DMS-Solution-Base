@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Home, ClipboardList, BedDouble, Receipt, Wrench, BellRing, LogOut, Settings2, Sparkles, Send, CheckCircle2, ShieldAlert, Landmark, UserMinus, CheckCircle, Info, AlertTriangle } from 'lucide-vue-next';
+import { Home, ClipboardList, BedDouble, Receipt, Wrench, BellRing, LogOut, Settings2, Sparkles, Send, CheckCircle2, ShieldAlert, Landmark, UserMinus, CheckCircle, Info, AlertTriangle, Star } from 'lucide-vue-next';
 import type { MaintenanceRequest, Invoice, TransferRequest, Room } from '../types';
 import { useAppData } from '../composables/useAppData';
 import { useRouter } from 'vue-router';
@@ -47,14 +47,9 @@ const myMaintenance = computed<MaintenanceRequest[]>(() => {
 });
 
 /**
- * Student's unpaid invoices for current semester
- * Field mapping: invoice.studentId, invoice.amount, invoice.status ('Paid'|'Unpaid')
+ * Student's invoices from API
  */
-const myInvoices = computed<Invoice[]>(() => {
-  const studentId = studentUser.value?.id;
-  if (!studentId) return [];
-  return invoices.value?.filter((inv) => inv?.studentId === studentId) ?? [];
-});
+const myInvoices = ref<Invoice[]>([]);
 
 /**
  * Current room assignment info fetched from API
@@ -68,8 +63,21 @@ const myApplication = computed(() => {
 const myRoom = ref<any>(null);
 
 import { roomBuildingApi } from '../services/room-building.service';
+import { billingApi } from '../services/billing.service';
+
+const fetchMyInvoices = async () => {
+  const studentId = studentUser.value?.id;
+  if (!studentId || studentId === 'N/A') return;
+  try {
+    const data = await billingApi.invoices.getByStudent(studentId);
+    myInvoices.value = data || [];
+  } catch(e) {
+    console.error('Lỗi tải hóa đơn:', e);
+  }
+};
 
 onMounted(async () => {
+  fetchMyInvoices();
   const studentId = studentUser.value?.id;
   if (studentId && studentId !== 'N/A') {
     try {
@@ -169,26 +177,65 @@ const isMaintModalOpen = ref(false);
 const openMaintenanceDetail = (m: MaintenanceRequest) => {
   viewingMaintenance.value = m;
   isMaintModalOpen.value = true;
+  isRatingOpen.value = false;
+  currentRating.value = 5;
 };
 
-const cancelMaintenance = () => {
+const isRatingOpen = ref(false);
+const currentRating = ref(5);
+const hoverRating = ref(0);
+
+const cancelMaintenance = async () => {
   if (viewingMaintenance.value) {
-    if (actions?.updateMaintenanceStatus) {
-      actions.updateMaintenanceStatus(viewingMaintenance.value.id, 'Cancelled');
+    try {
+      await billingApi.maintenance.updateStatus(viewingMaintenance.value.id, 'Cancelled');
+      if (actions?.updateMaintenanceStatus) {
+        actions.updateMaintenanceStatus(viewingMaintenance.value.id, 'Cancelled');
+      }
+      showToast('Đã hủy phiếu yêu cầu sửa chữa thành công.', 'info');
+      isMaintModalOpen.value = false;
+    } catch (e) {
+      showToast('Lỗi khi hủy phiếu!', 'error');
     }
-    showToast('Đã hủy phiếu yêu cầu sửa chữa thành công.', 'info');
-    isMaintModalOpen.value = false;
   }
 };
 
-const acceptMaintenance = (isSatisfied: boolean) => {
+const acceptMaintenance = async (isSatisfied: boolean) => {
   if (viewingMaintenance.value) {
-    const newStatus = isSatisfied ? 'Resolved' : 'In Progress';
-    if (actions?.updateMaintenanceStatus) {
-      actions.updateMaintenanceStatus(viewingMaintenance.value.id, newStatus);
+    if (isSatisfied) {
+      isRatingOpen.value = true;
+      return;
     }
-    showToast(isSatisfied ? 'Đã xác nhận nghiệm thu và đóng phiếu!' : 'Đã yêu cầu làm lại!', 'success');
-    isMaintModalOpen.value = false;
+    
+    const newStatus = 'In Progress';
+    try {
+      await billingApi.maintenance.updateStatus(viewingMaintenance.value.id, newStatus);
+      if (actions?.updateMaintenanceStatus) {
+        actions.updateMaintenanceStatus(viewingMaintenance.value.id, newStatus);
+      }
+      showToast('Đã yêu cầu làm lại!', 'info');
+      isMaintModalOpen.value = false;
+    } catch (e) {
+      showToast('Lỗi khi cập nhật!', 'error');
+    }
+  }
+};
+
+const submitRating = async () => {
+  if (viewingMaintenance.value) {
+    try {
+      // Gọi API Rating ở đây: billingApi.maintenance.rate(viewingMaintenance.value.id, currentRating.value)
+      // Tạm thời gọi updateStatus thành Resolved
+      await billingApi.maintenance.updateStatus(viewingMaintenance.value.id, 'Resolved');
+      if (actions?.updateMaintenanceStatus) {
+        actions.updateMaintenanceStatus(viewingMaintenance.value.id, 'Resolved');
+      }
+      showToast('Đã xác nhận nghiệm thu và đánh giá thợ!', 'success');
+      isRatingOpen.value = false;
+      isMaintModalOpen.value = false;
+    } catch (e) {
+      showToast('Lỗi khi gửi đánh giá!', 'error');
+    }
   }
 };
 
@@ -200,34 +247,36 @@ const transferReason = ref('');
 const payingInvoice = ref<Invoice | null>(null);
 const isPayModalOpen = ref(false);
 
-const handleMaintenanceSubmit = () => {
+const handleMaintenanceSubmit = async () => {
   if (!maintTitle.value?.trim() || !maintDesc.value?.trim()) {
     showToast('Vui lòng điền đủ tiêu đề và nội dung mô tả lỗi báo hỏng!', 'error');
     return;
   }
 
-  const newRequest: MaintenanceRequest = {
-    id: 'maint-' + Math.random().toString(36).substr(2, 9),
-    displayId: 'SC' + String((maintenanceRequests.value?.length || 0) + 1).padStart(3, '0'),
-    roomNumber: myRoom.value ? `${myRoom.value.roomNumber}-${myRoom.value.building || ''}` : studentUser.value.roomNumber || '101',
-    title: maintTitle.value,
-    description: maintDesc.value,
-    category: maintCategory.value as any,
-    priority: maintPriority.value,
-    status: 'Pending',
-    createdAt: new Date().toISOString().split('T')[0]
-  };
-
-  if (actions?.addMaintenance) {
-    actions.addMaintenance(newRequest);
+  const formData = new FormData();
+  formData.append('roomNumber', myRoom.value ? `${myRoom.value.roomNumber}-${myRoom.value.building || ''}` : studentUser.value.roomNumber || '101');
+  formData.append('title', maintTitle.value);
+  formData.append('description', maintDesc.value);
+  formData.append('category', maintCategory.value);
+  formData.append('priority', maintPriority.value);
+  if (maintImage.value) {
+    formData.append('image', maintImage.value);
   }
-  
-  showToast('Đã gửi phiếu báo hỏng kỹ thuật thành công tới ban kỹ sư KTX!', 'success');
-  maintTitle.value = '';
-  maintDesc.value = '';
-  maintCategory.value = 'Điện';
-  maintPriority.value = 'Normal';
-  maintImage.value = null;
+
+  try {
+    await billingApi.maintenance.createWithImage(formData);
+    showToast('Đã gửi phiếu báo hỏng kỹ thuật thành công tới ban kỹ sư KTX!', 'success');
+    maintTitle.value = '';
+    maintDesc.value = '';
+    maintCategory.value = 'Điện';
+    maintPriority.value = 'Normal';
+    maintImage.value = null;
+    
+    // Tải lại list
+    // if (actions?.fetchMaintenance) actions.fetchMaintenance(); // if applicable
+  } catch (error) {
+    showToast('Có lỗi xảy ra khi gửi phiếu báo hỏng!', 'error');
+  }
 };
 
 const handleTransferSubmit = () => {
@@ -820,18 +869,39 @@ const menuItems = [
             </div>
           </div>
           
-          <!-- Nghiệm thu (Task 2.5) -->
+          <!-- Nghiệm thu (Task 2.5) & Đánh giá (Rating) -->
           <div v-if="viewingMaintenance.status === 'Waiting for Acceptance'" class="bg-blue-50 border border-blue-200 p-4 rounded-xl space-y-3 mt-4">
-            <h4 class="font-bold text-blue-800 text-sm flex items-center gap-2"><CheckCircle class="w-4 h-4" /> Kỹ sư báo cáo đã sửa xong!</h4>
-            <p class="text-xs text-blue-700 leading-relaxed">Vui lòng kiểm tra lại thực tế tại phòng. Lỗi đã được khắc phục hoàn toàn chưa?</p>
-            <div class="flex gap-3 pt-2">
-              <button @click="acceptMaintenance(true)" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm transition-colors cursor-pointer">
-                Hài lòng (Đóng phiếu)
+            <template v-if="!isRatingOpen">
+              <h4 class="font-bold text-blue-800 text-sm flex items-center gap-2"><CheckCircle class="w-4 h-4" /> Kỹ sư báo cáo đã sửa xong!</h4>
+              <p class="text-xs text-blue-700 leading-relaxed">Vui lòng kiểm tra lại thực tế tại phòng. Lỗi đã được khắc phục hoàn toàn chưa?</p>
+              <div class="flex gap-3 pt-2">
+                <button @click="acceptMaintenance(true)" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm transition-colors cursor-pointer">
+                  Hài lòng (Đóng phiếu)
+                </button>
+                <button @click="acceptMaintenance(false)" class="flex-1 py-2.5 bg-white border border-blue-200 hover:bg-blue-50 text-blue-700 font-bold text-xs rounded-lg shadow-sm transition-colors cursor-pointer">
+                  Vẫn hỏng (Sửa lại)
+                </button>
+              </div>
+            </template>
+            <template v-else>
+              <h4 class="font-bold text-blue-800 text-sm text-center">Đánh giá chất lượng sửa chữa</h4>
+              <p class="text-xs text-blue-700 text-center">Mức độ hài lòng của bạn về thợ kỹ thuật?</p>
+              <div class="flex justify-center gap-2 py-4">
+                <Star 
+                  v-for="star in 5" :key="star" 
+                  @click="currentRating = star"
+                  @mouseenter="hoverRating = star"
+                  @mouseleave="hoverRating = 0"
+                  :class="[
+                    'w-8 h-8 cursor-pointer transition-colors',
+                    star <= (hoverRating || currentRating) ? 'text-amber-400 fill-amber-400' : 'text-gray-300'
+                  ]"
+                />
+              </div>
+              <button @click="submitRating" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-lg shadow-sm transition-colors cursor-pointer">
+                Gửi đánh giá & Đóng phiếu
               </button>
-              <button @click="acceptMaintenance(false)" class="flex-1 py-2.5 bg-white border border-blue-200 hover:bg-blue-50 text-blue-700 font-bold text-xs rounded-lg shadow-sm transition-colors cursor-pointer">
-                Vẫn hỏng (Sửa lại)
-              </button>
-            </div>
+            </template>
           </div>
         </div>
 

@@ -129,13 +129,33 @@ export const maintenanceApi = {
   create: (data: Omit<MaintenanceRequest, 'id' | 'createdAt'>) =>
     apiClient.post('/maintenance', data).then(extractData<MaintenanceRequest>),
 
+  /** POST /maintenance/with-image — Tạo báo hỏng đính kèm ảnh */
+  createWithImage: (formData: FormData) =>
+    apiClient.post('/maintenance/with-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(extractData<MaintenanceRequest>),
+
   /** PUT /maintenance/{id}/status — Cập nhật trạng thái phiếu */
   updateStatus: (id: string, status: string) =>
     apiClient.put(`/maintenance/${id}/status`, { status }).then(extractData<MaintenanceRequest>),
 
+  /** PUT /maintenance/{id}/assign — Phân công thợ sửa chữa */
+  assign: (id: string, staffId: string) =>
+    apiClient.put(`/maintenance/${id}/assign`, { staffId }).then(extractData<MaintenanceRequest>),
+
   /** DELETE /maintenance/{id} — Xóa yêu cầu bảo trì */
   delete: (id: string) =>
     apiClient.delete(`/maintenance/${id}`).then(extractData<void>),
+};
+
+// ============================================================
+// UTILITIES API (/api/v1/utilities)
+// ============================================================
+
+export const utilitiesApi = {
+  /** POST /utilities/record — Ghi nhận chỉ số điện nước */
+  record: (data: { roomId: string | number; electricityIndex: number; waterIndex: number; recordedDate?: string }) =>
+    apiClient.post('/utilities/record', data).then(extractData<any>),
 };
 
 // ============================================================
@@ -144,6 +164,7 @@ export const maintenanceApi = {
 export const billingApi = {
   invoices: invoicesApi,
   maintenance: maintenanceApi,
+  utilities: utilitiesApi,
 };
 
 export default billingApi;

@@ -5,6 +5,8 @@ import { usePagination } from '../composables/usePagination';
 import { LayoutDashboard, Users, UserPlus, Wrench, ShieldAlert, CheckCircle, LogOut, Search, Building, Receipt, FilePlus, AlertTriangle, Info, CheckCircle2, Landmark } from 'lucide-vue-next';
 import type { Room, BookingApplication, MaintenanceRequest, Invoice } from '../types';
 import { useAppData } from '../composables/useAppData';
+import StaffUtilities from './StaffUtilities.vue';
+import { billingApi } from '../services/billing.service';
 
 const { user, rooms: _rooms, applications: _applications, maintenanceRequests: _maintenanceRequests, invoices: _invoices, actions } = useAppData();
 
@@ -84,23 +86,43 @@ const openRejectModal = (issue: MaintenanceRequest) => {
   showRejectModal.value = true;
 };
 
-const handleAssign = () => {
-  if (selectedIssue.value) {
-    emit('updateMaintenanceStatus', selectedIssue.value.id, 'In Progress');
-    showToast('Đã phân công thợ thành công!', 'success');
-    showAssignModal.value = false;
+const handleAssign = async () => {
+  if (selectedIssue.value && selectedTech.value) {
+    try {
+      await billingApi.maintenance.assign(selectedIssue.value.id, selectedTech.value);
+      emit('updateMaintenanceStatus', selectedIssue.value.id, 'In Progress');
+      showToast('Đã phân công thợ thành công!', 'success');
+      showAssignModal.value = false;
+    } catch (e) {
+      showToast('Có lỗi xảy ra khi phân công', 'error');
+    }
   }
 };
 
-const handleReject = () => {
+const handleReject = async () => {
   if (selectedIssue.value) {
     if (!rejectReason.value) {
       showToast('Vui lòng nhập lý do từ chối!', 'error');
       return;
     }
-    emit('updateMaintenanceStatus', selectedIssue.value.id, 'Rejected');
-    showToast('Đã từ chối phiếu yêu cầu!', 'info');
-    showRejectModal.value = false;
+    try {
+      await billingApi.maintenance.updateStatus(selectedIssue.value.id, 'Rejected');
+      emit('updateMaintenanceStatus', selectedIssue.value.id, 'Rejected');
+      showToast('Đã từ chối phiếu yêu cầu!', 'info');
+      showRejectModal.value = false;
+    } catch (e) {
+      showToast('Có lỗi xảy ra khi cập nhật trạng thái', 'error');
+    }
+  }
+};
+
+const handleUpdateStatus = async (id: string, status: string, message: string) => {
+  try {
+    await billingApi.maintenance.updateStatus(id, status);
+    emit('updateMaintenanceStatus', id, status);
+    showToast(message, 'success');
+  } catch (e) {
+    showToast('Có lỗi xảy ra khi cập nhật trạng thái', 'error');
   }
 };
 
@@ -111,7 +133,7 @@ const showToast = (message: string, type: 'success' | 'info' | 'error' = 'succes
   setTimeout(() => { toast.value = null; }, 4000);
 };
 
-const handleCreateBill = () => {
+const handleCreateBill = async () => {
   if (!billRoom.value || !billAmount.value || !billDesc.value) {
     showToast('Vui lòng khai báo đầy đủ thông tin (phòng, lý do chi tiết và số tiền)!', 'error');
     return;
@@ -121,20 +143,22 @@ const handleCreateBill = () => {
     showToast('Số tiền hóa đơn nhập vào chưa hợp lệ!', 'error');
     return;
   }
-  const newInvoice: Invoice = {
-    id: 'HD' + String(props.invoices.length + 1).padStart(3, '0'),
-    roomNumber: billRoom.value,
-    studentId: 'DNU-COMMON',
-    month: 'Lẻ phát sinh',
-    amount: amt,
-    type: 'EXTRA_FEE',
-    status: 'Unpaid',
-    createdAt: new Date().toISOString().split('T')[0]
-  };
-  emit('addInvoice', newInvoice);
-  showToast('Đã phát hành hóa đơn phát sinh lẻ thành công!', 'success');
-  billAmount.value = '';
-  billDesc.value = '';
+  
+  try {
+    await billingApi.invoices.createExtraFee({
+      roomId: parseInt(billRoom.value.split('-')[0]) || 0,
+      studentId: 0,
+      reason: billReason.value,
+      description: billDesc.value,
+      amount: amt
+    });
+    
+    showToast('Đã phát hành hóa đơn phát sinh lẻ thành công!', 'success');
+    billAmount.value = '';
+    billDesc.value = '';
+  } catch (error) {
+    showToast('Có lỗi xảy ra khi phát hành hóa đơn!', 'error');
+  }
 };
 
 const menuItems = [
@@ -144,7 +168,8 @@ const menuItems = [
   { id: 'Tra cứu Sinh viên', icon: Users },
   { id: 'Tra cứu Phòng', icon: Building },
   { id: 'Lập HD phát sinh lẻ', icon: Receipt },
-  { id: 'Ghi nhận thu tiền', icon: Landmark }
+  { id: 'Ghi nhận thu tiền', icon: Landmark },
+  { id: 'Chỉ số Điện Nước', icon: FilePlus }
 ];
 </script>
 
@@ -202,9 +227,11 @@ const menuItems = [
         <div class="bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-full px-4 py-1.5 text-xs font-bold uppercase">Phiên trực: Đang mở ⚡</div>
       </header>
 
-      <div class="p-8 flex-1 space-y-6">
+      <div class="p-8 flex-1">
         
-        <div v-if="activeTab === 'Tổng quan'" class="space-y-6">
+        <StaffUtilities v-if="activeTab === 'Chỉ số Điện Nước'" />
+
+        <div v-if="activeTab === 'Tổng quan'" class="space-y-6 animate-fade-in text-left">
           <div v-if="urgentIssues.length > 0" class="bg-secondary/10 border border-secondary/30 p-5 rounded-[24px] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div class="flex items-start gap-4">
               <div class="w-11 h-11 rounded-full bg-secondary/20 text-secondary flex items-center justify-center shrink-0 mt-1">
@@ -216,7 +243,7 @@ const menuItems = [
                 <p class="text-xs text-text-muted font-light mt-1">Mô tả thực trạng: {{ urgentIssues[0].description }} (Vị trí: {{ urgentIssues[0].roomNumber }})</p>
               </div>
             </div>
-            <button @click="emit('updateMaintenanceStatus', urgentIssues[0].id, 'In Progress'); showToast('Đã cử kĩ sư hiện trường!', 'success');" class="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-full shadow-xs cursor-pointer">
+            <button @click="handleUpdateStatus(urgentIssues[0].id, 'In Progress', 'Đã cử kĩ sư hiện trường!');" class="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-full shadow-xs cursor-pointer">
               Cử kỹ sư xử lý ngay
             </button>
           </div>
@@ -278,7 +305,7 @@ const menuItems = [
                   </button>
                 </template>
                 <template v-else-if="issue.status === 'In Progress'">
-                  <button @click="emit('updateMaintenanceStatus', issue.id, 'Waiting for Acceptance'); showToast('Đã báo sinh viên nghiệm thu!', 'success');" class="w-1/2 bg-primary hover:bg-primary-hover text-white font-bold py-2 rounded-full cursor-pointer text-center">
+                  <button @click="handleUpdateStatus(issue.id, 'Waiting for Acceptance', 'Đã báo sinh viên nghiệm thu!');" class="w-1/2 bg-primary hover:bg-primary-hover text-white font-bold py-2 rounded-full cursor-pointer text-center">
                     Báo chờ nghiệm thu
                   </button>
                   <span class="flex items-center justify-center font-bold text-[10px] w-1/2 uppercase tracking-wide border rounded-full bg-primary/10 text-primary border-primary/20">
