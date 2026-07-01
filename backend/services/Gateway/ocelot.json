@@ -92,16 +92,16 @@
       "DownstreamHostAndPorts": [{ "Host": "student-service", "Port": 8081 }]
     },
     {
-      "UpstreamPathTemplate": "/api/Transfers/{everything}",
+      "UpstreamPathTemplate": "/api/StudentContracts",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
-      "DownstreamPathTemplate": "/api/Transfers/{everything}",
+      "DownstreamPathTemplate": "/api/StudentContracts",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "student-service", "Port": 8081 }]
     },
     {
-      "UpstreamPathTemplate": "/api/StudentContracts",
+      "UpstreamPathTemplate": "/api/Transfers/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE"],
-      "DownstreamPathTemplate": "/api/StudentContracts",
+      "DownstreamPathTemplate": "/api/Transfers/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "student-service", "Port": 8081 }]
     },
