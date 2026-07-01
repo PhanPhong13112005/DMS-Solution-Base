@@ -316,6 +316,7 @@ const heroSlides = [
             <h4 class="font-bold text-[#4A4A4A] text-base mb-1">An ninh đa lớp</h4>
             <p class="text-xs text-[#8B8B8B] font-light leading-relaxed">Hệ thống camera AI giám sát thông minh góc rộng, tuần tra trực đêm phối hợp.</p>
           </div>
+        </div>
       </div>
     </section>
 
