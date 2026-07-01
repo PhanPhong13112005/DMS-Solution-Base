@@ -9,8 +9,8 @@
   --color-primary-dark: #4B4E41;
   --color-primary-light: #5F6352;
   
-  --color-secondary: #CB997E;
-  --color-secondary-hover: #b0856d;
+  --color-secondary: #E5A885; /* Sáng và rõ nét hơn tông cũ #CB997E */
+  --color-secondary-hover: #D69773;
   
   --color-accent: #F97316;
   --color-accent-hover: #EA580C;
