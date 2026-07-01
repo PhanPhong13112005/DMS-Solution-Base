@@ -748,6 +748,73 @@ const confirmDeleteRoom = async () => {
   }
 };
 
+// =============================================
+// QUẢN LÝ LOẠI PHÒNG (CRUD)
+// =============================================
+const showRoomTypeModal = ref(false);
+const isEditingRoomType = ref(false);
+const roomTypeForm = ref({
+  id: null,
+  name: '',
+  maxOccupants: 4,
+  monthlyPrice: 1500000,
+  hasAirConditioner: false,
+  hasPrivateBathroom: true
+});
+
+const openCreateRoomTypeModal = () => {
+  isEditingRoomType.value = false;
+  roomTypeForm.value = { id: null, name: '', maxOccupants: 4, monthlyPrice: 1500000, hasAirConditioner: false, hasPrivateBathroom: true };
+  showRoomTypeModal.value = true;
+};
+
+const openEditRoomTypeModal = (rt: any) => {
+  isEditingRoomType.value = true;
+  roomTypeForm.value = { ...rt };
+  showRoomTypeModal.value = true;
+};
+
+const handleSaveRoomType = async () => {
+  if (!roomTypeForm.value.name) {
+    showToast('Vui lòng nhập tên loại phòng!', 'error');
+    return;
+  }
+  try {
+    if (isEditingRoomType.value) {
+      await roomBuildingApi.roomTypes.update(roomTypeForm.value.id, roomTypeForm.value);
+      showToast('Cập nhật loại phòng thành công!', 'success');
+    } else {
+      await roomBuildingApi.roomTypes.create(roomTypeForm.value);
+      showToast('Tạo loại phòng mới thành công!', 'success');
+    }
+    showRoomTypeModal.value = false;
+    await loadFacilitiesData();
+  } catch (err) {
+    showToast('Có lỗi xảy ra khi lưu loại phòng!', 'error');
+  }
+};
+
+const showDeleteRoomTypeConfirmModal = ref(false);
+const roomTypeToDeleteId = ref(null);
+
+const handleDeleteRoomType = (id: any) => {
+  roomTypeToDeleteId.value = id;
+  showDeleteRoomTypeConfirmModal.value = true;
+};
+
+const confirmDeleteRoomType = async () => {
+  try {
+    await roomBuildingApi.roomTypes.delete(roomTypeToDeleteId.value);
+    showToast('Xóa loại phòng thành công!', 'success');
+    await loadFacilitiesData();
+  } catch (err) {
+    showToast('Không thể xóa loại phòng đang được sử dụng!', 'error');
+  } finally {
+    showDeleteRoomTypeConfirmModal.value = false;
+    roomTypeToDeleteId.value = null;
+  }
+};
+
 </script>
 
 <template>
@@ -1881,7 +1948,7 @@ const confirmDeleteRoom = async () => {
         <div v-if="activeTab === 'Loại phòng'" class="bg-white rounded-[32px] border border-border p-8 shadow-sm space-y-6 text-left">
           <div class="flex justify-between items-center border-b border-border pb-4">
             <h3 class="font-bold text-secondary text-xl">Quản lý Loại Phòng (Master Data)</h3>
-            <button class="px-4 py-2 bg-secondary hover:bg-[#A47148] text-white font-bold text-xs rounded-full shadow-sm transition-colors flex items-center gap-2 cursor-pointer">
+            <button @click="openCreateRoomTypeModal" class="px-4 py-2 bg-secondary hover:bg-[#A47148] text-white font-bold text-xs rounded-full shadow-sm transition-colors flex items-center gap-2 cursor-pointer">
               <Plus class="w-4 h-4" /> Thêm Loại Phòng
             </button>
           </div>
@@ -1905,8 +1972,9 @@ const confirmDeleteRoom = async () => {
                     <span v-if="t.hasAirConditioner" class="px-2 bg-blue-100 text-blue-700 rounded text-xs inline-block mb-1">Điều hòa</span>
                     <span v-if="t.hasPrivateBathroom" class="px-2 bg-emerald-100 text-emerald-700 rounded text-xs ml-1 inline-block mb-1">WC Riêng</span>
                   </td>
-                  <td class="px-6 py-4 text-right">
-                    <button class="p-1.5 text-text-muted hover:text-text-main cursor-pointer"><Pencil class="w-4 h-4" /></button>
+                  <td class="px-6 py-4 text-right space-x-3">
+                    <button @click="openEditRoomTypeModal(t)" class="p-1.5 text-text-muted hover:text-text-main cursor-pointer" title="Chỉnh sửa"><Pencil class="w-4 h-4" /></button>
+                    <button @click="handleDeleteRoomType(t.id)" class="p-1.5 text-text-muted hover:text-rose-600 cursor-pointer" title="Xóa"><Trash2 class="w-4 h-4" /></button>
                   </td>
                 </tr>
                 <tr v-if="roomTypesList.length === 0">
@@ -2749,6 +2817,77 @@ const confirmDeleteRoom = async () => {
             Hủy bỏ
           </button>
           <button @click="confirmDeleteNews" class="px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-full shadow-sm transition-colors cursor-pointer">
+            Đồng ý xóa
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Tạo / Sửa Loại Phòng -->
+    <div v-if="showRoomTypeModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showRoomTypeModal = false"></div>
+      <div class="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[32px] shadow-2xl relative z-10 p-8 border border-border text-left animate-fade-in custom-scrollbar">
+        <div class="flex justify-between items-center mb-6 pb-4 border-b border-border">
+          <h3 class="font-serif text-xl text-text-main">{{ isEditingRoomType ? 'Sửa Loại Phòng' : 'Thêm Loại Phòng Mới' }}</h3>
+          <button @click="showRoomTypeModal = false" class="text-text-muted hover:text-rose-500 transition-colors cursor-pointer">
+            <span class="text-xl leading-none">&times;</span>
+          </button>
+        </div>
+        <div class="space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-text-main">Tên loại phòng <span class="text-secondary">*</span></label>
+              <input type="text" v-model="roomTypeForm.name" placeholder="VD: Standard, VIP..." class="w-full bg-white border border-border rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-primary transition-colors" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-xs font-bold text-text-main">Sức chứa (Người) <span class="text-secondary">*</span></label>
+              <input type="number" v-model="roomTypeForm.maxOccupants" class="w-full bg-white border border-border rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-primary transition-colors" />
+            </div>
+          </div>
+          <div class="space-y-1.5">
+            <label class="text-xs font-bold text-text-main">Đơn giá / Tháng (VNĐ) <span class="text-secondary">*</span></label>
+            <input type="number" v-model="roomTypeForm.monthlyPrice" class="w-full bg-white border border-border rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-primary transition-colors" />
+          </div>
+          <div class="flex items-center gap-6 pt-2">
+            <label class="flex items-center gap-2 text-sm font-medium text-text-main cursor-pointer">
+              <input type="checkbox" v-model="roomTypeForm.hasAirConditioner" class="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300">
+              Có điều hòa
+            </label>
+            <label class="flex items-center gap-2 text-sm font-medium text-text-main cursor-pointer">
+              <input type="checkbox" v-model="roomTypeForm.hasPrivateBathroom" class="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300">
+              WC Riêng khép kín
+            </label>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-8 pt-6 border-t border-border">
+          <button @click="showRoomTypeModal = false" class="px-6 py-2.5 border border-border text-text-main hover:bg-background font-bold text-xs rounded-full transition-colors cursor-pointer">
+            Hủy
+          </button>
+          <button @click="handleSaveRoomType" class="px-6 py-2.5 bg-secondary hover:bg-[#A47148] text-white font-bold text-xs rounded-full shadow-sm transition-colors cursor-pointer">
+            {{ isEditingRoomType ? 'Cập nhật' : 'Tạo mới' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Xác nhận Xóa Loại Phòng -->
+    <div v-if="showDeleteRoomTypeConfirmModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showDeleteRoomTypeConfirmModal = false"></div>
+      <div class="bg-white w-full max-w-md rounded-[32px] shadow-2xl relative z-10 p-8 border border-border text-left animate-fade-in">
+        <div class="flex items-start gap-4 mb-6">
+          <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center shrink-0">
+            <Trash2 class="w-6 h-6" />
+          </div>
+          <div>
+            <h3 class="font-serif text-lg font-bold text-text-main">Xác nhận xóa loại phòng</h3>
+            <p class="text-sm text-text-muted mt-2">Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa loại phòng này khỏi hệ thống không?</p>
+          </div>
+        </div>
+        <div class="flex justify-end gap-3 mt-8">
+          <button @click="showDeleteRoomTypeConfirmModal = false" class="px-6 py-2.5 border border-border text-text-main hover:bg-background font-bold text-xs rounded-full transition-colors cursor-pointer">
+            Hủy bỏ
+          </button>
+          <button @click="confirmDeleteRoomType" class="px-6 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-full shadow-sm transition-colors cursor-pointer">
             Đồng ý xóa
           </button>
         </div>
