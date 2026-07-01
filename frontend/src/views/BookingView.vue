@@ -18,6 +18,7 @@ const searchPrice = ref<string>('Tất cả');
 // Booking Modal States
 const selectedRoom = ref(null);
 const isModalOpen = ref(false);
+const showAuthAlert = ref(false);
 const step = ref(1);
 const localError = ref<string | null>(null);
 
@@ -72,8 +73,7 @@ const filteredRooms = computed(() => {
 const handleOpenBooking = (room: Room) => {
   const cachedUser = localStorage.getItem('current_user');
   if (!cachedUser) {
-    alert('Vui lòng đăng nhập để tiến hành đăng ký phòng!');
-    router.push('/auth');
+    showAuthAlert.value = true;
     return;
   }
   
@@ -82,6 +82,10 @@ const handleOpenBooking = (room: Room) => {
   step.value = 1;
   localError.value = null;
   isModalOpen.value = true;
+};
+
+const goToAuth = () => {
+  router.push('/auth');
 };
 
 const resetForm = () => {
@@ -445,6 +449,26 @@ const formatCurrency = (amount: number) => {
         </div>
 
       </div>
+      </div>
     </div>
   </div>
+
+  <!-- Custom Auth Alert Modal -->
+  <div v-if="showAuthAlert" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showAuthAlert = false"></div>
+    <div class="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#EAE7E1] animate-in fade-in zoom-in duration-200">
+      <div class="p-6 text-center space-y-4">
+        <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto border border-red-100 mb-2">
+          <ShieldAlert class="w-8 h-8" />
+        </div>
+        <h3 class="text-xl font-serif font-bold text-[#4A4A4A]">Yêu cầu Đăng nhập</h3>
+        <p class="text-sm text-[#8B8B8B] leading-relaxed font-light px-2">Bạn cần đăng nhập bằng tài khoản Sinh viên để có thể tiến hành chọn và đăng ký phòng KTX.</p>
+      </div>
+      <div class="bg-[#FDFBF7] px-6 py-4 border-t border-[#EAE7E1] flex items-center justify-between gap-3">
+        <button @click="showAuthAlert = false" class="flex-1 py-2.5 bg-white border border-[#EAE7E1] text-[#4A4A4A] text-xs font-bold rounded-2xl hover:bg-gray-50 transition-colors">Đóng</button>
+        <button @click="goToAuth" class="flex-1 py-2.5 bg-[#F97316] text-white text-xs font-bold rounded-2xl hover:bg-[#EA580C] transition-colors shadow-sm">Đăng nhập ngay</button>
+      </div>
+    </div>
+  </div>
+
 </template>
