@@ -87,21 +87,27 @@ import { watchEffect } from 'vue';
 
 watchEffect(() => {
   if (!myRoom.value && myApplication.value && myApplication.value.status === 'Approved') {
-    // Mock room data from approved application to fix local state without backend
-    let capacity = 4;
-    let price = 800000;
-    const roomNumStr = String(myApplication.value.roomNumber || '');
-    if (roomNumStr.startsWith('2')) capacity = 2;
-    if (roomNumStr.startsWith('6')) capacity = 6;
+    // Attempt to find the real room in global state
+    const requestedRoomNum = String(myApplication.value.roomNumber || '');
+    const realRoom = rooms.value?.find((r: any) => String(r.roomNumber) === requestedRoomNum);
     
+    let capacity = realRoom ? realRoom.capacity : 4;
+    let price = realRoom ? realRoom.price : 800000;
+    let roomType = realRoom ? (realRoom.roomType || `Phòng ${capacity} người`) : `Phòng ${capacity} người`;
+    let roommatesCount = capacity > 1 ? capacity - 1 : 0;
+    
+    // In a real scenario, roommates list would come from API. For now, simulate missing slots.
+    const fakeRoommates = Array.from({ length: roommatesCount }, (_, i) => i + 1);
+
     myRoom.value = {
-      id: 1,
-      roomNumber: myApplication.value.roomNumber,
-      buildingName: myApplication.value.building,
-      roomType: 'Phòng ' + capacity + ' người',
+      id: realRoom ? realRoom.id : 1,
+      roomNumber: requestedRoomNum,
+      buildingName: myApplication.value.building || (realRoom ? realRoom.building : ''),
+      roomType: roomType,
       myBed: { bedName: 'Giường số 1' },
-      roommates: capacity === 4 ? [1,2,3] : (capacity === 2 ? [1] : [1,2,3,4,5]), // just a fake array length for roommates
-      price: price
+      roommates: fakeRoommates,
+      price: price,
+      amenities: realRoom ? realRoom.amenities : []
     };
   }
 });
