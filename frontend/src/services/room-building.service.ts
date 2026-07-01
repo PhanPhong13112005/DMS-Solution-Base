@@ -20,6 +20,17 @@ export const buildingsApi = {
   create: (data: Omit<Building, 'id'>) => apiRequest.post<Building>('/Buildings', data),
   update: (id: number, data: Partial<Building>) => apiRequest.put<void>(`/Buildings/${id}`, data),
   delete: (id: number) => apiRequest.delete<void>(`/Buildings/${id}`),
+  getHierarchy: () => apiRequest.get<any[]>('/Buildings/hierarchy'),
+};
+
+// ============ ROOM TYPES API ============
+
+export const roomTypesApi = {
+  getAll: () => apiRequest.get<any[]>('/RoomTypes'),
+  getById: (id: number) => apiRequest.get<any>(`/RoomTypes/${id}`),
+  create: (data: any) => apiRequest.post<any>('/RoomTypes', data),
+  update: (id: number, data: any) => apiRequest.put<void>(`/RoomTypes/${id}`, data),
+  delete: (id: number) => apiRequest.delete<void>(`/RoomTypes/${id}`),
 };
 
 // ============ ROOMS API ============
@@ -33,6 +44,7 @@ export const roomsApi = {
   create: (data: Omit<Room, 'id'>) => apiRequest.post<Room>('/Rooms', data),
   update: (id: number, data: Partial<Room>) => apiRequest.put<void>(`/Rooms/${id}`, data),
   delete: (id: number) => apiRequest.delete<void>(`/Rooms/${id}`),
+  maintenance: (id: number, data: { status: string; reason?: string }) => apiRequest.put<void>(`/Rooms/Maintenance/${id}`, data),
 };
 
 // ============ BEDS API ============
@@ -45,6 +57,7 @@ export const bedsApi = {
   delete: (id: number) => apiRequest.delete<void>(`/Beds/${id}`),
   assignBed: (id: number, data: { isAvailable: boolean; studentId?: string | null }) =>
     apiRequest.put<void>(`/Beds/Assign/${id}`, data),
+  maintenance: (id: number, description: string) => apiRequest.put<void>(`/Beds/Maintenance/${id}`, `"${description}"`, { headers: { 'Content-Type': 'application/json' } }),
 };
 
 // ============ ROOM AMENITIES API ============
@@ -71,6 +84,7 @@ export const newsApi = {
 
 export const roomBuildingApi = {
   buildings: buildingsApi,
+  roomTypes: roomTypesApi,
   rooms: roomsApi,
   beds: bedsApi,
   amenities: roomAmenitiesApi,

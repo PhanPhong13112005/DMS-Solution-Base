@@ -39,6 +39,7 @@
             <th>Loại Phòng</th>
             <th>Giá Cả</th>
             <th>Trạng Thái</th>
+            <th>Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -54,6 +55,11 @@
                 ● {{ room.status }}
               </span>
             </td>
+            <td>
+              <button @click="triggerMaintenance(room.id)" class="btn-maintenance" title="Khóa phòng / Bảo trì">
+                🔧 Báo bảo trì
+              </button>
+            </td>
           </tr>
           <tr v-if="roomList.length === 0">
             <td colspan="7" class="empty-row">
@@ -66,52 +72,60 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted } from 'vue';
+import { roomBuildingApi } from '../services/room-building.service';
 import axios from 'axios';
 
-export default {
-  name: 'StaffRoomSearch',
-  data() {
-    return {
-      buildings: [],
-      filters: {
-        buildingId: '',
-        floor: null,
-        status: ''
-      },
-      roomList: []
-    };
-  },
-  methods: {
-    async fetchBuildings() {
-      try {
-        const response = await axios.get('http://143.198.83.224:5000/api/Buildings');
-        this.buildings = response.data;
-      } catch (error) {
-        console.error("Lỗi lấy danh sách tòa nhà:", error);
-      }
-    },
-    async handleSearch() {
-      try {
-        const response = await axios.get('http://143.198.83.224:5000/api/Rooms/staff/search', {
-          params: {
-            buildingId: this.filters.buildingId || null,
-            floor: this.filters.floor || null,
-            status: this.filters.status || null
-          }
-        });
-        this.roomList = response.data;
-      } catch (error) {
-        console.error("Lỗi tra cứu phòng:", error);
-        alert("Hệ thống mất kết nối backend hoặc lỗi Gateway!");
-      }
-    }
-  },
-  mounted() {
-    this.fetchBuildings();
-    this.handleSearch();
+const buildings = ref([]);
+const filters = ref({
+  buildingId: '',
+  floor: null,
+  status: ''
+});
+const roomList = ref([]);
+
+const fetchBuildings = async () => {
+  try {
+    const response = await roomBuildingApi.buildings.getAll();
+    buildings.value = response;
+  } catch (error) {
+    console.error("Lỗi lấy danh sách tòa nhà:", error);
   }
 };
+
+const handleSearch = async () => {
+  try {
+    const response = await axios.get('http://143.198.83.224:5000/api/Rooms/staff/search', {
+      params: {
+        buildingId: filters.value.buildingId || null,
+        floor: filters.value.floor || null,
+        status: filters.value.status || null
+      }
+    });
+    roomList.value = response.data;
+  } catch (error) {
+    console.error("Lỗi tra cứu phòng:", error);
+    alert("Hệ thống mất kết nối backend hoặc lỗi Gateway!");
+  }
+};
+
+const triggerMaintenance = async (roomId) => {
+  try {
+    // Gọi API PUT /Rooms/Maintenance/{id}
+    await roomBuildingApi.rooms.maintenance(roomId, { status: 'Under Maintenance', reason: 'Cán bộ báo hỏng' });
+    await handleSearch();
+    alert('Đã khóa phòng bảo trì thành công!');
+  } catch (error) {
+    console.error("Lỗi cập nhật bảo trì:", error);
+    alert('Khóa phòng thất bại!');
+  }
+};
+
+onMounted(() => {
+  fetchBuildings();
+  handleSearch();
+});
 </script>
 
 <style scoped>
@@ -228,5 +242,20 @@ export default {
   padding: 40px !important;
   color: #888;
   font-size: 15px;
+}
+.btn-maintenance {
+  background-color: #fca5a5;
+  color: #7f1d1d;
+  border: 1px solid #f87171;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: bold;
+}
+.btn-maintenance:hover {
+  background-color: #ef4444;
+  color: white;
 }
 </style>
