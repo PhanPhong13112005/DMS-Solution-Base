@@ -128,6 +128,27 @@ namespace RoomBuildingService.Controllers
 
             return Ok(new { message = "Đã cập nhật giường và gửi thông báo lên hệ thống thành công!" });
         }
+        // PUT: api/Bed/Maintenance/5
+        [HttpPut("Maintenance/{id}")]
+        public async Task<IActionResult> RequestMaintenance(int id, [FromBody] string requestDescription)
+        {
+            var bed = await _context.Beds.FindAsync(id);
+            if (bed == null) return NotFound(new { message = "Không tìm thấy giường." });
+
+            bed.Status = "Under Maintenance";
+            await _context.SaveChangesAsync();
+
+            // Publish sự kiện bảo trì sang Nhóm 3 (BillingMaintenanceService)
+            await _publishEndpoint.Publish(new BedMaintenanceEvent
+            {
+                BedId = id,
+                Status = bed.Status,
+                RequestDescription = requestDescription,
+                RequestedAt = System.DateTime.UtcNow
+            });
+
+            return Ok(new { message = "Đã gửi yêu cầu bảo trì giường thành công!" });
+        }
     }
 
     // Class phụ trợ để nhận dữ liệu JSON từ Frontend gửi lên
@@ -135,5 +156,13 @@ namespace RoomBuildingService.Controllers
     {
         public bool IsAvailable { get; set; }
         public string? StudentId { get; set; }
+    }
+
+    public class BedMaintenanceEvent
+    {
+        public int BedId { get; set; }
+        public string Status { get; set; } = null!;
+        public string RequestDescription { get; set; } = null!;
+        public DateTime RequestedAt { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation; // 1. BẮT BUỘC PHẢI CÓ THƯ VIỆN NÀY
@@ -16,6 +16,8 @@ public partial class Bed
     public bool IsAvailable { get; set; }
 
     public string? AssignedStudentId { get; set; }
+
+    public string Status { get; set; } = "Available"; // "Available", "Occupied", "Under Maintenance"
 
     [JsonIgnore]
     [ValidateNever] // 2. THÊM DÒNG NÀY ĐỂ CẤM .NET BẮT LỖI

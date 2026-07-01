@@ -22,6 +22,8 @@ public partial class RoomDbContext : DbContext
 
     public virtual DbSet<Room> Rooms { get; set; }
 
+    public virtual DbSet<RoomType> RoomTypes { get; set; }
+
     public virtual DbSet<RoomAmenity> RoomAmenities { get; set; }
 
     public virtual DbSet<News> News { get; set; }

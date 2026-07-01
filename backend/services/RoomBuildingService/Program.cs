@@ -77,7 +77,7 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<RoomDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
     if (!db.Buildings.Any())
     {
         var toaA = new RoomBuildingService.Models.Building { Name = "Tòa A", GenderRestriction = "Nam", TotalFloors = 5 };
