@@ -148,6 +148,17 @@ using (var scope = app.Services.CreateScope())
         }
         
         db.SaveChanges();
+        db.SaveChanges();
+    }
+
+    if (!db.News.Any())
+    {
+        var n1 = new RoomBuildingService.Models.News { Title = "Thông báo: Đăng ký phòng nội trú học kỳ I", Category = "Thông báo", Content = "Phòng Công tác sinh viên thông báo thời gian đăng ký phòng nội trú học kỳ I bắt đầu từ đầu tháng. Sinh viên đăng nhập vào hệ thống để thao tác nhanh nhất có thể.", Author = "Ban Quản Lý", CreatedAt = DateTime.UtcNow.AddDays(-1) };
+        var n2 = new RoomBuildingService.Models.News { Title = "Sự kiện: Chào đón tân sinh viên nội trú", Category = "Sự kiện", Content = "Vào cuối tuần này sẽ có chương trình giao lưu âm nhạc và các trò chơi vận động tại sân khu A để chào đón các bạn tân sinh viên nội trú khóa mới.", Author = "Đoàn Thanh Niên", CreatedAt = DateTime.UtcNow.AddDays(-2) };
+        var n3 = new RoomBuildingService.Models.News { Title = "Quy định mới về việc sử dụng điện nước", Category = "Nội quy", Content = "Từ ngày 15 tới, KTX sẽ áp dụng định mức mới về sử dụng điện nước. Các phòng vượt định mức sẽ phải đóng thêm phụ phí.", Author = "Ban Quản Lý", CreatedAt = DateTime.UtcNow.AddDays(-5) };
+        var n4 = new RoomBuildingService.Models.News { Title = "Khắc phục thành công sự cố mạng wifi khu B", Category = "Kỹ thuật", Content = "Hệ thống wifi khu B đã được nâng cấp và khắc phục tình trạng chập chờn. Sinh viên có thể kết nối bình thường từ sáng nay.", Author = "Bộ phận Kỹ thuật", CreatedAt = DateTime.UtcNow.AddDays(-10) };
+        db.News.AddRange(n1, n2, n3, n4);
+        db.SaveChanges();
     }
 }
 
