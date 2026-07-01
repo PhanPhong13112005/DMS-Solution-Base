@@ -311,10 +311,10 @@ const startInvoicePayment = (inv: Invoice) => {
 };
 
 const startBatchPayment = () => {
-  const selected = invoices.value?.filter((i: Invoice) => selectedInvoiceIds.value.includes(i.id)) || [];
+  const selected = myInvoices.value.filter((i: Invoice) => selectedInvoiceIds.value.includes(i.id)) || [];
   const totalAmount = selected.reduce((sum: number, i: Invoice) => sum + i.amount, 0);
   payingInvoice.value = {
-    id: 'HD-GOP-' + String((invoices.value?.length || 0) + 1).padStart(3, '0'),
+    id: 'HD-GOP-' + String((myInvoices.value.length || 0) + 1).padStart(3, '0'),
     type: 'Thanh toán gộp ' + selected.length + ' hóa đơn',
     month: filterMonth.value !== 'All' ? filterMonth.value : 'Nhiều tháng',
     amount: totalAmount,
@@ -503,7 +503,7 @@ const menuItems = [
               </div>
               <div>
                 <div class="text-[10px] text-text-muted font-bold uppercase tracking-wider">Hóa đơn chờ thanh toán</div>
-                <div class="text-lg font-bold text-secondary font-mono mt-0.5">{{ invoices.filter(i => i.status === 'Unpaid').length }} hóa đơn</div>
+                <div class="text-lg font-bold text-secondary font-mono mt-0.5">{{ myInvoices.filter(i => i.status === 'Unpaid').length }} hóa đơn</div>
               </div>
             </div>
 
@@ -591,7 +591,7 @@ const menuItems = [
             <div class="bg-secondary/10 border border-secondary/20 p-5 rounded-2xl flex items-center justify-between">
               <div>
                 <span class="text-[10px] text-secondary font-bold uppercase tracking-wider block mb-1">Tổng công nợ cần đóng</span>
-                <div class="text-2xl font-bold text-secondary font-mono">{{ formatCurrency(invoices.filter(i => i.status === 'Unpaid').reduce((sum, i) => sum + i.amount, 0)) }}đ</div>
+                <div class="text-2xl font-bold text-secondary font-mono">{{ formatCurrency(myInvoices.filter(i => i.status === 'Unpaid').reduce((sum, i) => sum + i.amount, 0)) }}đ</div>
               </div>
               <div class="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center text-secondary">
                 <AlertTriangle class="w-5 h-5" />
@@ -600,7 +600,7 @@ const menuItems = [
             <div class="bg-primary/10 border border-primary/20 p-5 rounded-2xl flex items-center justify-between">
               <div>
                 <span class="text-[10px] text-primary font-bold uppercase tracking-wider block mb-1">Đã thanh toán (Tháng này)</span>
-                <div class="text-2xl font-bold text-primary font-mono">{{ invoices.filter(i => i.status === 'Paid').length }} Phiếu</div>
+                <div class="text-2xl font-bold text-primary font-mono">{{ myInvoices.filter(i => i.status === 'Paid').length }} Phiếu</div>
               </div>
               <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
                 <CheckCircle2 class="w-5 h-5" />
@@ -642,8 +642,8 @@ const menuItems = [
                 <CheckCircle2 class="w-5 h-5 text-white" />
               </div>
               <div>
-                <div class="text-xs text-white/70">Đã chọn {{ selectedInvoiceIds.length }} hóa đơn</div>
-                <div class="font-bold font-mono text-lg">{{ formatCurrency(invoices.filter(i => selectedInvoiceIds.includes(i.id)).reduce((s, i) => s + i.amount, 0)) }}đ</div>
+                <div class="text-[10px] text-text-muted font-bold uppercase tracking-wider">Đang chọn {{ selectedInvoiceIds.length }} hóa đơn</div>
+                <div class="font-bold font-mono text-lg">{{ formatCurrency(myInvoices.filter(i => selectedInvoiceIds.includes(i.id)).reduce((s, i) => s + i.amount, 0)) }}đ</div>
               </div>
             </div>
             <button @click="startBatchPayment" class="px-6 py-2.5 bg-secondary hover:bg-[#b07d62] font-bold text-sm rounded-full shadow-md cursor-pointer transition-colors">
