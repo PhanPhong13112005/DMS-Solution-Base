@@ -59,5 +59,5 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 app.MapControllers();
 
-// Khởi chạy chính xác trên port 8081 dành cho Nhóm 2
-app.Run("http://localhost:8081");
+// Khởi chạy
+app.Run();
