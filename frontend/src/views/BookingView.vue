@@ -345,16 +345,18 @@ const formatCurrency = (amount: number) => {
           <div v-if="step === 2" class="space-y-5">
             <h4 class="font-serif text-[#4A4A4A] text-sm">Tải lên hồ sơ minh chứng</h4>
             <div class="space-y-3">
-              <div @click="cccdUploaded = true" class="border-2 border-dashed border-[#EAE7E1] hover:border-[#6B705C] rounded-2xl p-6 text-center cursor-pointer transition-all bg-[#FDFBF7]">
+              <label class="block border-2 border-dashed border-[#EAE7E1] hover:border-[#6B705C] rounded-2xl p-6 text-center cursor-pointer transition-all bg-[#FDFBF7]">
+                <input type="file" class="hidden" accept="image/*,.pdf" @change="cccdUploaded = !!($event.target.files && $event.target.files.length)" />
                 <Upload :class="['w-8 h-8 mx-auto mb-2', cccdUploaded ? 'text-[#6B705C]' : 'text-[#8B8B8B]']" />
                 <div class="text-xs font-bold text-[#4A4A4A]">Căn cước công dân <span class="text-[#CB997E]">*</span></div>
                 <span v-if="cccdUploaded" class="text-[#6B705C] text-xs font-semibold block mt-1.5">✓ Đính kèm thành công!</span>
-              </div>
-              <div @click="studentCardUploaded = true" class="border-2 border-dashed border-[#EAE7E1] hover:border-[#6B705C] rounded-2xl p-6 text-center cursor-pointer transition-all bg-[#FDFBF7]">
+              </label>
+              <label class="block border-2 border-dashed border-[#EAE7E1] hover:border-[#6B705C] rounded-2xl p-6 text-center cursor-pointer transition-all bg-[#FDFBF7]">
+                <input type="file" class="hidden" accept="image/*,.pdf" @change="studentCardUploaded = !!($event.target.files && $event.target.files.length)" />
                 <Upload :class="['w-8 h-8 mx-auto mb-2', studentCardUploaded ? 'text-[#6B705C]' : 'text-[#8B8B8B]']" />
                 <div class="text-xs font-bold text-[#4A4A4A]">Thẻ sinh viên / Giấy báo <span class="text-[#CB997E]">*</span></div>
                 <span v-if="studentCardUploaded" class="text-[#6B705C] text-xs font-semibold block mt-1.5">✓ Đính kèm thành công!</span>
-              </div>
+              </label>
             </div>
           </div>
 
