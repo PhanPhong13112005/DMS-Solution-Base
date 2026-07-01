@@ -274,20 +274,22 @@ const appActions: AppActions = {
   // Admin Portal Actions
   approveApplication: async (appId: string) => {
     try { await contractApi.applications.approve(appId); } catch(e) {}
-    const idx = applications.value.findIndex((app) => app.id === appId);
+    const idx = applications.value.findIndex((app) => String(app.id) === String(appId));
     if (idx !== -1) {
       applications.value[idx].status = 'Approved';
       applications.value[idx].updatedAt = new Date().toISOString();
+      applications.value = [...applications.value];
       localStorage.setItem('cached_applications', JSON.stringify(applications.value));
     }
   },
 
   rejectApplication: async (appId: string) => {
     try { await contractApi.applications.reject(appId); } catch(e) {}
-    const idx = applications.value.findIndex((app) => app.id === appId);
+    const idx = applications.value.findIndex((app) => String(app.id) === String(appId));
     if (idx !== -1) {
       applications.value[idx].status = 'Rejected';
       applications.value[idx].updatedAt = new Date().toISOString();
+      applications.value = [...applications.value];
       localStorage.setItem('cached_applications', JSON.stringify(applications.value));
     }
   },

@@ -407,7 +407,7 @@ const menuItems = [
             </div>
           </div>
 
-          <div v-if="myApplication && !myRoom" class="bg-orange-50 border border-orange-200 text-orange-800 p-5 rounded-[24px] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs">
+          <div v-if="myApplication && myApplication.status === 'Pending'" class="bg-orange-50 border border-orange-200 text-orange-800 p-5 rounded-[24px] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs mb-6">
             <div class="flex items-center gap-4">
               <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
                 <ClipboardList class="w-6 h-6" />
@@ -419,6 +419,21 @@ const menuItems = [
             </div>
             <div class="px-4 py-2 bg-orange-100 text-orange-700 text-xs font-bold rounded-full border border-orange-200 whitespace-nowrap shadow-sm">
               Đang xử lý
+            </div>
+          </div>
+
+          <div v-if="myApplication && myApplication.status === 'Approved'" class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-5 rounded-[24px] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xs mb-6">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                <CheckCircle class="w-6 h-6" />
+              </div>
+              <div>
+                <h4 class="font-bold text-sm text-emerald-900">Hồ sơ đã được phê duyệt!</h4>
+                <p class="text-xs md:text-sm opacity-90 mt-0.5 leading-relaxed">Ban quản lý đã duyệt yêu cầu xếp phòng của bạn. Bạn có thể xem chi tiết ở mục <strong>Phòng của tôi</strong>.</p>
+              </div>
+            </div>
+            <div class="px-4 py-2 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full border border-emerald-200 whitespace-nowrap shadow-sm">
+              Đã duyệt
             </div>
           </div>
 
