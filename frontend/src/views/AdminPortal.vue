@@ -732,11 +732,14 @@ const openEditRoomModal = (room) => {
 
 const handleSaveRoom = async () => {
   try {
+    const payload = { ...roomForm.value };
+    if (!payload.id) delete payload.id;
+
     if (isEditingRoom.value) {
-      await roomBuildingApi.rooms.update(roomForm.value.id, roomForm.value);
+      await roomBuildingApi.rooms.update(roomForm.value.id, payload);
       showToast('Cập nhật phòng thành công!', 'success');
     } else {
-      await roomBuildingApi.rooms.create(roomForm.value);
+      await roomBuildingApi.rooms.create(payload);
       showToast('Tạo phòng mới thành công!', 'success');
     }
     showRoomModal.value = false;
@@ -801,11 +804,14 @@ const handleSaveRoomType = async () => {
     return;
   }
   try {
+    const payload = { ...roomTypeForm.value };
+    if (!payload.id) delete payload.id;
+
     if (isEditingRoomType.value) {
-      await roomBuildingApi.roomTypes.update(roomTypeForm.value.id, roomTypeForm.value);
+      await roomBuildingApi.roomTypes.update(roomTypeForm.value.id, payload);
       showToast('Cập nhật loại phòng thành công!', 'success');
     } else {
-      await roomBuildingApi.roomTypes.create(roomTypeForm.value);
+      await roomBuildingApi.roomTypes.create(payload);
       showToast('Tạo loại phòng mới thành công!', 'success');
     }
     showRoomTypeModal.value = false;
