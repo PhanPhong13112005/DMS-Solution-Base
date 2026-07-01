@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { Search, MapPin, Users, Heart, ClipboardCheck, ArrowRight, ShieldAlert, Upload, HelpCircle, CheckCircle2, UserCheck, CreditCard, Landmark, Coins, AlertCircle } from 'lucide-vue-next';
 import type { BookingApplication } from '../types';
 import { useAppData } from '../composables/useAppData';
+import { contractApi } from '../services/contract.service';
 
 // ============ USE TYPE-SAFE APP DATA & ACTIONS ============
 const { rooms, actions } = useAppData();
@@ -114,7 +115,7 @@ const handleNextStep = () => {
   }
 };
 
-const submitBooking = () => {
+const submitBooking = async () => {
   localError.value = null;
   if (!agreeRules.value) {
     localError.value = 'Bạn phải tích chọn đồng ý cam kết với nội quy KTX mới có thể tiếp tục!';
@@ -123,9 +124,9 @@ const submitBooking = () => {
   if (!selectedRoom.value) return;
 
   isSubmitting.value = true;
-  setTimeout(() => {
-    const newApp: BookingApplication = {
-      id: 'app-' + Math.random().toString(36).substr(2, 9),
+  
+  try {
+    const newApp = {
       fullName: fullName.value,
       studentId: studentId.value,
       className: className.value,
@@ -135,17 +136,20 @@ const submitBooking = () => {
       roomNumber: selectedRoom.value!.roomNumber,
       building: selectedRoom.value!.building,
       paymentMethod: paymentMethod.value,
-      status: 'Pending',
-      createdAt: new Date().toISOString().replace('T', ' ').substr(0, 16),
+      status: 'Pending' as const,
       evidenceCCCD: 'cccd_front_' + studentId.value + '.jpg',
       evidenceStudentCard: 'student_card_' + studentId.value + '.jpg'
     };
-
-    emit('addApplication', newApp);
-    emit('updateRoomVacancy', selectedRoom.value!.id, true);
+    
+    await contractApi.applications.create(newApp);
+    
     isSubmitting.value = false;
     step.value = 5;
-  }, 1000);
+  } catch (error) {
+    console.error('Lỗi khi gửi đơn đăng ký:', error);
+    localError.value = 'Có lỗi xảy ra khi gửi đơn đăng ký. Vui lòng thử lại sau.';
+    isSubmitting.value = false;
+  }
 };
 
 const formatCurrency = (amount: number) => {
