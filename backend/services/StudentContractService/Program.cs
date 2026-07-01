@@ -13,7 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 // 2. Cấu hình Client để gọi đồng bộ qua API Gateway (Cổng 5000)
 builder.Services.AddHttpClient<RoomServiceClient>(client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5000");
+    var gatewayHost = builder.Configuration["Gateway:BaseUrl"] ?? "http://gateway:5000";
+    client.BaseAddress = new Uri(gatewayHost);
 });
 
 // 3. Tích hợp MassTransit kết nối với Message Broker RabbitMQ của hệ thống
@@ -26,7 +27,11 @@ builder.Services.AddMassTransit(x =>
     // Cấu hình kết nối tới RabbitMQ (CHỈ GIỮ LẠI 1 KHỐI NÀY DUY NHẤT)
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host("localhost", "/");
+        var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "rabbitmq";
+        cfg.Host(rabbitHost, "/", h => {
+            h.Username("guest");
+            h.Password("guest");
+        });
         cfg.ConfigureEndpoints(context);
     });
 });
