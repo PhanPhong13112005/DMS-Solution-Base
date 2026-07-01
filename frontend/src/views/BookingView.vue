@@ -447,8 +447,6 @@ const formatCurrency = (amount: number) => {
         <div v-else class="bg-[#FDFBF7] px-6 py-4 border-t border-[#EAE7E1]">
           <button @click="handleCloseModal" class="w-full py-3 bg-[#6B705C] text-white font-bold rounded-full hover:bg-[#8B9178] transition-all text-center text-xs cursor-pointer">Xác nhận và kết thúc</button>
         </div>
-
-      </div>
       </div>
     </div>
   </div>
