@@ -368,16 +368,35 @@ const formatCurrency = (amount: number) => {
                 <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-[#6B705C] shrink-0"><Landmark class="w-5 h-5" /></div>
                 <div><div class="text-sm font-bold text-[#4A4A4A]">Chuyển khoản Ngân hàng</div></div>
               </label>
+              <div v-if="paymentMethod === 'bank'" class="p-4 bg-[#FDFBF7] rounded-xl border border-[#EAE7E1] text-sm text-[#4A4A4A] animate-in fade-in slide-in-from-top-2">
+                <p class="font-bold mb-2 text-[#CB997E]">Thông tin chuyển khoản:</p>
+                <p>Ngân hàng: <strong>Vietcombank</strong></p>
+                <p>Số tài khoản: <strong>0123456789</strong></p>
+                <p>Chủ tài khoản: <strong>ĐẠI HỌC ĐẠI NAM</strong></p>
+                <p class="mt-2 text-xs text-[#8B8B8B]">Cú pháp: <span class="font-bold text-[#6B705C]">KTX {{ studentId || '[Mã Sinh Viên]' }} {{ fullName || '[Họ Tên]' }}</span></p>
+                <div class="mt-4 flex justify-center">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" alt="QR Code" class="w-32 h-32 rounded-lg border border-[#EAE7E1] p-2 bg-white" />
+                </div>
+              </div>
+
               <label :class="['flex items-center gap-4 p-4 border rounded-2xl cursor-pointer hover:border-[#CB997E] transition-all', paymentMethod === 'e-wallet' ? 'border-[#CB997E] bg-[#CB997E]/10' : 'border-[#EAE7E1]']">
                 <input type="radio" v-model="paymentMethod" value="e-wallet" class="text-[#6B705C] focus:ring-[#6B705C] w-4.5 h-4.5" />
                 <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0"><CreditCard class="w-5 h-5" /></div>
                 <div><div class="text-sm font-bold text-[#4A4A4A]">Ví điện tử MoMo / ShopeePay</div></div>
               </label>
+              <div v-if="paymentMethod === 'e-wallet'" class="p-4 bg-[#FDFBF7] rounded-xl border border-[#EAE7E1] text-sm text-[#4A4A4A] text-center animate-in fade-in slide-in-from-top-2">
+                <p class="font-bold mb-3 text-[#CB997E]">Quét mã QR qua ứng dụng Ví điện tử</p>
+                <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" alt="Momo QR Code" class="w-32 h-32 mx-auto rounded-lg border border-[#EAE7E1] p-2 bg-white" />
+              </div>
+
               <label :class="['flex items-center gap-4 p-4 border rounded-2xl cursor-pointer hover:border-[#CB997E] transition-all', paymentMethod === 'direct' ? 'border-[#CB997E] bg-[#CB997E]/10' : 'border-[#EAE7E1]']">
                 <input type="radio" v-model="paymentMethod" value="direct" class="text-[#6B705C] focus:ring-[#6B705C] w-4.5 h-4.5" />
                 <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0"><Coins class="w-5 h-5" /></div>
                 <div><div class="text-sm font-bold text-[#4A4A4A]">Thanh toán tiền mặt trực tiếp</div></div>
               </label>
+              <div v-if="paymentMethod === 'direct'" class="p-4 bg-[#FDFBF7] rounded-xl border border-[#EAE7E1] text-sm text-[#4A4A4A] animate-in fade-in slide-in-from-top-2">
+                <p class="leading-relaxed">Vui lòng mang theo số tiền mặt tương ứng lệ phí phòng KTX đến <strong class="text-[#CB997E]">Phòng Kế toán (P.101 Tòa A)</strong> trong vòng 3 ngày làm việc sau khi nộp đơn để hoàn tất thủ tục đăng ký.</p>
+              </div>
             </div>
           </div>
 
