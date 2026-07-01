@@ -1,5 +1,4 @@
 <script setup lang="ts">
-<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { usePagination } from '../composables/usePagination';
 import apiClient from '../api/axios';
