@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { Search, MapPin, Users, Heart, ClipboardCheck, ArrowRight, ShieldAlert, Upload, HelpCircle, CheckCircle2, UserCheck, CreditCard, Landmark, Coins, AlertCircle } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
 import type { BookingApplication } from '../types';
 import { useAppData } from '../composables/useAppData';
 
 // ============ USE TYPE-SAFE APP DATA & ACTIONS ============
 const { rooms, actions } = useAppData();
+const router = useRouter();
 
 const filter = ref<string>('Tất cả');
 const searchBldg = ref<string>('Tất cả');
@@ -68,6 +70,13 @@ const filteredRooms = computed(() => {
 });
 
 const handleOpenBooking = (room: Room) => {
+  const cachedUser = localStorage.getItem('current_user');
+  if (!cachedUser) {
+    alert('Vui lòng đăng nhập để tiến hành đăng ký phòng!');
+    router.push('/auth');
+    return;
+  }
+  
   if (room.available === 0) return;
   selectedRoom.value = room;
   step.value = 1;

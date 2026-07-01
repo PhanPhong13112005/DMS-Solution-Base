@@ -56,8 +56,7 @@ const router = createRouter({
     { 
       path: '/booking', 
       name: 'Booking',
-      component: BookingView,
-      meta: { requiresAuth: true }
+      component: BookingView
     },
 
     // --- NHÓM TRANG NỘI BỘ (PRIVATE PORTALS) ---
