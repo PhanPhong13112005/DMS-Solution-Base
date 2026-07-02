@@ -63,5 +63,12 @@ namespace BillingMaintenanceService.Controllers
 
             return Ok(new { StatusCode = 201, IsSuccess = true, Message = "Đã chốt chỉ số điện nước thành công!" });
         }
+        [HttpGet("current-month")]
+        public IActionResult GetCurrentMonthUtilities()
+        {
+            string currentMonth = DateTime.Now.ToString("MM/yyyy");
+            var records = _repo.GetUtilityRecordsByMonth(currentMonth);
+            return Ok(new { StatusCode = 200, IsSuccess = true, Data = records });
+        }
     }
 }

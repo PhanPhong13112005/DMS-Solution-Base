@@ -45,6 +45,10 @@ namespace BillingMaintenanceService.Infrastructure
         public List<UtilityRecord> GetUnprocessedUtilityRecords(string targetMonth) =>
             _context.UtilityRecords.Where(u => u.TargetMonth == targetMonth && !u.IsProcessed).ToList();
 
+        /// <summary>Lấy toàn bộ bản ghi điện nước của 1 tháng để hiển thị</summary>
+        public List<UtilityRecord> GetUtilityRecordsByMonth(string targetMonth) =>
+            _context.UtilityRecords.Where(u => u.TargetMonth == targetMonth).ToList();
+
         // =====================================================================
         // BẢO TRÌ (MAINTENANCE)
         // =====================================================================

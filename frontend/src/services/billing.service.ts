@@ -156,6 +156,10 @@ export const utilitiesApi = {
   /** POST /utilities/record — Ghi nhận chỉ số điện nước */
   record: (data: { roomId: string | number; electricityIndex: number; waterIndex: number; recordedDate?: string }) =>
     apiClient.post('/utilities/record', data).then(extractData<any>),
+    
+  /** GET /utilities/current-month — Lấy tất cả chỉ số điện nước của tháng hiện tại */
+  getCurrentMonth: () =>
+    apiClient.get('/utilities/current-month').then(extractData<any[]>),
 };
 
 // ============================================================

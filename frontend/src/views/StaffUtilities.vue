@@ -45,13 +45,29 @@ const handleSaveUtility = async (room: any) => {
   }
 };
 
-onMounted(() => {
-  // Initialize utilities state
+onMounted(async () => {
+  // Initialize utilities state with 0
   rooms.value.forEach(r => {
     if (!utilitiesData.value[r.id]) {
       utilitiesData.value[r.id] = { electricity: 0, water: 0, isSaved: false };
     }
   });
+
+  // Fetch current month records to prefill UI
+  try {
+    const records = await billingApi.utilities.getCurrentMonth();
+    if (records && Array.isArray(records)) {
+      records.forEach((record: any) => {
+        if (utilitiesData.value[record.roomId]) {
+          utilitiesData.value[record.roomId].electricity = record.electricityIndex || 0;
+          utilitiesData.value[record.roomId].water = record.waterIndex || 0;
+          utilitiesData.value[record.roomId].isSaved = record.isProcessed;
+        }
+      });
+    }
+  } catch (err) {
+    console.error('Failed to fetch current month utilities:', err);
+  }
 });
 </script>
 
