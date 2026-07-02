@@ -40,17 +40,32 @@ const billAmount = ref('');
 
 const extraInvoices = computed(() => {
   return props.invoices
-    .filter(i => i.type === 'EXTRA_FEE')
-    .sort((a, b) => b.id.localeCompare(a.id));
+    .filter((i: Invoice) => i.type === 'EXTRA_FEE')
+    .map((i: Invoice) => {
+      const room = props.rooms.find(r => r.id == i.roomNumber);
+      return {
+        ...i,
+        roomNumber: room ? room.roomNumber : i.roomNumber
+      };
+    });
 });
 
 const searchInvoice = ref('');
 const unpaidInvoices = computed(() => {
-  return props.invoices.filter(i => 
-    i.status === 'Unpaid' && 
-    ((i.roomNumber || '').toLowerCase().includes(searchInvoice.value.toLowerCase()) || 
-     (i.studentId || '').toLowerCase().includes(searchInvoice.value.toLowerCase()))
-  );
+  const query = searchInvoice.value.toLowerCase();
+  return props.invoices
+    .filter(i => i.status === 'Unpaid')
+    .map((i: Invoice) => {
+      const room = props.rooms.find(r => r.id == i.roomNumber);
+      return {
+        ...i,
+        roomNumber: room ? room.roomNumber : i.roomNumber
+      };
+    })
+    .filter((i: Invoice) => 
+      String(i.studentId).includes(query) || 
+      String(i.roomNumber).toLowerCase().includes(query)
+    );
 });
 
 const pendingApps = computed(() => props.applications.filter(a => a.status === 'Pending'));
@@ -158,8 +173,8 @@ const handleCreateBill = async () => {
   }
   
   try {
-    await billingApi.invoices.createExtraFee({
-      roomId: parseInt(billRoom.value.split('-')[0]) || 0,
+    const newInv = await billingApi.invoices.createExtraFee({
+      roomId: parseInt(billRoom.value as string) || 0,
       studentId: 0,
       reason: billReason.value,
       description: billDesc.value,
@@ -169,6 +184,11 @@ const handleCreateBill = async () => {
     showToast('Đã phát hành hóa đơn phát sinh lẻ thành công!', 'success');
     billAmount.value = '';
     billDesc.value = '';
+    if (actions?.payInvoice) {
+      // Just a trigger to reload data, but ideally we should have a reload function
+      // If we don't have reload, we can mock adding it to the list
+      emit('reload-data'); 
+    }
   } catch (error) {
     showToast('Có lỗi xảy ra khi phát hành hóa đơn!', 'error');
   }
@@ -387,7 +407,7 @@ const menuItems = [
                 <label class="text-xs font-bold text-text-main">Chọn phòng phát hành <span class="text-secondary">*</span></label>
                 <select v-model="billRoom" required class="w-full bg-background border border-border focus:border-primary rounded-2xl px-4 py-2.5 text-xs font-mono font-bold outline-none">
                   <option value="" disabled>-- Chọn phòng --</option>
-                  <option v-for="room in props.rooms" :key="room.id" :value="room.roomNumber + '-' + room.building">
+                  <option v-for="room in props.rooms" :key="room.id" :value="room.id">
                     Phòng {{ room.roomNumber }} - Tòa {{ room.building }}
                   </option>
                 </select>
