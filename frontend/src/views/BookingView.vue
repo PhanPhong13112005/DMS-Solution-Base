@@ -6,7 +6,7 @@ import type { BookingApplication } from '../types';
 import { useAppData } from '../composables/useAppData';
 
 // ============ USE TYPE-SAFE APP DATA & ACTIONS ============
-const { rooms, actions } = useAppData();
+const { rooms, actions, user } = useAppData();
 const router = useRouter();
 
 const filter = ref<string>('Tất cả');
@@ -22,12 +22,12 @@ const showAuthAlert = ref(false);
 const step = ref(1);
 const localError = ref<string | null>(null);
 
-// Form Inputs
-const fullName = ref('');
-const studentId = ref('');
-const className = ref('');
-const phone = ref('');
-const email = ref('');
+// Form Inputs - Pre-fill with current user data if available
+const fullName = ref(user?.value?.name || '');
+const studentId = ref(user?.value?.id || '');
+const className = ref(user?.value?.className || '');
+const phone = ref(user?.value?.phone || '');
+const email = ref(user?.value?.email || '');
 const paymentMethod = ref<'bank' | 'e-wallet' | 'direct'>('bank');
 const cccdUploaded = ref(false);
 const studentCardUploaded = ref(false);
