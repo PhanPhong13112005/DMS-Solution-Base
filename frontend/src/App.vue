@@ -219,8 +219,13 @@ const appActions: AppActions = {
   },
 
   addMaintenance: async (req: MaintenanceRequest) => {
-    const newReq = await billingApi.maintenance.create(req);
-    maintenanceRequests.value.push(newReq);
+    // If it already has an ID from backend, just push it (useful for FormData uploads)
+    if ((req as any).id) {
+      maintenanceRequests.value.push(req);
+    } else {
+      const newReq = await billingApi.maintenance.create(req);
+      maintenanceRequests.value.push(newReq);
+    }
   },
 
   updateMaintenanceStatus: async (id: string, status: MaintenanceRequest['status']) => {

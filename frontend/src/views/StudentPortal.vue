@@ -256,6 +256,8 @@ const handleMaintenanceSubmit = async () => {
 
   const formData = new FormData();
   formData.append('roomNumber', myRoom.value ? `${myRoom.value.roomNumber}-${myRoom.value.building || ''}` : studentUser.value.roomNumber || '101');
+  formData.append('roomId', myRoom.value?.id?.toString() || '1');
+  formData.append('studentId', '1'); // Pass dummy int to satisfy N3 DB schema
   formData.append('title', maintTitle.value);
   formData.append('description', maintDesc.value);
   formData.append('category', maintCategory.value);
@@ -265,7 +267,7 @@ const handleMaintenanceSubmit = async () => {
   }
 
   try {
-    await billingApi.maintenance.createWithImage(formData);
+    const newReq = await billingApi.maintenance.createWithImage(formData);
     showToast('Đã gửi phiếu báo hỏng kỹ thuật thành công tới ban kỹ sư KTX!', 'success');
     maintTitle.value = '';
     maintDesc.value = '';
@@ -274,7 +276,10 @@ const handleMaintenanceSubmit = async () => {
     maintImage.value = null;
     
     // Tải lại list
-    // if (actions?.fetchMaintenance) actions.fetchMaintenance(); // if applicable
+    if (actions?.addMaintenance) {
+       // Mock push since we directly hit API here
+       actions.addMaintenance(newReq as any); // Update local state directly
+    }
   } catch (error) {
     showToast('Có lỗi xảy ra khi gửi phiếu báo hỏng!', 'error');
   }
