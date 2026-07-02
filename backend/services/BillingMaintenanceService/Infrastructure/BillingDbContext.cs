@@ -115,7 +115,7 @@ namespace BillingMaintenanceService.Infrastructure
                     Description = "Điều hòa không lạnh, phát ra tiếng ồn lớn, chảy nước",
                     Category    = MaintenanceCategory.Electricity,
                     Priority    = MaintenancePriority.Normal,
-                    Status      = MaintenanceStatus.Completed,
+                    Status      = MaintenanceStatus.Resolved,
                     ImageUrl    = null,
                     CreatedAt   = new DateTime(2026, 6, 10),
                     UpdatedAt   = new DateTime(2026, 6, 12)
@@ -143,7 +143,7 @@ namespace BillingMaintenanceService.Infrastructure
                     Description = "Bóng đèn phòng ngủ bị hỏng, phòng tối, ảnh hưởng việc học",
                     Category    = MaintenanceCategory.Electricity,
                     Priority    = MaintenancePriority.Normal,
-                    Status      = MaintenanceStatus.Processing,
+                    Status      = MaintenanceStatus.InProgress,
                     ImageUrl    = null,
                     CreatedAt   = new DateTime(2026, 6, 22),
                     UpdatedAt   = new DateTime(2026, 6, 23)
