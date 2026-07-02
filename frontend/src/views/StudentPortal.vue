@@ -77,6 +77,20 @@ const fetchMyInvoices = async () => {
   }
 };
 
+// Fetch room invoices when room info is available
+watchEffect(async () => {
+  if (myRoom.value?.id) {
+    try {
+      const roomInvoices = await billingApi.invoices.getByRoom(myRoom.value.id) || [];
+      // Merge and deduplicate
+      const all = [...myInvoices.value, ...roomInvoices];
+      myInvoices.value = Array.from(new Map(all.map(item => [item.id, item])).values());
+    } catch(e) {
+      console.error('Lỗi tải hóa đơn phòng:', e);
+    }
+  }
+});
+
 onMounted(async () => {
   fetchMyInvoices();
   const studentId = studentUser.value?.id;
