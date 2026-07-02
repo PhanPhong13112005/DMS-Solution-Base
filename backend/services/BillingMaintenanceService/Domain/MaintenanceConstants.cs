@@ -6,11 +6,13 @@ namespace BillingMaintenanceService.Domain
     /// </summary>
     public static class MaintenanceStatus
     {
-        public const string Pending    = "Pending";     // Chờ xử lý
-        public const string Processing = "Processing";  // Đang xử lý
-        public const string Completed  = "Completed";   // Đã hoàn tất
+        public const string Pending    = "Pending";       // Chờ xử lý
+        public const string InProgress = "In Progress";   // Đang xử lý
+        public const string Resolved   = "Resolved";      // Đã giải quyết
+        public const string Cancelled  = "Cancelled";     // Sinh viên hủy
+        public const string Rejected   = "Rejected";      // BQL từ chối
 
-        public static readonly string[] All = { Pending, Processing, Completed };
+        public static readonly string[] All = { Pending, InProgress, Resolved, Cancelled, Rejected };
 
         public static bool IsValid(string status) =>
             All.Contains(status, StringComparer.OrdinalIgnoreCase);

@@ -60,20 +60,20 @@ export const transferRequestsApi = {
   /**
    * GET: Lấy danh sách tất cả yêu cầu chuyển phòng
    */
-  getAll: () => apiRequest.get<any>('/StudentContracts/Transfers').then(res => res.value || res),
+  getAll: () => apiRequest.get<any>('/Transfers').then(res => res.value || res),
 
   /**
    * GET: Lấy thông tin chi tiết một yêu cầu
    * @param id - Transfer Request ID
    */
-  getById: (id: string) => apiRequest.get<TransferRequest>(`/StudentContracts/Transfers/${id}`),
+  getById: (id: string) => apiRequest.get<TransferRequest>(`/Transfers/${id}`),
 
   /**
    * POST: Tạo yêu cầu chuyển phòng mới
    * @param data - Transfer request data
    */
   create: (data: Omit<TransferRequest, 'id' | 'createdAt'>) =>
-    apiRequest.post<TransferRequest>('/StudentContracts/Transfers', data),
+    apiRequest.post<TransferRequest>('/Transfers', data),
 
   /**
    * PUT: Cập nhật trạng thái yêu cầu
@@ -81,21 +81,21 @@ export const transferRequestsApi = {
    * @param status - New status
    */
   updateStatus: (id: string, status: string) =>
-    apiRequest.put<void>(`/StudentContracts/Transfers/${id}/status`, { status }),
+    apiRequest.put<void>(`/Transfers/${id}/status`, { status }),
 
   /**
    * PUT: Phê duyệt yêu cầu chuyển phòng
    * @param id - Transfer Request ID
    */
   approve: (id: string) =>
-    apiRequest.put<void>(`/StudentContracts/Transfers/${id}/approve`, { status: 'Approved' }),
+    apiRequest.put<void>(`/Transfers/${id}/approve`, { status: 'Approved' }),
 
   /**
    * PUT: Từ chối yêu cầu chuyển phòng
    * @param id - Transfer Request ID
    */
   reject: (id: string) =>
-    apiRequest.put<void>(`/StudentContracts/Transfers/${id}/reject`, { status: 'Rejected' }),
+    apiRequest.put<void>(`/Transfers/${id}/reject`, { status: 'Rejected' }),
 };
 
 // ============ EXPORT GROUPED API ============
