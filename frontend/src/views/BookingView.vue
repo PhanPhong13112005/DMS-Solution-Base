@@ -137,9 +137,8 @@ const submitBooking = () => {
 
   isSubmitting.value = true;
   
-  setTimeout(() => {
-    const newApp: BookingApplication = {
-      id: 'app-' + Math.random().toString(36).substr(2, 9),
+  try {
+    const newApp = {
       fullName: fullName.value,
       studentId: studentId.value,
       className: className.value,
@@ -149,17 +148,21 @@ const submitBooking = () => {
       roomNumber: selectedRoom.value!.roomNumber,
       building: selectedRoom.value!.building,
       paymentMethod: paymentMethod.value,
-      status: 'Pending',
-      createdAt: new Date().toISOString().replace('T', ' ').substr(0, 16),
+      status: 'Pending' as const,
       evidenceCCCD: 'cccd_front_' + studentId.value + '.jpg',
       evidenceStudentCard: 'student_card_' + studentId.value + '.jpg'
     };
 
-    actions.addApplication(newApp);
+    // Cast as BookingApplication for the action signature, although it lacks id
+    await actions.addApplication(newApp as BookingApplication);
     
     isSubmitting.value = false;
     step.value = 5;
-  }, 1000);
+  } catch (error) {
+    isSubmitting.value = false;
+    localError.value = 'Đã có lỗi xảy ra khi gửi đơn! Vui lòng thử lại.';
+    console.error(error);
+  }
 };
 
 const formatCurrency = (amount: number) => {

@@ -213,8 +213,9 @@ const appActions: AppActions = {
 
   // Student Portal Actions
   addApplication: async (app: BookingApplication) => {
-    await contractApi.applications.create(app);
-    applications.value.unshift(app);
+    const response = await contractApi.applications.create(app);
+    // Push the newly created app from the database (which has the correct ID)
+    applications.value.unshift(response);
   },
 
   addMaintenance: async (req: MaintenanceRequest) => {
