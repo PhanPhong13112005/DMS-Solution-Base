@@ -45,6 +45,34 @@ const handleSaveUtility = async (room: any) => {
   }
 };
 
+const handleCreateUtilityBill = async (room: any) => {
+  const data = utilitiesData.value[room.id];
+  if (!data || data.electricity < 0 || data.water < 0) return;
+  
+  const elecCost = data.electricity * 3500;
+  const waterCost = data.water * 25000;
+  const totalCost = elecCost + waterCost;
+  
+  if (totalCost === 0) {
+    showToast('Chỉ số bằng 0, không cần lập hóa đơn!', 'info');
+    return;
+  }
+  
+  try {
+    await billingApi.invoices.createExtraFee({
+      roomId: room.id,
+      studentId: 0,
+      reason: 'Tiền điện nước',
+      description: `Thu tiền điện tiêu thụ (${data.electricity} kWh) và nước (${data.water} m3).`,
+      amount: totalCost
+    });
+    utilitiesData.value[room.id].isProcessed = true;
+    showToast(`Đã lập hóa đơn Điện Nước cho phòng ${room.roomNumber}!`, 'success');
+  } catch (error) {
+    showToast('Có lỗi xảy ra khi lập hóa đơn.', 'error');
+  }
+};
+
 watch(() => rooms.value, (newRooms) => {
   if (newRooms) {
     newRooms.forEach(r => {
@@ -103,8 +131,9 @@ onMounted(async () => {
             <tr class="text-[10px] font-bold text-text-muted uppercase tracking-wider border-b border-border">
               <th class="py-3 px-4">Tòa / Phòng</th>
               <th class="py-3 px-4 text-center">Trạng thái</th>
-              <th class="py-3 px-4 text-center">Chỉ số Điện Mới</th>
-              <th class="py-3 px-4 text-center">Chỉ số Nước Mới</th>
+              <th class="py-3 px-4 text-center">Chỉ số Điện (kWh)</th>
+              <th class="py-3 px-4 text-center">Chỉ số Nước (m³)</th>
+              <th class="py-3 px-4 text-center">Thành tiền (VNĐ)</th>
               <th class="py-3 px-4 text-right">Thao tác</th>
             </tr>
           </thead>
@@ -132,14 +161,33 @@ onMounted(async () => {
                   <input type="number" min="0" v-model="utilitiesData[room.id].water" class="w-24 text-center bg-background border border-border rounded-lg px-2 py-1.5 outline-none focus:border-primary font-mono text-sm" :disabled="utilitiesData[room.id]?.isSaved" />
                 </div>
               </td>
+              <td class="py-3 px-4 text-center">
+                <div class="flex flex-col items-center justify-center">
+                  <span class="font-bold font-mono text-secondary">
+                    {{ new Intl.NumberFormat('vi-VN').format(
+                      (utilitiesData[room.id]?.electricity || 0) * 3500 + 
+                      (utilitiesData[room.id]?.water || 0) * 25000
+                    ) }}đ
+                  </span>
+                  <span class="text-[9px] text-text-muted mt-0.5">(3.5k/kWh - 25k/khối)</span>
+                </div>
+              </td>
               <td class="py-3 px-4 text-right">
-                <button v-if="!utilitiesData[room.id]?.isSaved" @click="handleSaveUtility(room)" class="px-4 py-1.5 bg-secondary hover:bg-[#A47148] text-white font-bold rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1">
-                  <Save class="w-3.5 h-3.5" /> Lưu
-                </button>
-                <button v-else @click="utilitiesData[room.id].isSaved = false" class="px-4 py-1.5 bg-background border border-border hover:bg-background/50 text-text-main font-bold rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1">
-                  <Edit2 class="w-3.5 h-3.5 text-text-muted" />
-                  <span>Sửa</span>
-                </button>
+                <div class="flex justify-end items-center gap-2">
+                  <button v-if="!utilitiesData[room.id]?.isSaved" @click="handleSaveUtility(room)" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1">
+                    <Save class="w-3.5 h-3.5" /> Chốt số
+                  </button>
+                  <template v-else>
+                    <button v-if="!utilitiesData[room.id]?.isProcessed" @click="handleCreateUtilityBill(room)" class="px-4 py-1.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1">
+                      <FilePlus class="w-3.5 h-3.5" /> Lập Hóa Đơn
+                    </button>
+                    <span v-else class="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200">Đã lập HĐ</span>
+                    
+                    <button @click="utilitiesData[room.id].isSaved = false" class="px-3 py-1.5 bg-background border border-border hover:bg-background/50 text-text-main font-bold rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center">
+                      <Edit2 class="w-3.5 h-3.5 text-text-muted" />
+                    </button>
+                  </template>
+                </div>
               </td>
             </tr>
             <tr v-if="filteredRooms.length === 0">
