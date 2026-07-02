@@ -33,10 +33,16 @@ const searchQuery = ref('');
 const toast = ref<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
 
 // Form Lập hóa đơn phát sinh lẻ
-const billRoom = ref('101-Tòa B');
+const billRoom = ref('');
 const billReason = ref('Phạt vi phạm');
 const billDesc = ref('');
 const billAmount = ref('');
+
+const extraInvoices = computed(() => {
+  return props.invoices
+    .filter(i => i.type === 'EXTRA_FEE')
+    .sort((a, b) => b.id.localeCompare(a.id));
+});
 
 const searchInvoice = ref('');
 const unpaidInvoices = computed(() => {
@@ -339,17 +345,22 @@ const menuItems = [
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-1">
                 <label class="text-xs font-bold text-text-main">Chọn phòng phát hành <span class="text-secondary">*</span></label>
-                <select v-model="billRoom" class="w-full bg-background border border-border focus:border-primary rounded-2xl px-4 py-2.5 text-xs font-mono font-bold outline-none">
-                  <option value="101-Tòa B">Phòng 101-Tòa B</option>
-                  <option value="A102 - Tòa A">Phòng A102-Tòa A</option>
+                <select v-model="billRoom" required class="w-full bg-background border border-border focus:border-primary rounded-2xl px-4 py-2.5 text-xs font-mono font-bold outline-none">
+                  <option value="" disabled>-- Chọn phòng --</option>
+                  <option v-for="room in props.rooms" :key="room.id" :value="room.roomNumber + '-' + room.building">
+                    Phòng {{ room.roomNumber }} - Tòa {{ room.building }}
+                  </option>
                 </select>
               </div>
               <div class="space-y-1">
                 <label class="text-xs font-bold text-text-main">Lý do thu <span class="text-secondary">*</span></label>
-                <select v-model="billReason" class="w-full bg-background border border-border focus:border-primary rounded-2xl px-4 py-2.5 text-xs outline-none">
+                <select v-model="billReason" required class="w-full bg-background border border-border focus:border-primary rounded-2xl px-4 py-2.5 text-xs outline-none">
                   <option value="Phạt vi phạm">Phạt vi phạm nội quy</option>
                   <option value="Hỏng đồ">Bồi thường tài sản hỏng</option>
                   <option value="Mất chìa khóa">Làm lại thẻ/chìa khóa</option>
+                  <option value="Tiền điện nước">Phụ trội điện nước vượt định mức</option>
+                  <option value="Vệ sinh phí">Phí vệ sinh tăng thêm</option>
+                  <option value="Khác">Lý do khác...</option>
                 </select>
               </div>
             </div>
@@ -365,6 +376,30 @@ const menuItems = [
               <FilePlus class="w-4 h-4" /> <span>Phát hành hóa đơn</span>
             </button>
           </form>
+
+          <!-- Lịch sử hóa đơn phát sinh lẻ -->
+          <div class="mt-10 border-t border-border pt-8">
+            <h4 class="font-serif text-text-main text-base mb-4">Lịch sử hóa đơn đã lập</h4>
+            <div class="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+              <div v-for="inv in extraInvoices" :key="inv.id" class="p-4 border border-border bg-background/50 rounded-2xl flex justify-between items-center hover:border-primary/30 transition-colors">
+                <div>
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="font-bold text-text-main text-sm">Phòng {{ inv.roomNumber }}</span>
+                    <span :class="['text-[10px] font-bold px-2 py-0.5 rounded-full', inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-secondary/15 text-secondary']">
+                      {{ inv.status === 'Paid' ? 'Đã thu' : 'Chưa thu' }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-text-muted">{{ inv.month }} • Lập ngày: {{ new Date(inv.createdAt).toLocaleDateString('vi-VN') }}</p>
+                </div>
+                <div class="text-base font-bold font-mono text-text-main">
+                  {{ new Intl.NumberFormat('vi-VN').format(inv.amount) }}đ
+                </div>
+              </div>
+              <div v-if="extraInvoices.length === 0" class="text-center py-6 text-text-muted italic text-xs font-mono">
+                Chưa có hóa đơn phát sinh nào được lập.
+              </div>
+            </div>
+          </div>
         </div>
 
         <div v-if="activeTab === 'Ghi nhận thu tiền'" class="bg-white rounded-[32px] border border-border p-8 shadow-sm text-left">
