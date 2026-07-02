@@ -60,7 +60,7 @@ services:
       dockerfile: backend/services/StudentContractService/Dockerfile
     container_name: dms-student-service
     environment:
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=StudentContractDb;User Id=sa;Password=PhanPhong@123;TrustServerCertificate=True;
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=StudentContractDb_v2;User Id=sa;Password=PhanPhong@123;TrustServerCertificate=True;
       - RabbitMQ__Host=rabbitmq
     ports:
       - "8081:8081"
