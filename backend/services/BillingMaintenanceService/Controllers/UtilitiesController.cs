@@ -34,16 +34,30 @@ namespace BillingMaintenanceService.Controllers
 
             string currentMonth = DateTime.Now.ToString("MM/yyyy");
 
-            // Kiểm tra xem phòng này đã chốt trong tháng này chưa
-            var existingRecord = _repo.GetUnprocessedUtilityRecords(currentMonth)
+            // Kiểm tra xem phòng này đã chốt trong tháng này chưa (bao gồm cả đã processed hay chưa)
+            var existingRecord = _repo.GetUtilityRecordsByMonth(currentMonth)
                 .FirstOrDefault(u => u.RoomId == req.RoomId);
 
             if (existingRecord != null)
             {
-                // Cập nhật lại
+                // Cập nhật lại chỉ số
                 existingRecord.ElectricityIndex = req.ElectricityIndex;
                 existingRecord.WaterIndex = req.WaterIndex;
                 _repo.UpdateUtilityRecord(existingRecord);
+
+                // Nếu đã lên Hóa đơn, phải cập nhật lại Hóa đơn luôn!
+                if (existingRecord.IsProcessed)
+                {
+                    var existingBill = _repo.GetBillsByRoomId(req.RoomId)
+                        .FirstOrDefault(b => b.TargetMonth == currentMonth && b.BillType == BillTypes.Monthly);
+
+                    if (existingBill != null && !existingBill.IsPaid)
+                    {
+                        existingBill.ElectricityCost = req.ElectricityIndex * 3500;
+                        existingBill.WaterCost = req.WaterIndex * 20000;
+                        _repo.UpdateBill(existingBill);
+                    }
+                }
             }
             else
             {

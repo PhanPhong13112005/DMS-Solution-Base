@@ -134,10 +134,11 @@ onMounted(async () => {
                 <button v-if="!utilitiesData[room.id]?.isSaved" @click="handleSaveUtility(room)" class="px-4 py-1.5 bg-secondary hover:bg-[#A47148] text-white font-bold rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1">
                   <Save class="w-3.5 h-3.5" /> Lưu
                 </button>
-                <button v-else-if="!utilitiesData[room.id]?.isProcessed" @click="utilitiesData[room.id].isSaved = false" class="px-4 py-1.5 bg-background border border-border hover:bg-background/50 text-text-main font-bold rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1">
-                  <Edit2 class="w-3.5 h-3.5 text-text-muted" /> Sửa
+                <button v-else @click="utilitiesData[room.id].isSaved = false" class="px-4 py-1.5 bg-background border border-border hover:bg-background/50 text-text-main font-bold rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1">
+                  <Edit2 class="w-3.5 h-3.5 text-text-muted" />
+                  <span v-if="utilitiesData[room.id]?.isProcessed" class="text-amber-600">Sửa đè (Đã lên HĐ)</span>
+                  <span v-else>Sửa</span>
                 </button>
-                <span v-else class="text-[10px] text-text-muted italic px-2">Đã lên HĐ</span>
               </td>
             </tr>
             <tr v-if="filteredRooms.length === 0">
