@@ -13,6 +13,7 @@ namespace BillingMaintenanceService.Infrastructure
         public DbSet<Bill> Bills { get; set; }
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<UtilityRecord> UtilityRecords { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,6 +32,11 @@ namespace BillingMaintenanceService.Infrastructure
                 entity.Property(b => b.BillType).HasMaxLength(20);
                 entity.Property(b => b.FeeReason).HasMaxLength(200);
                 entity.Property(b => b.ReceiptCode).HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<UtilityRecord>(entity =>
+            {
+                entity.Property(e => e.TargetMonth).HasMaxLength(20);
             });
 
             // ============================================================

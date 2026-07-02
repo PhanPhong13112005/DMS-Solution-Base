@@ -153,29 +153,9 @@ export const maintenanceApi = {
 // ============================================================
 
 export const utilitiesApi = {
-  /** POST /utilities/record — Ghi nhận chỉ số điện nước (Giả lập bằng cách gọi POST /bills) */
-  record: async (data: { roomId: string | number; electricityIndex: number; waterIndex: number; recordedDate?: string }) => {
-    // 1 Kwh = 3500đ, 1 khối nước = 20000đ
-    const elecCost = data.electricityIndex * 3500;
-    const waterCost = data.waterIndex * 20000;
-    
-    const d = new Date();
-    const monthStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-
-    const payload = {
-      roomId: Number(data.roomId),
-      studentId: 1, // Mặc định ID sinh viên đại diện do hệ thống backend tự map sau
-      title: `Hóa đơn Điện Nước - Phòng ${data.roomId}`,
-      targetMonth: monthStr,
-      billType: 'MONTHLY',
-      electricityCost: elecCost,
-      waterCost: waterCost,
-      serviceFee: 50000,
-      extraAmount: 0
-    };
-
-    return apiClient.post('/bills', payload).then(extractData<any>);
-  }
+  /** POST /utilities/record — Ghi nhận chỉ số điện nước */
+  record: (data: { roomId: string | number; electricityIndex: number; waterIndex: number; recordedDate?: string }) =>
+    apiClient.post('/utilities/record', data).then(extractData<any>),
 };
 
 // ============================================================

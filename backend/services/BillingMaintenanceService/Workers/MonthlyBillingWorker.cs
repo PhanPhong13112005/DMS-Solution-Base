@@ -46,43 +46,51 @@ namespace BillingMaintenanceService.Workers
             using (var scope = _serviceProvider.CreateScope())
             {
                 var billingService = scope.ServiceProvider.GetRequiredService<BillingAppService>();
+                var repo = scope.ServiceProvider.GetRequiredService<BillingMaintenanceService.Infrastructure.BillingMaintenanceRepository>();
                 
                 string currentMonth = DateTime.Now.ToString("MM/yyyy");
                 
-                // Lấy tất cả hóa đơn hiện có để tìm danh sách các phòng
-                var allBills = billingService.GetAllBills();
-                var uniqueRooms = allBills.Select(b => b.RoomId).Distinct().ToList();
+                // Lấy các bản ghi điện nước đã được chốt nhưng chưa lên hóa đơn
+                var unprocessedRecords = repo.GetUnprocessedUtilityRecords(currentMonth);
 
                 int createdCount = 0;
 
-                foreach (var roomId in uniqueRooms)
+                foreach (var record in unprocessedRecords)
                 {
-                    // Kiểm tra xem phòng này đã có hóa đơn trong tháng hiện tại chưa
-                    bool hasBillThisMonth = allBills.Any(b => b.RoomId == roomId && b.TargetMonth == currentMonth);
+                    // Lấy tất cả hóa đơn của phòng này trong tháng (để tránh trùng lặp)
+                    var existingBills = repo.GetBillsByRoomId(record.RoomId);
+                    bool hasBillThisMonth = existingBills.Any(b => b.TargetMonth == currentMonth && b.BillType == BillTypes.Monthly);
                     
                     if (!hasBillThisMonth)
                     {
-                        // Chưa có -> Tạo hóa đơn tự động
+                        // Tạo hóa đơn tự động với chỉ số đã chốt
+                        decimal elecCost = record.ElectricityIndex * 3500;
+                        decimal waterCost = record.WaterIndex * 20000;
+
                         var newBill = new Bill
                         {
-                            RoomId = roomId,
-                            StudentId = 0,
+                            RoomId = record.RoomId,
+                            StudentId = 0, // Sẽ được cập nhật chính xác nếu liên kết với Contract
                             ContractId = "AUTO-GEN",
-                            Title = $"Phí lưu trú tự động tháng {currentMonth}",
+                            Title = $"Phí lưu trú và điện nước tháng {currentMonth} - Phòng {record.RoomId}",
                             TargetMonth = currentMonth,
-                            ElectricityCost = 0,
-                            WaterCost = 0,
-                            ServiceFee = 620000 // Giả lập tiền phòng mặc định
+                            ElectricityCost = elecCost,
+                            WaterCost = waterCost,
+                            ServiceFee = 50000 // Giả lập tiền dịch vụ/rác
                         };
                         
                         billingService.CreateBill(newBill);
                         createdCount++;
                     }
+
+                    // Đánh dấu là đã xử lý
+                    record.IsProcessed = true;
+                    repo.UpdateUtilityRecord(record);
                 }
 
                 if (createdCount > 0)
                 {
-                    _logger.LogInformation("Đã tự động phát hành {Count} hóa đơn cho tháng {Month}.", createdCount, currentMonth);
+                    _logger.LogInformation("Đã tự động phát hành {Count} hóa đơn cho tháng {Month} từ các chỉ số điện nước đã chốt.", createdCount, currentMonth);
                 }
             }
         }
