@@ -415,12 +415,12 @@ const menuItems = [
               <div class="space-y-1">
                 <label class="text-xs font-bold text-text-main">Lý do thu <span class="text-secondary">*</span></label>
                 <select v-model="billReason" required class="w-full bg-background border border-border focus:border-primary rounded-2xl px-4 py-2.5 text-xs outline-none">
-                  <option value="Phạt vi phạm">Phạt vi phạm nội quy</option>
-                  <option value="Hỏng đồ">Bồi thường tài sản hỏng</option>
-                  <option value="Mất chìa khóa">Làm lại thẻ/chìa khóa</option>
-                  <option value="Tiền điện nước">Phụ trội điện nước vượt định mức</option>
-                  <option value="Vệ sinh phí">Phí vệ sinh tăng thêm</option>
-                  <option value="Khác">Lý do khác...</option>
+                  <option value="Phạt vi phạm nội quy">Phạt vi phạm nội quy</option>
+                  <option value="Bồi thường tài sản hỏng">Bồi thường tài sản hỏng</option>
+                  <option value="Làm lại thẻ/chìa khóa">Làm lại thẻ/chìa khóa</option>
+                  <option value="Phụ trội điện nước vượt định mức">Phụ trội điện nước vượt định mức</option>
+                  <option value="Phí vệ sinh tăng thêm">Phí vệ sinh tăng thêm</option>
+                  <option value="Khoản thu phát sinh khác">Lý do khác...</option>
                 </select>
               </div>
             </div>
