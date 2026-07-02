@@ -39,10 +39,10 @@ const roomsList = computed(() => rooms.value ?? []);
  * Field mapping: req.roomNumber (Số phòng), req.status (Trạng thái), req.priority (Mức độ)
  */
 const myMaintenance = computed<MaintenanceRequest[]>(() => {
-  const roomNumber = studentUser.value?.roomNumber;
-  if (!roomNumber) return [];
-  // Lọc theo phòng và đảo ngược để phiếu mới lên đầu (Task 2.2)
-  const list = maintenanceRequests.value?.filter((req) => req?.roomNumber?.includes(roomNumber)) ?? [];
+  const roomId = myRoom.value?.id;
+  if (!roomId) return [];
+  // Lọc theo phòng (roomId thay vì roomNumber do backend N3 chỉ lưu RoomId)
+  const list = maintenanceRequests.value?.filter((req) => String(req?.roomId) === String(roomId)) ?? [];
   return [...list].reverse();
 });
 
