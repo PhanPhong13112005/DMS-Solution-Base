@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useAppData } from '../composables/useAppData';
 import { billingApi } from '../services/billing.service';
 import { Save, CheckCircle, Search, FilePlus, Edit2 } from 'lucide-vue-next';
@@ -45,25 +45,28 @@ const handleSaveUtility = async (room: any) => {
   }
 };
 
-onMounted(async () => {
-  // Initialize utilities state with 0
-  rooms.value.forEach(r => {
+watch(rooms, (newRooms) => {
+  newRooms.forEach(r => {
     if (!utilitiesData.value[r.id]) {
       utilitiesData.value[r.id] = { electricity: 0, water: 0, isSaved: false, isProcessed: false };
     }
   });
+}, { immediate: true });
+
+onMounted(async () => {
 
   // Fetch current month records to prefill UI
   try {
     const records = await billingApi.utilities.getCurrentMonth();
     if (records && Array.isArray(records)) {
       records.forEach((record: any) => {
-        if (utilitiesData.value[record.roomId]) {
-          utilitiesData.value[record.roomId].electricity = record.electricityIndex || 0;
-          utilitiesData.value[record.roomId].water = record.waterIndex || 0;
-          utilitiesData.value[record.roomId].isSaved = true; // DB already has it
-          utilitiesData.value[record.roomId].isProcessed = record.isProcessed;
+        if (!utilitiesData.value[record.roomId]) {
+          utilitiesData.value[record.roomId] = { electricity: 0, water: 0, isSaved: false, isProcessed: false };
         }
+        utilitiesData.value[record.roomId].electricity = record.electricityIndex || 0;
+        utilitiesData.value[record.roomId].water = record.waterIndex || 0;
+        utilitiesData.value[record.roomId].isSaved = true; // DB already has it
+        utilitiesData.value[record.roomId].isProcessed = record.isProcessed;
       });
     }
   } catch (err) {
