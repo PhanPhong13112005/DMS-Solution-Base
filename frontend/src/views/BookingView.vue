@@ -127,7 +127,7 @@ const handleNextStep = () => {
   }
 };
 
-const submitBooking = () => {
+const submitBooking = async () => {
   localError.value = null;
   if (!agreeRules.value) {
     localError.value = 'Bạn phải tích chọn đồng ý cam kết với nội quy KTX mới có thể tiếp tục!';
