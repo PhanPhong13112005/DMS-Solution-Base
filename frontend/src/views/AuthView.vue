@@ -120,8 +120,8 @@ const handleForgetPassword = (e: Event) => {
       <div class="relative z-10 mt-12 bg-primary-light border border-primary-hover/40 p-4 rounded-2xl text-xs space-y-3 shrink-0">
         <div class="font-bold text-white uppercase tracking-widest text-[10px] pb-1 border-b border-white/10">THỬ ĐĂNG NHẬP NHANH</div>
         <div class="space-y-2 text-[11px] text-background">
-          <button @click="setCredentials('student1001', '123456')" class="w-full flex items-center justify-between p-2.5 bg-primary-dark/35 hover:bg-primary-dark/70 rounded-xl transition-all border border-white/5 text-left font-mono">
-            <span>Sinh viên: <strong class="text-secondary">student1001</strong></span>
+          <button @click="setCredentials('SV202601', '123456')" class="w-full flex items-center justify-between p-2.5 bg-primary-dark/35 hover:bg-primary-dark/70 rounded-xl transition-all border border-white/5 text-left font-mono">
+            <span>Sinh viên: <strong class="text-secondary">SV202601</strong></span>
             <span class="text-[10px] text-background/70 font-sans">Chọn</span>
           </button>
           <button @click="setCredentials('staff', '123456')" class="w-full flex items-center justify-between p-2.5 bg-primary-dark/35 hover:bg-primary-dark/70 rounded-xl transition-all border border-white/5 text-left font-mono">

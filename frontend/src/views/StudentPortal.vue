@@ -54,6 +54,7 @@ const myInvoices = ref<Invoice[]>([]);
 /**
  * Current room assignment info fetched from API
  */
+const studentCode = 'SV202601'; // Đã đổi sang SV202601 để khớp dữ liệu thật của Backend N2
 const myApplication = computed(() => {
   const studentId = studentUser.value?.id;
   if (!studentId || studentId === 'N/A') return null;
