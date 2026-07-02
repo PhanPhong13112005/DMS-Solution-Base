@@ -119,6 +119,14 @@ namespace BillingMaintenanceService.Controllers
             return Ok(new { IsSuccess = true, Message = "Thanh toán thành công!", Data = result });
         }
 
+        [HttpPut("{id:guid}/student-pay")]
+        public IActionResult StudentPayBill(Guid id)
+        {
+            var result = _billingService.StudentPayBill(id);
+            if (result == null) return NotFound(new { IsSuccess = false, Message = "Không tìm thấy hóa đơn!" });
+            return Ok(new { IsSuccess = true, Message = "Đã nộp minh chứng, chờ xác thực!", Data = result });
+        }
+
         [HttpDelete("{id:guid}")]
         public IActionResult DeleteBill(Guid id)
         {

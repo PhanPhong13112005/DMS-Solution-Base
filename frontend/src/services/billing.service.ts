@@ -23,6 +23,24 @@ import type { Invoice, MaintenanceRequest } from '../types';
 /** Trích dữ liệu thực từ response wrapper { IsSuccess, Data } của backend N3 */
 const extractData = <T>(res: any): T => res.data?.Data ?? res.data?.data ?? res.data;
 
+/** Map backend Bill model to frontend Invoice interface */
+const mapInvoice = (b: any): Invoice => ({
+  ...b,
+  id: b.id,
+  type: b.billType === 'MONTHLY' ? 'MONTHLY' : 'EXTRA_FEE',
+  title: b.title || (b.billType === 'MONTHLY' ? 'Hóa đơn tháng' : 'Hóa đơn phát sinh'),
+  amount: b.totalAmount || b.extraAmount || 0,
+  status: b.isPaid ? 'Paid' : (b.receiptCode === 'PENDING_VERIFICATION' ? 'Pending' : 'Unpaid'),
+  month: b.targetMonth || 'N/A',
+  roomNumber: b.roomId, // Add roomNumber directly from roomId
+  roomFee: b.roomFee || 0,
+  electricityFee: b.electricityCost || 0,
+  waterFee: b.waterCost || 0,
+  serviceFee: b.serviceFee || 0,
+  reason: b.feeReason || '',
+  description: b.description || b.title || '',
+});
+
 // ============================================================
 // INVOICES API (/api/v1/bills)
 // ============================================================
@@ -30,23 +48,23 @@ const extractData = <T>(res: any): T => res.data?.Data ?? res.data?.data ?? res.
 export const invoicesApi = {
   /** GET /bills — Lấy tất cả hóa đơn */
   getAll: () =>
-    apiClient.get('/bills').then(extractData<Invoice[]>),
+    apiClient.get('/bills').then(res => extractData<any[]>(res).map(mapInvoice)),
 
   /** GET /bills/{id} — Lấy hóa đơn theo ID */
   getById: (id: string) =>
-    apiClient.get(`/bills/${id}`).then(extractData<Invoice>),
+    apiClient.get(`/bills/${id}`).then(res => mapInvoice(extractData<any>(res))),
 
   /** GET /bills/room/{roomId} — Lấy hóa đơn theo phòng */
   getByRoom: (roomId: number) =>
-    apiClient.get(`/bills/room/${roomId}`).then(extractData<Invoice[]>),
+    apiClient.get(`/bills/room/${roomId}`).then(res => extractData<any[]>(res).map(mapInvoice)),
 
   /** GET /bills/student/{studentId} — Lấy hóa đơn của sinh viên */
   getByStudent: (studentId: string | number) =>
-    apiClient.get(`/bills/student/${studentId}`).then(extractData<Invoice[]>),
+    apiClient.get(`/bills/student/${studentId}`).then(res => extractData<any[]>(res).map(mapInvoice)),
 
   /** GET /bills/unpaid — Lấy tất cả hóa đơn chưa thanh toán */
   getUnpaid: () =>
-    apiClient.get('/bills/unpaid').then(extractData<Invoice[]>),
+    apiClient.get('/bills/unpaid').then(res => extractData<any[]>(res).map(mapInvoice)),
 
   /** GET /bills/stats — Thống kê doanh thu tổng hợp */
   getStats: () =>
@@ -54,15 +72,15 @@ export const invoicesApi = {
 
   /** GET /bills/type/{type} — Lọc theo loại: MONTHLY hoặc EXTRA_FEE */
   getByType: (type: 'MONTHLY' | 'EXTRA_FEE') =>
-    apiClient.get(`/bills/type/${type}`).then(extractData<Invoice[]>),
+    apiClient.get(`/bills/type/${type}`).then(res => extractData<any[]>(res).map(mapInvoice)),
 
   /** GET /bills/due-soon?days=N — Lấy hóa đơn sắp tới hạn (trong N ngày) */
   getDueSoon: (days = 3) =>
-    apiClient.get(`/bills/due-soon?days=${days}`).then(extractData<Invoice[]>),
+    apiClient.get(`/bills/due-soon?days=${days}`).then(res => extractData<any[]>(res).map(mapInvoice)),
 
   /** POST /bills — Tạo hóa đơn tháng mới (MONTHLY) */
   create: (data: Omit<Invoice, 'id' | 'createdAt'>) =>
-    apiClient.post('/bills', data).then(extractData<Invoice>),
+    apiClient.post('/bills', data).then(res => mapInvoice(extractData<any>(res))),
 
   /** POST /bills/extra-fee — Tạo hóa đơn phát sinh lẻ (phạt, đền bù...) */
   createExtraFee: (data: {
@@ -72,11 +90,15 @@ export const invoicesApi = {
     description: string;
     amount: number;
   }) =>
-    apiClient.post('/bills/extra-fee', data).then(extractData<Invoice>),
+    apiClient.post('/bills/extra-fee', data).then(res => mapInvoice(extractData<any>(res))),
+
+  /** PUT /bills/{id}/student-pay — Học sinh xác nhận thanh toán (chờ staff duyệt) */
+  studentPay: (id: string) =>
+    apiClient.put(`/bills/${id}/student-pay`).then(res => mapInvoice(extractData<any>(res))),
 
   /** PUT /bills/{id}/pay — Thanh toán hóa đơn (sinh mã biên lai tự động) */
   markAsPaid: (id: string) =>
-    apiClient.put(`/bills/${id}/pay`, {}).then(extractData<Invoice>),
+    apiClient.put(`/bills/${id}/pay`, {}).then(res => mapInvoice(extractData<any>(res))),
 
   /** DELETE /bills/{id} — Xóa hóa đơn */
   delete: (id: string) =>

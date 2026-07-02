@@ -66,31 +66,13 @@ const myRoom = ref<any>(null);
 import { roomBuildingApi } from '../services/room-building.service';
 import { billingApi } from '../services/billing.service';
 
-// Hàm ánh xạ dữ liệu Backend -> Frontend
-const mapInvoice = (b: any) => ({
-  ...b,
-  id: b.id,
-  type: b.billType === 'MONTHLY' ? 'MONTHLY' : 'EXTRA_FEE', // Giữ nguyên enum MONTHLY/EXTRA_FEE để form Payment đọc đúng
-  title: b.title || (b.billType === 'MONTHLY' ? 'Hóa đơn tháng' : 'Hóa đơn phát sinh'),
-  amount: b.totalAmount || b.extraAmount || 0,
-  status: b.isPaid ? 'Paid' : 'Unpaid',
-  month: b.targetMonth || 'N/A',
-  roomNumber: myRoom.value?.roomNumber || b.roomId,
-  roomFee: b.roomFee || 0,
-  electricityFee: b.electricityCost || 0,
-  waterFee: b.waterCost || 0,
-  serviceFee: b.serviceFee || 0,
-  reason: b.feeReason || '',
-  description: b.description || b.title || '',
-});
-
 const fetchMyInvoices = async () => {
   const studentId = studentUser.value?.id;
   if (!studentId || studentId === 'N/A') return;
   try {
     const data = await billingApi.invoices.getByStudent(studentId);
     if (data) {
-      myInvoices.value = data.map(mapInvoice);
+      myInvoices.value = data;
     }
   } catch(e) {
     console.error('Lỗi tải hóa đơn:', e);
@@ -102,9 +84,8 @@ watchEffect(async () => {
   if (myRoom.value?.id) {
     try {
       const roomInvoices = await billingApi.invoices.getByRoom(myRoom.value.id) || [];
-      const mappedInvoices = roomInvoices.map(mapInvoice);
       // Merge and deduplicate
-      const all = [...myInvoices.value, ...mappedInvoices];
+      const all = [...myInvoices.value, ...roomInvoices];
       myInvoices.value = Array.from(new Map(all.map(item => [item.id, item])).values());
     } catch(e) {
       console.error('Lỗi tải hóa đơn phòng:', e);
@@ -372,31 +353,28 @@ const startBatchPayment = () => {
 };
 
 const completeInvoicePayment = async () => {
-  if (!payingInvoice.value) return;
-  
   try {
-    if (payingInvoice.value.id.toString().startsWith('HD-GOP-')) {
+    if (selectedInvoiceIds.value.length > 0 && !payingInvoice.value) {
+      // Thanh toán gộp
       for (const id of selectedInvoiceIds.value) {
-        await billingApi.invoices.markAsPaid(id);
+        await billingApi.invoices.studentPay(id);
         const inv = myInvoices.value.find(i => String(i.id) === String(id));
-        if (inv) inv.status = 'Paid';
-        if (actions?.payInvoice) actions.payInvoice(id); // Vẫn gọi để update mock nếu cần
+        if (inv) inv.status = 'Pending';
       }
       selectedInvoiceIds.value = [];
-    } else {
+    } else if (payingInvoice.value) {
       const payId = payingInvoice.value.id;
-      await billingApi.invoices.markAsPaid(payId);
+      await billingApi.invoices.studentPay(payId);
       const inv = myInvoices.value.find(i => String(i.id) === String(payId));
-      if (inv) inv.status = 'Paid';
-      if (actions?.payInvoice) actions.payInvoice(payId);
+      if (inv) inv.status = 'Pending';
     }
 
     isPayModalOpen.value = false;
     payingInvoice.value = null;
-    showToast('Giao dịch thanh toán hóa đơn đã được ghi nhận thành công!', 'success');
+    showToast('Đã nộp minh chứng thanh toán! Vui lòng chờ Cán bộ KTX xác thực.', 'success');
   } catch (e) {
     console.error(e);
-    showToast('Có lỗi xảy ra khi thanh toán hóa đơn!', 'error');
+    showToast('Có lỗi xảy ra khi xác nhận thanh toán!', 'error');
   }
 };
 
@@ -677,6 +655,9 @@ const menuItems = [
                 <div class="text-lg font-bold font-mono text-text-main">{{ formatCurrency(inv.amount) }}đ</div>
                 <div v-if="inv.status === 'Paid'" class="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-extrabold uppercase tracking-wider rounded-md flex items-center gap-1">
                   <CheckCircle2 class="w-3 h-3" /> Đã thu
+                </div>
+                <div v-else-if="inv.status === 'Pending'" class="px-3 py-1 bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase tracking-wider rounded-md flex items-center gap-1">
+                  <Clock class="w-3 h-3" /> Chờ xác thực
                 </div>
                 <button v-else @click="startInvoicePayment(inv)" class="px-5 py-2 bg-secondary hover:bg-[#b07d62] text-white font-bold text-xs rounded-full shadow-xs cursor-pointer">
                   Thanh toán ngay

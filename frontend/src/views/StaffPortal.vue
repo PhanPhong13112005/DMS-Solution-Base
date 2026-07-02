@@ -174,6 +174,19 @@ const handleCreateBill = async () => {
   }
 };
 
+const handleVerifyPayment = async (id: string) => {
+  try {
+    await billingApi.invoices.markAsPaid(id);
+    showToast('Giao dịch đã được xác thực và chuyển thành Đã thu!', 'success');
+    // Refresh list locally by calling reload or updating store, but useAppData will reload if we trigger it
+    if (actions?.payInvoice) {
+      actions.payInvoice(id);
+    }
+  } catch (error) {
+    showToast('Có lỗi xảy ra khi xác thực giao dịch!', 'error');
+  }
+};
+
 const menuItems = [
   { id: 'Tổng quan', icon: LayoutDashboard },
   { id: 'Duyệt hồ sơ', icon: UserPlus },
@@ -451,8 +464,14 @@ const menuItems = [
               </div>
               <div class="flex flex-col items-end gap-2 shrink-0">
                 <div class="text-lg font-bold font-mono text-text-main">{{ new Intl.NumberFormat('vi-VN').format(inv.amount) }}đ</div>
-                <button @click="emit('payInvoice', inv.id); showToast('Đã ghi nhận thu Tiền Mặt thành công!', 'success');" class="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-full shadow-xs cursor-pointer flex items-center gap-2">
-                  <CheckCircle2 class="w-4 h-4" /> Ghi nhận thu Tiền Mặt
+                <div v-if="inv.status === 'Pending'" class="px-3 py-1 bg-amber-50 text-amber-700 text-[10px] font-extrabold uppercase tracking-wider rounded-md flex items-center gap-1">
+                  <Clock class="w-3 h-3" /> Chờ xác thực
+                </div>
+                <button v-if="inv.status === 'Pending'" @click="handleVerifyPayment(inv.id)" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-full shadow-xs cursor-pointer flex items-center gap-2">
+                  <CheckCircle2 class="w-4 h-4" /> Xác nhận đã chuyển khoản
+                </button>
+                <button v-else @click="handleVerifyPayment(inv.id)" class="px-5 py-2 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-full shadow-xs cursor-pointer flex items-center gap-2">
+                  <Landmark class="w-4 h-4" /> Ghi nhận thu Tiền Mặt
                 </button>
               </div>
             </div>
