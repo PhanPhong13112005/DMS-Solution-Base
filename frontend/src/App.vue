@@ -146,13 +146,6 @@ const loadData = async () => {
     ]);
 
     let finalApps = applicationsData ?? [];
-    const cachedApps = localStorage.getItem('cached_applications');
-    if (cachedApps) {
-      try {
-        const parsed = JSON.parse(cachedApps);
-        if (parsed && parsed.length > 0) finalApps = parsed;
-      } catch(e) {}
-    }
     
     // Update refs with fetched data
     buildings.value = buildingsData ?? [];
@@ -220,77 +213,55 @@ const appActions: AppActions = {
 
   // Student Portal Actions
   addApplication: async (app: BookingApplication) => {
-    try { await contractApi.applications.create(app); } catch(e) {}
+    await contractApi.applications.create(app);
     applications.value.unshift(app);
-    localStorage.setItem('cached_applications', JSON.stringify(applications.value));
   },
 
   addMaintenance: async (req: MaintenanceRequest) => {
-    try {
-      const newReq = await billingApi.maintenance.create(req);
-      maintenanceRequests.value.push(newReq);
-    } catch (error) {
-      console.error('Failed to create maintenance request:', error);
-      maintenanceRequests.value.push(req);
-    }
+    const newReq = await billingApi.maintenance.create(req);
+    maintenanceRequests.value.push(newReq);
   },
 
   updateMaintenanceStatus: async (id: string, status: MaintenanceRequest['status']) => {
-    try {
-      await billingApi.maintenance.updateStatus(id, status);
-      const idx = maintenanceRequests.value.findIndex((r) => r.id === id);
-      if (idx !== -1) {
-        maintenanceRequests.value[idx].status = status;
-      }
-    } catch (error) {
-      console.error('Failed to update maintenance request:', error);
-      const idx = maintenanceRequests.value.findIndex((r) => r.id === id);
-      if (idx !== -1) {
-        maintenanceRequests.value[idx].status = status;
-      }
+    await billingApi.maintenance.updateStatus(id, status);
+    const idx = maintenanceRequests.value.findIndex((r) => r.id === id);
+    if (idx !== -1) {
+      maintenanceRequests.value[idx].status = status;
     }
   },
 
   payInvoice: async (invoiceId: string) => {
-    try {
-      await billingApi.invoices.markAsPaid(invoiceId);
-      const idx = invoices.value.findIndex((inv) => inv.id === invoiceId);
-      if (idx !== -1) {
-        invoices.value[idx].status = 'Paid';
-      }
-    } catch (error) {
-      console.error('Failed to pay invoice:', error);
-      const idx = invoices.value.findIndex((inv) => inv.id === invoiceId);
-      if (idx !== -1) {
-        invoices.value[idx].status = 'Paid';
-      }
+    await billingApi.invoices.markAsPaid(invoiceId);
+    const idx = invoices.value.findIndex((inv) => inv.id === invoiceId);
+    if (idx !== -1) {
+      invoices.value[idx].status = 'Paid';
     }
   },
 
-  addTransfer: (req: TransferRequest) => {
+  addTransfer: async (req: TransferRequest) => {
+    // Implement API call if available, else just throw
+    // await contractApi.transfers.create(req);
     transfers.value.push(req);
   },
 
   // Admin Portal Actions
   approveApplication: async (appId: string) => {
-    try { await contractApi.applications.approve(appId); } catch(e) {}
+    await contractApi.applications.approve(appId);
     const idx = applications.value.findIndex((app) => String(app.id) === String(appId));
     if (idx !== -1) {
       applications.value[idx].status = 'Approved';
       applications.value[idx].updatedAt = new Date().toISOString();
       applications.value = [...applications.value];
-      localStorage.setItem('cached_applications', JSON.stringify(applications.value));
     }
   },
 
   rejectApplication: async (appId: string) => {
-    try { await contractApi.applications.reject(appId); } catch(e) {}
+    await contractApi.applications.reject(appId);
     const idx = applications.value.findIndex((app) => String(app.id) === String(appId));
     if (idx !== -1) {
       applications.value[idx].status = 'Rejected';
       applications.value[idx].updatedAt = new Date().toISOString();
       applications.value = [...applications.value];
-      localStorage.setItem('cached_applications', JSON.stringify(applications.value));
     }
   },
 
