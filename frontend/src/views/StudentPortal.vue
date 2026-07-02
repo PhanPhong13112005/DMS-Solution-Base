@@ -648,7 +648,8 @@ const menuItems = [
                 </div>
                 <div>
                   <h4 class="font-bold text-text-main text-base">{{ inv.title || inv.type }}</h4>
-                  <p class="text-xs text-text-muted font-mono mt-1">Phòng: {{ inv.roomNumber }} • Hóa đơn: {{ inv.id }}</p>
+                  <p v-if="inv.type === 'EXTRA_FEE' && inv.description" class="text-xs text-text-muted italic mt-0.5 line-clamp-1">{{ inv.description }}</p>
+                  <p class="text-[10px] text-text-muted font-mono mt-1">Phòng: {{ inv.roomNumber }} • Hóa đơn: {{ inv.id }}</p>
                 </div>
               </div>
               <div class="flex flex-col items-end gap-2 shrink-0">
