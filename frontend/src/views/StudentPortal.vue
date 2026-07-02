@@ -66,12 +66,32 @@ const myRoom = ref<any>(null);
 import { roomBuildingApi } from '../services/room-building.service';
 import { billingApi } from '../services/billing.service';
 
+// Hàm ánh xạ dữ liệu Backend -> Frontend
+const mapInvoice = (b: any) => ({
+  ...b,
+  id: b.id,
+  type: b.billType === 'MONTHLY' ? 'MONTHLY' : 'EXTRA_FEE', // Giữ nguyên enum MONTHLY/EXTRA_FEE để form Payment đọc đúng
+  title: b.title || (b.billType === 'MONTHLY' ? 'Hóa đơn tháng' : 'Hóa đơn phát sinh'),
+  amount: b.totalAmount || b.extraAmount || 0,
+  status: b.isPaid ? 'Paid' : 'Unpaid',
+  month: b.targetMonth || 'N/A',
+  roomNumber: myRoom.value?.roomNumber || b.roomId,
+  roomFee: b.roomFee || 0,
+  electricityFee: b.electricityCost || 0,
+  waterFee: b.waterCost || 0,
+  serviceFee: b.serviceFee || 0,
+  reason: b.feeReason || '',
+  description: b.description || b.title || '',
+});
+
 const fetchMyInvoices = async () => {
   const studentId = studentUser.value?.id;
   if (!studentId || studentId === 'N/A') return;
   try {
     const data = await billingApi.invoices.getByStudent(studentId);
-    myInvoices.value = data || [];
+    if (data) {
+      myInvoices.value = data.map(mapInvoice);
+    }
   } catch(e) {
     console.error('Lỗi tải hóa đơn:', e);
   }
@@ -82,8 +102,9 @@ watchEffect(async () => {
   if (myRoom.value?.id) {
     try {
       const roomInvoices = await billingApi.invoices.getByRoom(myRoom.value.id) || [];
+      const mappedInvoices = roomInvoices.map(mapInvoice);
       // Merge and deduplicate
-      const all = [...myInvoices.value, ...roomInvoices];
+      const all = [...myInvoices.value, ...mappedInvoices];
       myInvoices.value = Array.from(new Map(all.map(item => [item.id, item])).values());
     } catch(e) {
       console.error('Lỗi tải hóa đơn phòng:', e);
@@ -648,7 +669,7 @@ const menuItems = [
                   <Receipt class="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 class="font-bold text-text-main text-base">{{ inv.type }}</h4>
+                  <h4 class="font-bold text-text-main text-base">{{ inv.title || inv.type }}</h4>
                   <p class="text-xs text-text-muted font-mono mt-1">Phòng: {{ inv.roomNumber }} • Hóa đơn: {{ inv.id }}</p>
                 </div>
               </div>
