@@ -401,7 +401,7 @@ const menuItems = [
 </script>
 
 <template>
-  <div class="w-full flex bg-background min-h-screen text-left border-t border-border text-text-main">
+  <div class="w-full flex bg-background h-screen overflow-hidden text-left border-t border-border text-text-main">
 
     <div v-if="toast"
       class="fixed top-5 right-5 z-[200] max-w-sm rounded-[20px] shadow-lg border p-4 flex items-start gap-3 bg-white border-border animate-fade-in">
@@ -449,7 +449,7 @@ const menuItems = [
       </div>
     </aside>
 
-    <main class="flex-1 flex flex-col min-h-screen overflow-y-auto bg-background">
+    <main class="flex-1 flex flex-col h-full overflow-y-auto bg-background">
 
       <header class="bg-white border-b border-border px-8 py-4.5 flex justify-between items-center shrink-0">
         <div class="text-text-main">
