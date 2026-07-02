@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useAppData } from '../composables/useAppData';
 import { billingApi } from '../services/billing.service';
-import { Save, CheckCircle, Search, FilePlus } from 'lucide-vue-next';
+import { Save, CheckCircle, Search, FilePlus, Edit2 } from 'lucide-vue-next';
 
 const { rooms: _rooms } = useAppData();
 const rooms = computed(() => _rooms.value || []);
@@ -10,7 +10,7 @@ const rooms = computed(() => _rooms.value || []);
 const search = ref('');
 const toast = ref<{ message: string; type: 'success' | 'error' } | null>(null);
 
-const utilitiesData = ref<Record<string, { electricity: number; water: number; isSaved: boolean }>>({});
+const utilitiesData = ref<Record<string, { electricity: number; water: number; isSaved: boolean; isProcessed: boolean }>>({});
 
 const filteredRooms = computed(() => {
   return rooms.value.filter(r => 
@@ -49,7 +49,7 @@ onMounted(async () => {
   // Initialize utilities state with 0
   rooms.value.forEach(r => {
     if (!utilitiesData.value[r.id]) {
-      utilitiesData.value[r.id] = { electricity: 0, water: 0, isSaved: false };
+      utilitiesData.value[r.id] = { electricity: 0, water: 0, isSaved: false, isProcessed: false };
     }
   });
 
@@ -61,7 +61,8 @@ onMounted(async () => {
         if (utilitiesData.value[record.roomId]) {
           utilitiesData.value[record.roomId].electricity = record.electricityIndex || 0;
           utilitiesData.value[record.roomId].water = record.waterIndex || 0;
-          utilitiesData.value[record.roomId].isSaved = record.isProcessed;
+          utilitiesData.value[record.roomId].isSaved = true; // DB already has it
+          utilitiesData.value[record.roomId].isProcessed = record.isProcessed;
         }
       });
     }
@@ -130,6 +131,10 @@ onMounted(async () => {
                 <button v-if="!utilitiesData[room.id]?.isSaved" @click="handleSaveUtility(room)" class="px-4 py-1.5 bg-secondary hover:bg-[#A47148] text-white font-bold rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1">
                   <Save class="w-3.5 h-3.5" /> Lưu
                 </button>
+                <button v-else-if="!utilitiesData[room.id]?.isProcessed" @click="utilitiesData[room.id].isSaved = false" class="px-4 py-1.5 bg-background border border-border hover:bg-background/50 text-text-main font-bold rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1">
+                  <Edit2 class="w-3.5 h-3.5 text-text-muted" /> Sửa
+                </button>
+                <span v-else class="text-[10px] text-text-muted italic px-2">Đã lên HĐ</span>
               </td>
             </tr>
             <tr v-if="filteredRooms.length === 0">
