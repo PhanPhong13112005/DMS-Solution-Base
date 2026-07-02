@@ -89,7 +89,8 @@ const openRejectModal = (issue: MaintenanceRequest) => {
 const handleAssign = async () => {
   if (selectedIssue.value && selectedTech.value) {
     try {
-      await billingApi.maintenance.assign(selectedIssue.value.id, selectedTech.value);
+      // Vì Backend Nhóm 3 (N3) không quản lý bảng Thợ sửa chữa, ta chỉ cập nhật trạng thái
+      await billingApi.maintenance.updateStatus(selectedIssue.value.id, 'In Progress');
       emit('updateMaintenanceStatus', selectedIssue.value.id, 'In Progress');
       showToast('Đã phân công thợ thành công!', 'success');
       showAssignModal.value = false;

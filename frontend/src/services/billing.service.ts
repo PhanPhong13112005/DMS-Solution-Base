@@ -139,10 +139,6 @@ export const maintenanceApi = {
   updateStatus: (id: string, status: string) =>
     apiClient.put(`/maintenance/${id}/status`, { status }).then(extractData<MaintenanceRequest>),
 
-  /** PUT /maintenance/{id}/assign — Phân công thợ sửa chữa */
-  assign: (id: string, staffId: string) =>
-    apiClient.put(`/maintenance/${id}/assign`, { staffId }).then(extractData<MaintenanceRequest>),
-
   /** DELETE /maintenance/{id} — Xóa yêu cầu bảo trì */
   delete: (id: string) =>
     apiClient.delete(`/maintenance/${id}`).then(extractData<void>),
