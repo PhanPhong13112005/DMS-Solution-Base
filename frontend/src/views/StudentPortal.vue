@@ -785,27 +785,39 @@ const menuItems = [
         </div>
         
         <div class="bg-background border border-border rounded-2xl p-4 mb-6 space-y-3">
-          <div class="text-[10px] text-text-muted font-bold uppercase tracking-wider border-b border-border pb-2">{{ payingInvoice.type }}</div>
+          <div class="text-[10px] text-text-muted font-bold uppercase tracking-wider border-b border-border pb-2">{{ payingInvoice.type === 'EXTRA_FEE' ? 'Hóa đơn phát sinh' : 'Hóa đơn tháng' }}</div>
           
-          <div class="flex justify-between items-center text-xs">
-            <span class="text-text-muted">Tiền phòng:</span>
-            <span class="font-bold font-mono text-text-main">{{ formatCurrency(payingInvoice.roomFee || 0) }}đ</span>
-          </div>
-          <div class="flex justify-between items-center text-xs">
-            <span class="text-text-muted">Tiền điện:</span>
-            <span class="font-bold font-mono text-text-main">{{ formatCurrency(payingInvoice.electricityFee || 0) }}đ</span>
-          </div>
-          <div class="flex justify-between items-center text-xs">
-            <span class="text-text-muted">Tiền nước:</span>
-            <span class="font-bold font-mono text-text-main">{{ formatCurrency(payingInvoice.waterFee || 0) }}đ</span>
-          </div>
-          <div class="flex justify-between items-center text-xs">
-            <span class="text-text-muted">Phí dịch vụ (Internet, Rác...):</span>
-            <span class="font-bold font-mono text-text-main">{{ formatCurrency(payingInvoice.serviceFee || 0) }}đ</span>
-          </div>
+          <template v-if="payingInvoice.type === 'MONTHLY'">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-text-muted">Tiền phòng:</span>
+              <span class="font-bold font-mono text-text-main">{{ formatCurrency(payingInvoice.roomFee || 0) }}đ</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-text-muted">Tiền điện:</span>
+              <span class="font-bold font-mono text-text-main">{{ formatCurrency(payingInvoice.electricityFee || 0) }}đ</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-text-muted">Tiền nước:</span>
+              <span class="font-bold font-mono text-text-main">{{ formatCurrency(payingInvoice.waterFee || 0) }}đ</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-text-muted">Phí dịch vụ (Internet, Rác...):</span>
+              <span class="font-bold font-mono text-text-main">{{ formatCurrency(payingInvoice.serviceFee || 0) }}đ</span>
+            </div>
+          </template>
+          <template v-else>
+            <div class="flex justify-between items-start text-xs">
+              <span class="text-text-muted shrink-0 w-24">Lý do thu:</span>
+              <span class="font-bold text-text-main text-right">{{ payingInvoice.reason || 'Khoản thu phát sinh' }}</span>
+            </div>
+            <div class="flex justify-between items-start text-xs" v-if="payingInvoice.description">
+              <span class="text-text-muted shrink-0 w-24">Diễn giải chi tiết:</span>
+              <span class="font-light text-text-main text-right italic">{{ payingInvoice.description }}</span>
+            </div>
+          </template>
 
           <div class="flex justify-between items-center pt-3 border-t border-border">
-            <span class="text-sm font-bold text-text-main">Tổng cộng:</span>
+            <span class="text-sm font-bold text-text-main">Tổng cộng cần thanh toán:</span>
             <span class="text-2xl font-mono font-bold text-secondary">{{ formatCurrency(payingInvoice.amount) }}<span class="text-lg">đ</span></span>
           </div>
         </div>
@@ -813,8 +825,8 @@ const menuItems = [
         <!-- QR Code Thanh toán (Task 1.4) -->
         <div class="flex flex-col items-center mb-6">
           <span class="text-[10px] text-text-muted uppercase font-bold mb-2">Quét mã VietQR để thanh toán nhanh</span>
-          <div class="p-2 border-2 border-dashed border-secondary/50 rounded-2xl bg-white">
-            <img :src="`https://img.vietqr.io/image/mbbank-0978112551-compact2.jpg?amount=${payingInvoice.amount}&addInfo=Thanh toan HD ${payingInvoice.id}`" alt="VietQR" class="w-40 h-40 object-contain rounded-xl" />
+          <div class="p-3 border-2 border-dashed border-secondary/50 rounded-2xl bg-white shadow-inner">
+            <img :src="`https://img.vietqr.io/image/970422-040520059765-compact2.png?amount=${payingInvoice.amount}&addInfo=Thanh toan HD ${payingInvoice.id}&accountName=TRAN%20ANH%20TU`" alt="VietQR MBBank TRAN ANH TU" class="w-48 h-48 object-contain rounded-xl" />
           </div>
         </div>
 
