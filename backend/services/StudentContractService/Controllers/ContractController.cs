@@ -26,7 +26,7 @@ namespace StudentContractService.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Contract>>> GetContracts()
         {
-            return await _context.Contracts.ToListAsync();
+            return await _context.Contracts.Include(c => c.Student).ToListAsync();
         }
 
         // 2. XEM CHI TIẾT MỘT HỢP ĐỒNG THEO ID
@@ -86,45 +86,32 @@ namespace StudentContractService.Controllers
         }
 
         
-        // 5. API DUYỆT HỢP ĐỒNG & TỰ ĐỘNG PHÁT SỰ KIỆN SANG BÊN HÓA ĐƠN
-        [HttpPut("{id}/approve")]
-        public async Task<IActionResult> ApproveContract(Guid id)
-        {
-            // 1. Tìm hợp đồng
-            var contract = await _context.Contracts.FindAsync(id);
-            if (contract == null)
-                return NotFound(new { message = "Không tìm thấy hợp đồng này!" });
-
-            if (contract.Status == "Approved" || contract.Status == "Active")
-                return BadRequest(new { message = "Hợp đồng này đã được xử lý hoặc đã kích hoạt từ trước." });
-
-            // 2. Chuyển trạng thái sang Approved
-            contract.Status = "Approved";
-            _context.Contracts.Update(contract);
-            await _context.SaveChangesAsync();
-
-            // 3. BẮN TIN SANG RABBITMQ (ĐÃ SỬA TÊN VÀ KIỂU DỮ LIỆU ĐỂ KHỚP BÊN BILLING)
-            await _publishEndpoint.Publish<DMS.Shared.IContractApprovedEvent>(new
-            {
-                ContractId = Math.Abs(contract.Id.GetHashCode()),
-                StudentId = contract.StudentId.ToString(),
-                RoomId = contract.RoomId,
-                Amount = contract.RoomPrice,
-                Content = $"Hóa đơn tiền phòng cho hợp đồng mới của sinh viên mã số {contract.StudentId}",
-                StartDate = contract.StartDate
-            });
-
-            return Ok(new { message = "Đã duyệt hợp đồng thành công! Hệ thống đang tự động lập hóa đơn thanh toán.", data = contract });
-        }
-
-        [HttpPut("{id}/reject")]
-        public async Task<IActionResult> RejectContract(Guid id)
+        // 5. XÁC NHẬN CHECK-IN (KÍCH HOẠT HỢP ĐỒNG & BÁO SANG BILLING)
+        [HttpPut("{id}/check-in")]
+        public async Task<IActionResult> CheckIn(Guid id)
         {
             var contract = await _context.Contracts.FindAsync(id);
             if (contract == null) return NotFound(new { message = "Không tìm thấy hợp đồng!" });
-            contract.Status = "Rejected";
+
+            if (contract.Status == "Active")
+                return BadRequest(new { message = "Sinh viên đã check-in rồi!" });
+
+            contract.Status = "Active";
+            _context.Contracts.Update(contract);
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Đã từ chối hợp đồng!" });
+
+            // Tự động sinh hóa đơn tiền phòng tháng đầu tiên
+            await _publishEndpoint.Publish<DMS.Shared.IContractApprovedEvent>(new
+            {
+                ContractId = Math.Abs(contract.Id.GetHashCode()),
+                StudentId = contract.StudentId.ToString(), // TODO: Fetch from Student
+                RoomId = contract.RoomId,
+                Amount = contract.RoomPrice,
+                Content = $"Hóa đơn tiền phòng cho hợp đồng mới của sinh viên",
+                StartDate = contract.StartDate
+            });
+
+            return Ok(new { message = "Đã xác nhận Check-in thành công! Hợp đồng đã kích hoạt.", data = contract });
         }
     }
 }

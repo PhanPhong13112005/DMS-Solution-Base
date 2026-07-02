@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using StudentContractService.Models; // Đã cập nhật đường dẫn Models
 using System; // Thêm thư viện này để dùng được Guid và DateTime
@@ -14,6 +14,7 @@ namespace StudentContractService.Data // Đã cập nhật sang folder Data
 
         public DbSet<Student> Students { get; set; }
         public DbSet<RoomTransferRequest> RoomTransferRequests { get; set; }
+        public DbSet<BookingApplication> BookingApplications { get; set; }
         public DbSet<Contract> Contracts { get; set; }
         public DbSet<Room> Rooms { get; set; }
 

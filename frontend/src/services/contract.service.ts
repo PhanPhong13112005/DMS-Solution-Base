@@ -16,20 +16,20 @@ export const bookingApplicationsApi = {
   /**
    * GET: Lấy danh sách tất cả đơn đặt phòng
    */
-  getAll: () => apiRequest.get<BookingApplication[]>('/StudentContracts'),
+  getAll: () => apiRequest.get<BookingApplication[]>('/StudentContracts/Applications'),
 
   /**
    * GET: Lấy thông tin chi tiết một đơn
    * @param id - Booking Application ID
    */
-  getById: (id: string) => apiRequest.get<BookingApplication>(`/StudentContracts/${id}`),
+  getById: (id: string) => apiRequest.get<BookingApplication>(`/StudentContracts/Applications/${id}`),
 
   /**
    * POST: Tạo đơn đặt phòng mới
    * @param data - Booking application data
    */
   create: (data: Omit<BookingApplication, 'id' | 'createdAt'>) =>
-    apiRequest.post<BookingApplication>('/StudentContracts', data),
+    apiRequest.post<BookingApplication>('/StudentContracts/Applications', data),
 
   /**
    * PUT: Cập nhật thông tin đơn
@@ -37,21 +37,21 @@ export const bookingApplicationsApi = {
    * @param data - Updated data (status, paymentMethod, etc.)
    */
   update: (id: string, data: Partial<BookingApplication>) =>
-    apiRequest.put<void>(`/StudentContracts/${id}`, data),
+    apiRequest.put<void>(`/StudentContracts/Applications/${id}`, data),
 
   /**
    * PUT: Phê duyệt đơn đặt phòng
    * @param id - Booking Application ID
    */
   approve: (id: string) =>
-    apiRequest.put<void>(`/StudentContracts/${id}/approve`, { status: 'Approved' }),
+    apiRequest.put<void>(`/StudentContracts/Applications/${id}/approve`, { status: 'Approved' }),
 
   /**
    * PUT: Từ chối đơn đặt phòng
    * @param id - Booking Application ID
    */
   reject: (id: string) =>
-    apiRequest.put<void>(`/StudentContracts/${id}/reject`, { status: 'Rejected' }),
+    apiRequest.put<void>(`/StudentContracts/Applications/${id}/reject`, { status: 'Rejected' }),
 };
 
 // ============ TRANSFER REQUESTS API ============

@@ -3,14 +3,55 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace StudentContractService.Migrations.StudentDb
+namespace StudentContractService.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialStudentDb : Migration
+    public partial class RebuildN2 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "BookingApplications",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    StudentId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ClassName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Phone = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RoomId = table.Column<int>(type: "int", nullable: false),
+                    RoomNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Building = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PaymentMethod = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BookingApplications", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Rooms",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BuildingId = table.Column<int>(type: "int", nullable: false),
+                    RoomNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    FloorNumber = table.Column<int>(type: "int", nullable: false),
+                    RoomType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    MonthlyPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Rooms", x => x.Id);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Students",
                 columns: table => new
@@ -74,6 +115,16 @@ namespace StudentContractService.Migrations.StudentDb
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.InsertData(
+                table: "Students",
+                columns: new[] { "Id", "CurrentRoomId", "Email", "FullName", "IdCard", "PhoneNumber", "StudentCode" },
+                values: new object[] { new Guid("11111111-1111-1111-1111-111111111111"), 102, "vana@student.edu.vn", "Nguyễn Văn A", "012345678901", "0987654321", "SV202601" });
+
+            migrationBuilder.InsertData(
+                table: "Contracts",
+                columns: new[] { "Id", "EndDate", "RoomId", "RoomPrice", "StartDate", "Status", "StudentId" },
+                values: new object[] { new Guid("22222222-2222-2222-2222-222222222222"), new DateTime(2026, 6, 30, 0, 0, 0, 0, DateTimeKind.Unspecified), 102, 1500000m, new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), "Active", new Guid("11111111-1111-1111-1111-111111111111") });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Contracts_StudentId",
                 table: "Contracts",
@@ -95,7 +146,13 @@ namespace StudentContractService.Migrations.StudentDb
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "BookingApplications");
+
+            migrationBuilder.DropTable(
                 name: "Contracts");
+
+            migrationBuilder.DropTable(
+                name: "Rooms");
 
             migrationBuilder.DropTable(
                 name: "RoomTransferRequests");
