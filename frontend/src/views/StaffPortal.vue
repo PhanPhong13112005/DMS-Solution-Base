@@ -78,6 +78,12 @@ const activeIssues = computed(() => {
 });
 const urgentIssues = computed(() => activeIssues.value.filter(i => i.priority === 'Critical'));
 
+const historyIssues = computed(() => {
+  return props.maintenanceRequests
+    .filter(m => m.status === 'Resolved' || m.status === 'Cancelled' || m.status === 'Rejected')
+    .sort((a, b) => b.id.localeCompare(a.id));
+});
+
 const { paginatedItems: pIssues, currentPage: cpIssues, totalPages: tpIssues, nextPage: npIssues, prevPage: ppIssues } = usePagination(activeIssues, 4);
 
 const openAssignModal = (issue: MaintenanceRequest) => {
@@ -335,6 +341,27 @@ const menuItems = [
             <div class="flex gap-2">
               <button @click="ppIssues" :disabled="cpIssues === 1" class="px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-bold text-text-main disabled:opacity-50 hover:bg-white transition-colors">Trước</button>
               <button @click="npIssues" :disabled="cpIssues === tpIssues" class="px-3 py-1.5 bg-background border border-border rounded-lg text-xs font-bold text-text-main disabled:opacity-50 hover:bg-white transition-colors">Sau</button>
+            </div>
+          </div>
+          
+          <!-- Lịch sử bảo trì -->
+          <div class="mt-8 border-t border-border pt-8">
+            <h4 class="font-serif text-text-main text-base mb-4">Lịch sử bảo trì (Đã xử lý xong)</h4>
+            <div class="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+              <div v-for="issue in historyIssues" :key="issue.id" class="p-4 border border-border bg-background/50 rounded-2xl flex flex-col hover:border-primary/30 transition-colors">
+                <div class="flex justify-between items-start mb-2">
+                  <div class="font-bold text-text-main text-sm">Phòng {{ issue.roomNumber }} - {{ issue.title }}</div>
+                  <span :class="['text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide', 
+                    issue.status === 'Resolved' ? 'bg-emerald-100 text-emerald-700' : 
+                    issue.status === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-700']">
+                    {{ issue.status === 'Resolved' ? 'Đã hoàn thành' : issue.status === 'Rejected' ? 'Bị từ chối' : 'Sinh viên hủy' }}
+                  </span>
+                </div>
+                <p class="text-xs text-text-muted">{{ issue.description }}</p>
+              </div>
+              <div v-if="historyIssues.length === 0" class="text-center py-6 text-text-muted italic text-xs font-mono">
+                Chưa có lịch sử bảo trì nào được lưu lại.
+              </div>
             </div>
           </div>
         </div>
