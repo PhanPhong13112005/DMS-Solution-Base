@@ -136,8 +136,7 @@ onMounted(async () => {
                 </button>
                 <button v-else @click="utilitiesData[room.id].isSaved = false" class="px-4 py-1.5 bg-background border border-border hover:bg-background/50 text-text-main font-bold rounded-lg shadow-sm transition-colors cursor-pointer inline-flex items-center gap-1">
                   <Edit2 class="w-3.5 h-3.5 text-text-muted" />
-                  <span v-if="utilitiesData[room.id]?.isProcessed" class="text-amber-600">Sửa đè (Đã lên HĐ)</span>
-                  <span v-else>Sửa</span>
+                  <span>Sửa</span>
                 </button>
               </td>
             </tr>
