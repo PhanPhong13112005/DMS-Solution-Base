@@ -4,6 +4,7 @@ using BillingMaintenanceService.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BillingMaintenanceService.Migrations
 {
     [DbContext(typeof(BillingDbContext))]
-    partial class BillingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702035247_AddUtilityRecords")]
+    partial class AddUtilityRecords
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -204,7 +207,7 @@ namespace BillingMaintenanceService.Migrations
                             Description = "Điều hòa không lạnh, phát ra tiếng ồn lớn, chảy nước",
                             Priority = "Normal",
                             RoomId = 101,
-                            Status = "Resolved",
+                            Status = "Completed",
                             StudentId = 1001,
                             Title = "Hỏng điều hòa",
                             UpdatedAt = new DateTime(2026, 6, 12, 0, 0, 0, 0, DateTimeKind.Unspecified)
@@ -229,7 +232,7 @@ namespace BillingMaintenanceService.Migrations
                             Description = "Bóng đèn phòng ngủ bị hỏng, phòng tối, ảnh hưởng việc học",
                             Priority = "Normal",
                             RoomId = 101,
-                            Status = "In Progress",
+                            Status = "Processing",
                             StudentId = 1001,
                             Title = "Bóng đèn phòng bị hỏng",
                             UpdatedAt = new DateTime(2026, 6, 23, 0, 0, 0, 0, DateTimeKind.Unspecified)

@@ -76,13 +76,13 @@ namespace BillingMaintenanceService.Application
         {
             var all        = _repo.GetAllRequests();
             var pending    = all.Count(r => r.Status == MaintenanceStatus.Pending);
-            var processing = all.Count(r => r.Status == MaintenanceStatus.Processing);
-            var completed  = all.Count(r => r.Status == MaintenanceStatus.Completed);
+            var processing = all.Count(r => r.Status == MaintenanceStatus.InProgress);
+            var completed  = all.Count(r => r.Status == MaintenanceStatus.Resolved);
             var critical   = all.Count(r => r.Priority == MaintenancePriority.Critical);
 
             // Tính thời gian xử lý trung bình (chỉ với request đã Completed và có UpdatedAt)
             var avgHours = all
-                .Where(r => r.Status == MaintenanceStatus.Completed && r.UpdatedAt.HasValue)
+                .Where(r => r.Status == MaintenanceStatus.Resolved && r.UpdatedAt.HasValue)
                 .Select(r => (r.UpdatedAt!.Value - r.CreatedAt).TotalHours)
                 .DefaultIfEmpty(0)
                 .Average();

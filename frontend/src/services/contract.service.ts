@@ -16,20 +16,20 @@ export const bookingApplicationsApi = {
   /**
    * GET: Lấy danh sách tất cả đơn đặt phòng
    */
-  getAll: () => apiRequest.get<BookingApplication[]>('/StudentContracts'),
+  getAll: () => apiRequest.get<any>('/StudentContracts/Applications').then(res => res.value || res),
 
   /**
    * GET: Lấy thông tin chi tiết một đơn
    * @param id - Booking Application ID
    */
-  getById: (id: string) => apiRequest.get<BookingApplication>(`/StudentContracts/${id}`),
+  getById: (id: string) => apiRequest.get<BookingApplication>(`/StudentContracts/Applications/${id}`),
 
   /**
    * POST: Tạo đơn đặt phòng mới
    * @param data - Booking application data
    */
   create: (data: Omit<BookingApplication, 'id' | 'createdAt'>) =>
-    apiRequest.post<BookingApplication>('/StudentContracts', data),
+    apiRequest.post<BookingApplication>('/StudentContracts/Applications', data),
 
   /**
    * PUT: Cập nhật thông tin đơn
@@ -37,21 +37,21 @@ export const bookingApplicationsApi = {
    * @param data - Updated data (status, paymentMethod, etc.)
    */
   update: (id: string, data: Partial<BookingApplication>) =>
-    apiRequest.put<void>(`/StudentContracts/${id}`, data),
+    apiRequest.put<void>(`/StudentContracts/Applications/${id}`, data),
 
   /**
    * PUT: Phê duyệt đơn đặt phòng
    * @param id - Booking Application ID
    */
   approve: (id: string) =>
-    apiRequest.put<void>(`/StudentContracts/${id}/approve`, { status: 'Approved' }),
+    apiRequest.put<void>(`/StudentContracts/Applications/${id}/approve`, { status: 'Approved' }),
 
   /**
    * PUT: Từ chối đơn đặt phòng
    * @param id - Booking Application ID
    */
   reject: (id: string) =>
-    apiRequest.put<void>(`/StudentContracts/${id}/reject`, { status: 'Rejected' }),
+    apiRequest.put<void>(`/StudentContracts/Applications/${id}/reject`, { status: 'Rejected' }),
 };
 
 // ============ TRANSFER REQUESTS API ============
@@ -60,7 +60,7 @@ export const transferRequestsApi = {
   /**
    * GET: Lấy danh sách tất cả yêu cầu chuyển phòng
    */
-  getAll: () => apiRequest.get<TransferRequest[]>('/Transfers'),
+  getAll: () => apiRequest.get<any>('/Transfers').then(res => res.value || res),
 
   /**
    * GET: Lấy thông tin chi tiết một yêu cầu
@@ -76,12 +76,12 @@ export const transferRequestsApi = {
     apiRequest.post<TransferRequest>('/Transfers', data),
 
   /**
-   * PUT: Cập nhật yêu cầu chuyển phòng
+   * PUT: Cập nhật trạng thái yêu cầu
    * @param id - Transfer Request ID
-   * @param data - Updated data (status, reason, etc.)
+   * @param status - New status
    */
-  update: (id: string, data: Partial<TransferRequest>) =>
-    apiRequest.put<void>(`/Transfers/${id}`, data),
+  updateStatus: (id: string, status: string) =>
+    apiRequest.put<void>(`/Transfers/${id}/status`, { status }),
 
   /**
    * PUT: Phê duyệt yêu cầu chuyển phòng

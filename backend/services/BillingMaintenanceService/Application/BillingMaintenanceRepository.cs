@@ -36,6 +36,20 @@ namespace BillingMaintenanceService.Infrastructure
         public void DeleteBill(Bill bill) { _context.Bills.Remove(bill); _context.SaveChanges(); }
 
         // =====================================================================
+        // UTILITIES (ĐIỆN NƯỚC)
+        // =====================================================================
+        public void AddUtilityRecord(UtilityRecord record) { _context.UtilityRecords.Add(record); _context.SaveChanges(); }
+        public void UpdateUtilityRecord(UtilityRecord record) { _context.UtilityRecords.Update(record); _context.SaveChanges(); }
+        
+        /// <summary>Lấy danh sách các bản ghi chưa được tạo hóa đơn</summary>
+        public List<UtilityRecord> GetUnprocessedUtilityRecords(string targetMonth) =>
+            _context.UtilityRecords.Where(u => u.TargetMonth == targetMonth && !u.IsProcessed).ToList();
+
+        /// <summary>Lấy toàn bộ bản ghi điện nước của 1 tháng để hiển thị</summary>
+        public List<UtilityRecord> GetUtilityRecordsByMonth(string targetMonth) =>
+            _context.UtilityRecords.Where(u => u.TargetMonth == targetMonth).ToList();
+
+        // =====================================================================
         // BẢO TRÌ (MAINTENANCE)
         // =====================================================================
         public List<MaintenanceRequest> GetAllRequests()            => _context.MaintenanceRequests.OrderByDescending(m => m.CreatedAt).ToList();

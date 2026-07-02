@@ -106,6 +106,18 @@ namespace BillingMaintenanceService.Application
             return bill;
         }
 
+        // --- Sinh viên báo cáo đã thanh toán (chờ xác thực) ---
+        public Bill? StudentPayBill(Guid id)
+        {
+            var bill = _repo.GetBillById(id);
+            if (bill == null) return null;
+            if (bill.IsPaid) return bill;
+
+            bill.ReceiptCode = "PENDING_VERIFICATION";
+            _repo.UpdateBill(bill);
+            return bill;
+        }
+
         // --- Xóa hóa đơn ---
         public bool DeleteBill(Guid id)
         {

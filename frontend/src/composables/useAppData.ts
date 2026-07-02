@@ -124,7 +124,7 @@ export const useAppData = () => {
   );
 
   const unpaidInvoices = computed(() =>
-    invoices.value.filter((inv) => inv.status === 'Unpaid')
+    invoices.value.filter((inv) => inv.status === 'Unpaid' || inv.status === 'Pending')
   );
 
   const pendingRequests = computed(() =>

@@ -82,6 +82,28 @@ namespace BillingMaintenanceService.Controllers
             return Ok(new { StatusCode = 201, IsSuccess = true, Data = result });
         }
 
+        [HttpPost("with-image")]
+        public IActionResult CreateRequestWithImage([FromForm] Microsoft.AspNetCore.Http.IFormCollection form)
+        {
+            var newRequest = new MaintenanceRequest
+            {
+                Title = form["title"],
+                Description = form["description"],
+                Category = form["category"],
+                Priority = form["priority"],
+                RoomId = int.TryParse(form["roomId"], out var rId) ? rId : 1,
+                StudentId = int.TryParse(form["studentId"], out var sId) ? sId : 1
+            };
+
+            if (form.Files.Count > 0)
+            {
+                newRequest.ImageUrl = "/uploads/" + form.Files[0].FileName;
+            }
+
+            var result = _maintenanceService.CreateRequest(newRequest);
+            return Ok(new { StatusCode = 201, IsSuccess = true, Data = result });
+        }
+
         public class UpdateStatusRequest
         {
             public string Status { get; set; } = string.Empty;

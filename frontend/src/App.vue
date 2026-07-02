@@ -145,12 +145,14 @@ const loadData = async () => {
       }),
     ]);
 
+    let finalApps = applicationsData ?? [];
+    
     // Update refs with fetched data
     buildings.value = buildingsData ?? [];
     rooms.value = roomsData ?? [];
     beds.value = bedsData ?? [];
     amenities.value = amenitiesData ?? [];
-    applications.value = applicationsData ?? [];
+    applications.value = finalApps;
     transfers.value = transfersData ?? [];
     invoices.value = invoicesData ?? [];
     maintenanceRequests.value = maintenanceData ?? [];
@@ -210,68 +212,62 @@ const appActions: AppActions = {
   },
 
   // Student Portal Actions
-  addApplication: (app: BookingApplication) => {
-    applications.value.unshift(app);
+  addApplication: async (app: BookingApplication) => {
+    const response = await contractApi.applications.create(app);
+    // Push the newly created app from the database (which has the correct ID)
+    applications.value.unshift(response);
   },
 
   addMaintenance: async (req: MaintenanceRequest) => {
-    try {
+    // If it already has an ID from backend, just push it (useful for FormData uploads)
+    if ((req as any).id) {
+      maintenanceRequests.value.push(req);
+    } else {
       const newReq = await billingApi.maintenance.create(req);
       maintenanceRequests.value.push(newReq);
-    } catch (error) {
-      console.error('Failed to create maintenance request:', error);
-      maintenanceRequests.value.push(req);
     }
   },
 
   updateMaintenanceStatus: async (id: string, status: MaintenanceRequest['status']) => {
-    try {
-      await billingApi.maintenance.updateStatus(id, status);
-      const idx = maintenanceRequests.value.findIndex((r) => r.id === id);
-      if (idx !== -1) {
-        maintenanceRequests.value[idx].status = status;
-      }
-    } catch (error) {
-      console.error('Failed to update maintenance request:', error);
-      const idx = maintenanceRequests.value.findIndex((r) => r.id === id);
-      if (idx !== -1) {
-        maintenanceRequests.value[idx].status = status;
-      }
+    await billingApi.maintenance.updateStatus(id, status);
+    const idx = maintenanceRequests.value.findIndex((r) => r.id === id);
+    if (idx !== -1) {
+      maintenanceRequests.value[idx].status = status;
     }
   },
 
   payInvoice: async (invoiceId: string) => {
-    try {
-      await billingApi.invoices.markAsPaid(invoiceId);
-      const idx = invoices.value.findIndex((inv) => inv.id === invoiceId);
-      if (idx !== -1) {
-        invoices.value[idx].status = 'Paid';
-      }
-    } catch (error) {
-      console.error('Failed to pay invoice:', error);
-      const idx = invoices.value.findIndex((inv) => inv.id === invoiceId);
-      if (idx !== -1) {
-        invoices.value[idx].status = 'Paid';
-      }
+    await billingApi.invoices.markAsPaid(invoiceId);
+    const idx = invoices.value.findIndex((inv) => inv.id === invoiceId);
+    if (idx !== -1) {
+      invoices.value[idx].status = 'Paid';
     }
   },
 
-  addTransfer: (req: TransferRequest) => {
+  addTransfer: async (req: TransferRequest) => {
+    // Implement API call if available, else just throw
+    // await contractApi.transfers.create(req);
     transfers.value.push(req);
   },
 
   // Admin Portal Actions
-  approveApplication: (appId: string) => {
-    const idx = applications.value.findIndex((app) => app.id === appId);
+  approveApplication: async (appId: string) => {
+    await contractApi.applications.approve(appId);
+    const idx = applications.value.findIndex((app) => String(app.id) === String(appId));
     if (idx !== -1) {
       applications.value[idx].status = 'Approved';
+      applications.value[idx].updatedAt = new Date().toISOString();
+      applications.value = [...applications.value];
     }
   },
 
-  rejectApplication: (appId: string) => {
-    const idx = applications.value.findIndex((app) => app.id === appId);
+  rejectApplication: async (appId: string) => {
+    await contractApi.applications.reject(appId);
+    const idx = applications.value.findIndex((app) => String(app.id) === String(appId));
     if (idx !== -1) {
       applications.value[idx].status = 'Rejected';
+      applications.value[idx].updatedAt = new Date().toISOString();
+      applications.value = [...applications.value];
     }
   },
 
@@ -330,40 +326,64 @@ const appData: AppData = {
   news,
 };
 
+const handleLogout = () => {
+  loggedInUser.value = null;
+  localStorage.removeItem('current_user');
+  router.push('/');
+};
+
 provide('appData', appData);
 provide('appActions', appActions);
 </script>
 
 <template>
-  <div class="app-container bg-[#FDFBF7] min-h-screen font-sans text-[#4A4A4A]">
+  <div class="app-container bg-background min-h-screen font-sans text-text-main">
     
-    <nav v-if="showNavbar" class="bg-white border-b border-[#EAE7E1] sticky top-0 z-50 shadow-sm">
+    <nav v-if="showNavbar" class="bg-white border-b border-border sticky top-0 z-50 shadow-sm">
       <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         
         <router-link to="/" class="flex items-center gap-3 group">
-          <div class="w-10 h-10 bg-[#6B705C] text-white rounded-xl flex items-center justify-center group-hover:bg-[#8B9178] transition-colors">
+          <div class="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center group-hover:bg-primary-hover transition-colors">
             <Building2 class="w-5 h-5" />
           </div>
           <div>
-            <h1 class="font-serif font-bold text-[#4A4A4A] text-lg leading-none tracking-tight group-hover:text-[#6B705C] transition-colors">DNU KTX</h1>
-            <p class="text-[10px] text-[#8B8B8B] font-mono tracking-widest uppercase mt-1">Đại học Đại Nam</p>
+            <h1 class="font-serif font-bold text-text-main text-lg leading-none tracking-tight group-hover:text-primary transition-colors">DNU KTX</h1>
+            <p class="text-[10px] text-text-muted font-mono tracking-widest uppercase mt-1">Đại học Đại Nam</p>
           </div>
         </router-link>
 
-        <div class="hidden md:flex items-center gap-8 text-sm font-semibold text-[#8B8B8B]">
-          <router-link to="/" active-class="text-[#CB997E]" class="hover:text-[#4A4A4A] transition-colors">Trang chủ</router-link>
-          <router-link to="/about" active-class="text-[#CB997E]" class="hover:text-[#4A4A4A] transition-colors">Giới thiệu</router-link>
-          <router-link to="/news" active-class="text-[#CB997E]" class="hover:text-[#4A4A4A] transition-colors">Tin tức</router-link>
-          <router-link to="/booking" active-class="text-[#CB997E]" class="hover:text-[#4A4A4A] transition-colors">Đăng ký phòng</router-link>
-          <router-link to="/rules" active-class="text-[#CB997E]" class="hover:text-[#4A4A4A] transition-colors">Nội quy</router-link>
-          <router-link to="/contact" active-class="text-[#CB997E]" class="hover:text-[#4A4A4A] transition-colors">Liên hệ</router-link>
+        <div class="hidden md:flex items-center gap-8 text-sm font-semibold text-text-muted">
+          <router-link to="/" active-class="text-secondary" class="hover:text-text-main transition-colors">Trang chủ</router-link>
+          <router-link to="/about" active-class="text-secondary" class="hover:text-text-main transition-colors">Giới thiệu</router-link>
+          <router-link to="/news" active-class="text-secondary" class="hover:text-text-main transition-colors">Tin tức</router-link>
+          <router-link to="/booking" active-class="text-secondary" class="hover:text-text-main transition-colors">Đăng ký phòng</router-link>
+          <router-link to="/rules" active-class="text-secondary" class="hover:text-text-main transition-colors">Nội quy</router-link>
+          <router-link to="/contact" active-class="text-secondary" class="hover:text-text-main transition-colors">Liên hệ</router-link>
         </div>
 
         <div class="flex items-center gap-3">
-          <router-link to="/auth" class="hidden md:flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-[#F97316] bg-[#F97316]/10 border border-[#F97316]/20 hover:bg-[#F97316] hover:text-white hover:border-[#F97316] rounded-full transition-all duration-300 shadow-xs hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
+          <router-link v-if="!loggedInUser" to="/auth" class="hidden md:flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-accent bg-accent/10 border border-accent/20 hover:bg-accent hover:text-white hover:border-accent rounded-full transition-all duration-300 shadow-xs hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
             <LogIn class="w-4 h-4" />
             <span>Cổng đăng nhập</span>
           </router-link>
+
+          <div v-else class="relative group hidden md:block">
+            <button class="flex items-center gap-2 px-4 py-2 bg-background rounded-full hover:bg-border transition-colors border border-border">
+              <div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs uppercase">
+                {{ loggedInUser.id.substring(0, 2) }}
+              </div>
+              <span class="text-sm font-semibold text-text-main">{{ loggedInUser.id }}</span>
+            </button>
+            
+            <div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2">
+              <router-link :to="loggedInUser.role === 'Admin' ? '/admin' : loggedInUser.role === 'Staff' ? '/staff' : '/student'" class="block px-4 py-2 text-sm text-text-main hover:bg-background hover:text-secondary">
+                Thông tin của tôi
+              </router-link>
+              <button @click="handleLogout" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                Đăng xuất
+              </button>
+            </div>
+          </div>
 
         </div>
 

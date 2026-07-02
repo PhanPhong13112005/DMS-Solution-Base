@@ -25,7 +25,7 @@ namespace StudentContractService.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllTransfers()
         {
-            var transfers = await _context.RoomTransferRequests.OrderByDescending(r => r.CreatedAt).ToListAsync();
+            var transfers = await _context.RoomTransferRequests.Include(r => r.Student).OrderByDescending(r => r.CreatedAt).ToListAsync();
             return Ok(transfers);
         }
 

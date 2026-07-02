@@ -13,6 +13,7 @@ namespace BillingMaintenanceService.Infrastructure
         public DbSet<Bill> Bills { get; set; }
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<UtilityRecord> UtilityRecords { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,6 +32,11 @@ namespace BillingMaintenanceService.Infrastructure
                 entity.Property(b => b.BillType).HasMaxLength(20);
                 entity.Property(b => b.FeeReason).HasMaxLength(200);
                 entity.Property(b => b.ReceiptCode).HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<UtilityRecord>(entity =>
+            {
+                entity.Property(e => e.TargetMonth).HasMaxLength(20);
             });
 
             // ============================================================
@@ -109,7 +115,7 @@ namespace BillingMaintenanceService.Infrastructure
                     Description = "Điều hòa không lạnh, phát ra tiếng ồn lớn, chảy nước",
                     Category    = MaintenanceCategory.Electricity,
                     Priority    = MaintenancePriority.Normal,
-                    Status      = MaintenanceStatus.Completed,
+                    Status      = MaintenanceStatus.Resolved,
                     ImageUrl    = null,
                     CreatedAt   = new DateTime(2026, 6, 10),
                     UpdatedAt   = new DateTime(2026, 6, 12)
@@ -137,7 +143,7 @@ namespace BillingMaintenanceService.Infrastructure
                     Description = "Bóng đèn phòng ngủ bị hỏng, phòng tối, ảnh hưởng việc học",
                     Category    = MaintenanceCategory.Electricity,
                     Priority    = MaintenancePriority.Normal,
-                    Status      = MaintenanceStatus.Processing,
+                    Status      = MaintenanceStatus.InProgress,
                     ImageUrl    = null,
                     CreatedAt   = new DateTime(2026, 6, 22),
                     UpdatedAt   = new DateTime(2026, 6, 23)
