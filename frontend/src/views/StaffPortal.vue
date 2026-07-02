@@ -2,7 +2,7 @@
 import StaffRoomSearch from './StaffRoomSearch.vue';
 import { ref, computed } from 'vue';
 import { usePagination } from '../composables/usePagination';
-import { LayoutDashboard, Users, UserPlus, Wrench, ShieldAlert, CheckCircle, LogOut, Search, Building, Receipt, FilePlus, AlertTriangle, Info, CheckCircle2, Landmark } from 'lucide-vue-next';
+import { LayoutDashboard, Users, UserPlus, Wrench, ShieldAlert, CheckCircle, LogOut, Search, Building, Receipt, FilePlus, AlertTriangle, Info, CheckCircle2, Landmark, Clock } from 'lucide-vue-next';
 import type { Room, BookingApplication, MaintenanceRequest, Invoice } from '../types';
 import { useAppData } from '../composables/useAppData';
 import StaffUtilities from './StaffUtilities.vue';
@@ -42,7 +42,7 @@ const extraInvoices = computed(() => {
   return props.invoices
     .filter((i: Invoice) => i.type === 'EXTRA_FEE')
     .map((i: Invoice) => {
-      const room = props.rooms.find(r => r.id == i.roomNumber);
+      const room = props.rooms.find((r: any) => String(r.id) === String(i.roomNumber));
       return {
         ...i,
         roomNumber: room ? room.roomNumber : i.roomNumber
@@ -56,7 +56,7 @@ const unpaidInvoices = computed(() => {
   return props.invoices
     .filter(i => i.status === 'Unpaid')
     .map((i: Invoice) => {
-      const room = props.rooms.find(r => r.id == i.roomNumber);
+      const room = props.rooms.find((r: any) => String(r.id) === String(i.roomNumber));
       return {
         ...i,
         roomNumber: room ? room.roomNumber : i.roomNumber
@@ -185,8 +185,8 @@ const handleCreateBill = async () => {
     billAmount.value = '';
     billDesc.value = '';
     if (actions?.payInvoice) {
-      // Just a trigger to reload data, but ideally we should have a reload function
-      // If we don't have reload, we can mock adding it to the list
+      // Trigger reload data after invoice creation
+      actions.payInvoice(''); // reload trigger
       emit('reload-data'); 
     }
   } catch (error) {

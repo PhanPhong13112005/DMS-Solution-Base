@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Home, ClipboardList, BedDouble, Receipt, Wrench, BellRing, LogOut, Settings2, Sparkles, Send, CheckCircle2, ShieldAlert, Landmark, UserMinus, CheckCircle, Info, AlertTriangle, Star } from 'lucide-vue-next';
+import { Home, ClipboardList, BedDouble, Receipt, Wrench, BellRing, LogOut, Settings2, Sparkles, Send, CheckCircle2, ShieldAlert, Landmark, UserMinus, CheckCircle, Info, AlertTriangle, Star, Clock } from 'lucide-vue-next';
 import type { MaintenanceRequest, Invoice, TransferRequest, Room } from '../types';
 import { useAppData } from '../composables/useAppData';
 import { useRouter } from 'vue-router';
@@ -119,7 +119,7 @@ watchEffect(() => {
     let capacity = realRoom ? realRoom.capacity : 4;
     let price = realRoom ? realRoom.price : 800000;
     let roomType = realRoom ? (realRoom.roomType || `Phòng ${capacity} người`) : `Phòng ${capacity} người`;
-    let roommatesCount = capacity > 1 ? capacity - 1 : 0;
+    let roommatesCount = (capacity ?? 0) > 1 ? (capacity ?? 0) - 1 : 0;
     
     // In a real scenario, roommates list would come from API. For now, simulate missing slots.
     const fakeRoommates = Array.from({ length: roommatesCount }, (_, i) => i + 1);

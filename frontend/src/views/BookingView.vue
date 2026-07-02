@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue';
 import { Search, MapPin, Users, Heart, ClipboardCheck, ArrowRight, ShieldAlert, Upload, HelpCircle, CheckCircle2, UserCheck, CreditCard, Landmark, Coins, AlertCircle } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
-import type { BookingApplication } from '../types';
+import type { BookingApplication, Room } from '../types';
 import { useAppData } from '../composables/useAppData';
 
 // ============ USE TYPE-SAFE APP DATA & ACTIONS ============
@@ -16,7 +16,7 @@ const searchPrice = ref<string>('Tất cả');
 
 
 // Booking Modal States
-const selectedRoom = ref(null);
+const selectedRoom = ref<Room | null>(null);
 const isModalOpen = ref(false);
 const showAuthAlert = ref(false);
 const step = ref(1);
@@ -37,7 +37,7 @@ const isSubmitting = ref(false);
 // Filter computation
 // Filter computation
 const filteredRooms = computed(() => {
-  return (rooms.value ?? []).filter(room => {
+  return (rooms.value ?? []).filter((room: Room) => {
     // 1. Lọc theo Tòa nhà
     const matchBldg = searchBldg.value === 'Tất cả' || room.building === searchBldg.value;
 
@@ -51,9 +51,9 @@ const filteredRooms = computed(() => {
     // 3. Lọc theo Giá
     let matchPrice = true;
     if (searchPrice.value !== 'Tất cả') {
-      if (searchPrice.value === 'Dưới 600k') matchPrice = room.price < 600000;
-      else if (searchPrice.value === '600k - 1tr') matchPrice = room.price >= 600000 && room.price <= 1000000;
-      else if (searchPrice.value === 'Trên 1tr') matchPrice = room.price > 1000000;
+      if (searchPrice.value === 'Dưới 600k') matchPrice = (room.price ?? 0) < 600000;
+      else if (searchPrice.value === '600k - 1tr') matchPrice = (room.price ?? 0) >= 600000 && (room.price ?? 0) <= 1000000;
+      else if (searchPrice.value === 'Trên 1tr') matchPrice = (room.price ?? 0) > 1000000;
     }
 
     // 4. Lọc theo Tiện ích / Tag
@@ -154,7 +154,7 @@ const submitBooking = async () => {
     };
 
     // Cast as BookingApplication for the action signature, although it lacks id
-    await actions.addApplication(newApp as BookingApplication);
+    await actions.addApplication(newApp as unknown as BookingApplication);
     
     isSubmitting.value = false;
     step.value = 5;
@@ -236,7 +236,7 @@ const formatCurrency = (amount: number) => {
         <div 
           v-for="room in filteredRooms"
           :key="room.id"
-          :class="['bg-white rounded-[32px] border transition-all duration-300 flex flex-col h-full overflow-hidden', room.available > 0 ? 'border-border shadow-xs hover:shadow-md hover:border-primary group' : 'border-border opacity-75']"
+          :class="['bg-white rounded-[32px] border transition-all duration-300 flex flex-col h-full overflow-hidden', (room.available ?? 0) > 0 ? 'border-border shadow-xs hover:shadow-md hover:border-primary group' : 'border-border opacity-75']"
         >
           <div class="relative h-44 bg-background overflow-hidden shrink-0">
             <img 
@@ -245,7 +245,7 @@ const formatCurrency = (amount: number) => {
               :alt="`Room ${room.roomNumber}`"
               class="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
             />
-            <span v-if="room.available > 0" class="absolute top-3 right-3 bg-primary-hover text-white text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg">
+            <span v-if="(room.available ?? 0) > 0" class="absolute top-3 right-3 bg-primary-hover text-white text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg">
               {{ room.available }} Chỗ trống
             </span>
             <span v-else class="absolute top-3 right-3 bg-secondary text-white text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg">
@@ -282,18 +282,18 @@ const formatCurrency = (amount: number) => {
               <div class="flex justify-between items-baseline">
                 <span class="text-xs text-text-muted font-light">Giá lưu trú:</span>
                 <span class="text-lg font-bold text-secondary tracking-tight">
-                  {{ formatCurrency(room.price) }}đ
+                  {{ formatCurrency(room.price ?? 0) }}đ
                   <span class="text-xs text-text-muted font-normal"> /tháng</span>
                 </span>
               </div>
 
               <button
-                :disabled="room.available === 0"
+                :disabled="(room.available ?? 0) === 0"
                 @click="handleOpenBooking(room)"
-                :class="['w-full py-3 font-semibold text-xs md:text-sm rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer', room.available > 0 ? 'bg-primary hover:bg-primary-hover text-white shadow-xs' : 'bg-slate-100 text-slate-400 cursor-not-allowed']"
+                :class="['w-full py-3 font-semibold text-xs md:text-sm rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer', (room.available ?? 0) > 0 ? 'bg-primary hover:bg-primary-hover text-white shadow-xs' : 'bg-slate-100 text-slate-400 cursor-not-allowed']"
               >
-                <span>{{ room.available > 0 ? 'Đăng ký lưu trú' : 'Hết chỗ' }}</span>
-                <ArrowRight v-if="room.available > 0" class="w-4 h-4" />
+                <span>{{ (room.available ?? 0) > 0 ? 'Đăng ký lưu trú' : 'Hết chỗ' }}</span>
+                <ArrowRight v-if="(room.available ?? 0) > 0" class="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -363,13 +363,13 @@ const formatCurrency = (amount: number) => {
             <h4 class="font-serif text-text-main text-sm">Tải lên hồ sơ minh chứng</h4>
             <div class="space-y-3">
               <label class="block border-2 border-dashed border-border hover:border-primary rounded-2xl p-6 text-center cursor-pointer transition-all bg-background">
-                <input type="file" class="hidden" accept="image/*,.pdf" @change="cccdUploaded = !!($event.target.files && $event.target.files.length)" />
+                <input type="file" class="hidden" accept="image/*,.pdf" @change="cccdUploaded = !!(($event.target as HTMLInputElement).files && ($event.target as HTMLInputElement).files!.length)" />
                 <Upload :class="['w-8 h-8 mx-auto mb-2', cccdUploaded ? 'text-primary' : 'text-text-muted']" />
                 <div class="text-xs font-bold text-text-main">Căn cước công dân <span class="text-secondary">*</span></div>
                 <span v-if="cccdUploaded" class="text-primary text-xs font-semibold block mt-1.5">✓ Đính kèm thành công!</span>
               </label>
               <label class="block border-2 border-dashed border-border hover:border-primary rounded-2xl p-6 text-center cursor-pointer transition-all bg-background">
-                <input type="file" class="hidden" accept="image/*,.pdf" @change="studentCardUploaded = !!($event.target.files && $event.target.files.length)" />
+                <input type="file" class="hidden" accept="image/*,.pdf" @change="studentCardUploaded = !!(($event.target as HTMLInputElement).files && ($event.target as HTMLInputElement).files!.length)" />
                 <Upload :class="['w-8 h-8 mx-auto mb-2', studentCardUploaded ? 'text-primary' : 'text-text-muted']" />
                 <div class="text-xs font-bold text-text-main">Thẻ sinh viên / Giấy báo <span class="text-secondary">*</span></div>
                 <span v-if="studentCardUploaded" class="text-primary text-xs font-semibold block mt-1.5">✓ Đính kèm thành công!</span>

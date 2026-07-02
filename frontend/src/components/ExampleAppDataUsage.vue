@@ -33,7 +33,7 @@
             <h4>Phòng {{ room.roomNumber }} - {{ room.building }}</h4>
             <p>Sức chứa: {{ room.capacity }} người</p>
             <p>Còn trống: {{ room.available }} giường</p>
-            <p>Giá: {{ new Intl.NumberFormat('vi-VN').format(room.price) }}đ/tháng</p>
+            <p>Giá: {{ new Intl.NumberFormat('vi-VN').format(room.price ?? 0) }}đ/tháng</p>
           </div>
         </div>
         <p v-else class="empty-state">Không có phòng nào</p>

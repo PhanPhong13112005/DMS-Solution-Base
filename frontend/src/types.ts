@@ -107,6 +107,7 @@ export interface BookingApplication {
 export interface MaintenanceRequest {
   id: string;
   displayId?: string;
+  roomId?: number;       // ID phòng (dùng để filter theo phòng)
   roomNumber: string;
   studentId?: number;    // MSSV sinh viên gửi phiếu (MỚI)
   title: string;
@@ -130,6 +131,8 @@ export interface NewsArticle {
 export interface Invoice {
   id: string;
   displayId?: string;
+  title?: string;                      // Tiêu đề hóa đơn
+  description?: string;                // Mô tả chi tiết
   roomNumber: string;
   studentId: string;
   month: string;
@@ -139,10 +142,11 @@ export interface Invoice {
   waterFee?: number;
   serviceFee?: number;
   type: string;
-  status: 'Unpaid' | 'Paid';
+  status: 'Unpaid' | 'Paid' | 'Pending'; // Thêm 'Pending' cho trạng thái chờ xác nhận
   createdAt: string;
   // --- Trường mới (đồng bộ với backend N3) ---
   billType?: 'MONTHLY' | 'EXTRA_FEE'; // Phân loại hóa đơn
+  reason?: string;                     // Lý do thu phí (phạt, đền bù...)
   feeReason?: string;                  // Lý do thu (chỉ cho EXTRA_FEE)
   dueDate?: string;                    // Hạn chót đóng tiền (ISO date string)
   receiptCode?: string;                // Mã biên lai (sinh sau khi thanh toán)

@@ -1,6 +1,6 @@
 import { ref, computed, onMounted } from 'vue';
 import roomBuildingApi from '../services/room-building.service';
-import type { Room } from '../types';
+import type { Room, Building, Bed, RoomAmenity } from '../types';
 
 /**
  * Composable hook để quản lý dữ liệu từ Room Building Service
@@ -8,10 +8,10 @@ import type { Room } from '../types';
  */
 export const useRoomBuilding = () => {
   // ============ STATE ============
-  const rooms = ref<any[]>([]);
-  const buildings = ref<any[]>([]);
-  const beds = ref<any[]>([]);
-  const amenities = ref<any[]>([]);
+  const rooms = ref<Room[]>([]);
+  const buildings = ref<Building[]>([]);
+  const beds = ref<Bed[]>([]);
+  const amenities = ref<RoomAmenity[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -24,7 +24,7 @@ export const useRoomBuilding = () => {
    */
   const getRoomsByBuildingName = computed(() => {
     return (buildingName: string) => {
-      return rooms.value.filter((room: any) => room.building === buildingName);
+      return rooms.value.filter((room: Room) => room.building === buildingName);
     };
   });
 
@@ -33,7 +33,7 @@ export const useRoomBuilding = () => {
    */
   const getBuildingByName = computed(() => {
     return (buildingName: string) => {
-      return buildings.value.find((b: any) => b.name === buildingName);
+      return buildings.value.find((b: Building) => b.name === buildingName);
     };
   });
 
@@ -41,8 +41,8 @@ export const useRoomBuilding = () => {
    * Lấy danh sách giường theo phòng
    */
   const getBedsByRoomId = computed(() => {
-    return (roomId: string) => {
-      return beds.value.filter((bed: any) => bed.roomId === roomId);
+    return (roomId: number) => {
+      return beds.value.filter((bed: Bed) => bed.roomId === roomId);
     };
   });
 
@@ -50,31 +50,32 @@ export const useRoomBuilding = () => {
    * Đếm giường trống theo phòng
    */
   const getAvailableBedCount = computed(() => {
-    return (roomId: string) => {
-      return beds.value.filter((bed: any) => bed.roomId === roomId && !bed.occupiedBy).length;
+    return (roomId: number) => {
+      return beds.value.filter((bed: Bed) => bed.roomId === roomId && bed.isAvailable).length;
     };
   });
 
   // ============ METHODS ============
   /**
-   * Tải tất cả dữ liệu
+   * Tải tất cả dữ liệu từ các API grouped
    */
   const loadAllData = async () => {
     loading.value = true;
     error.value = null;
 
     try {
-      const data = await roomBuildingApi.getAllRoomBuildingData();
+      const [buildingsData, roomsData, bedsData, amenitiesData] = await Promise.all([
+        roomBuildingApi.buildings.getAll(),
+        roomBuildingApi.rooms.getAll(),
+        roomBuildingApi.beds.getAll(),
+        roomBuildingApi.amenities.getAll(),
+      ]);
 
-      if (data.success) {
-        buildings.value = data.buildings;
-        rooms.value = data.rooms;
-        beds.value = data.beds;
-        amenities.value = data.amenities;
-        console.log('✅ Đã nạp dữ liệu từ Room Building Service');
-      } else {
-        throw new Error('Lỗi nạp dữ liệu từ API');
-      }
+      buildings.value = buildingsData;
+      rooms.value = roomsData;
+      beds.value = bedsData;
+      amenities.value = amenitiesData;
+      console.log('✅ Đã nạp dữ liệu từ Room Building Service');
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Lỗi không xác định';
       console.error('❌ Lỗi:', error.value);
@@ -86,9 +87,9 @@ export const useRoomBuilding = () => {
   /**
    * Tạo phòng mới
    */
-  const createNewRoom = async (roomData: any) => {
+  const createNewRoom = async (roomData: Omit<Room, 'id'>) => {
     try {
-      const newRoom = await roomBuildingApi.createRoom(roomData);
+      const newRoom = await roomBuildingApi.rooms.create(roomData);
       if (newRoom) {
         rooms.value.push(newRoom);
         return newRoom;
@@ -102,16 +103,13 @@ export const useRoomBuilding = () => {
   /**
    * Cập nhật thông tin phòng
    */
-  const updateRoomInfo = async (roomId: string, roomData: any) => {
+  const updateRoomInfo = async (roomId: number, roomData: Partial<Room>) => {
     try {
-      const updated = await roomBuildingApi.updateRoom(roomId, roomData);
-      if (updated) {
-        const index = rooms.value.findIndex((r: any) => r.id === roomId);
-        if (index !== -1) {
-          rooms.value[index] = updated;
-        }
-        return updated;
-      }
+      await roomBuildingApi.rooms.update(roomId, roomData);
+      // Reload rooms sau khi update
+      const updatedRooms = await roomBuildingApi.rooms.getAll();
+      rooms.value = updatedRooms;
+      return roomData;
     } catch (err) {
       console.error('Lỗi cập nhật phòng:', err);
     }
@@ -121,16 +119,13 @@ export const useRoomBuilding = () => {
   /**
    * Gán sinh viên cho giường
    */
-  const assignStudentBed = async (bedId: string, studentId: string) => {
+  const assignStudentBed = async (bedId: number, studentId: string) => {
     try {
-      const updated = await roomBuildingApi.assignStudentToBed(bedId, studentId);
-      if (updated) {
-        const index = beds.value.findIndex((b: any) => b.id === bedId);
-        if (index !== -1) {
-          beds.value[index] = updated;
-        }
-        return updated;
-      }
+      await roomBuildingApi.beds.assignBed(bedId, { isAvailable: false, studentId });
+      // Reload beds
+      const updatedBeds = await roomBuildingApi.beds.getAll();
+      beds.value = updatedBeds;
+      return true;
     } catch (err) {
       console.error('Lỗi gán sinh viên vào giường:', err);
     }
@@ -140,16 +135,13 @@ export const useRoomBuilding = () => {
   /**
    * Giải phóng giường
    */
-  const releaseBed = async (bedId: string) => {
+  const releaseBed = async (bedId: number) => {
     try {
-      const updated = await roomBuildingApi.unassignBed(bedId);
-      if (updated) {
-        const index = beds.value.findIndex((b: any) => b.id === bedId);
-        if (index !== -1) {
-          beds.value[index] = updated;
-        }
-        return updated;
-      }
+      await roomBuildingApi.beds.assignBed(bedId, { isAvailable: true, studentId: null });
+      // Reload beds
+      const updatedBeds = await roomBuildingApi.beds.getAll();
+      beds.value = updatedBeds;
+      return true;
     } catch (err) {
       console.error('Lỗi giải phóng giường:', err);
     }
@@ -159,36 +151,19 @@ export const useRoomBuilding = () => {
   /**
    * Thêm tiện nghi vào phòng
    */
-  const addAmenityToRoom = async (roomId: string, amenityId: string) => {
+  const addAmenityToRoom = async (roomId: number, amenityName: string, condition: string = 'Good') => {
     try {
-      const result = await roomBuildingApi.addAmenityToRoom(roomId, amenityId);
+      const result = await roomBuildingApi.amenities.create({ roomId, amenityName, condition });
       if (result) {
-        // Reload room amenities
-        const roomAmenities = await roomBuildingApi.getAmenitiesByRoom(roomId);
-        return roomAmenities;
+        // Reload amenities
+        const updatedAmenities = await roomBuildingApi.amenities.getAll();
+        amenities.value = updatedAmenities;
+        return result;
       }
     } catch (err) {
       console.error('Lỗi thêm tiện nghi:', err);
     }
     return null;
-  };
-
-  /**
-   * Kiểm tra kết nối API
-   */
-  const checkApiHealth = async () => {
-    try {
-      const isHealthy = await roomBuildingApi.healthCheck();
-      if (isHealthy) {
-        console.log('✅ API Room Building Service khỏe mạnh');
-      } else {
-        console.warn('⚠️ API Room Building Service không khả dụng');
-      }
-      return isHealthy;
-    } catch (err) {
-      console.error('❌ Lỗi kiểm tra kết nối:', err);
-      return false;
-    }
   };
 
   return {
@@ -215,8 +190,8 @@ export const useRoomBuilding = () => {
     assignStudentBed,
     releaseBed,
     addAmenityToRoom,
-    checkApiHealth
   };
 };
 
 export default useRoomBuilding;
+

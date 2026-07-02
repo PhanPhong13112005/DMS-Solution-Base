@@ -38,7 +38,7 @@ const emit = (event: string, ...args: any[]) => {
 const realTotalBeds = ref(0);
 const realOccupiedBeds = ref(0);
 const realAvailableBeds = ref(0);
-const allBedsList = ref([]);
+const allBedsList = ref<any[]>([]);
 
 const loadDashboardStats = async () => {
   try {
@@ -67,10 +67,10 @@ const loadFacilitiesData = async () => {
       roomBuildingApi.roomTypes.getAll(),
       roomBuildingApi.buildings.getHierarchy()
     ]);
-    if (bRes) buildingsList.value = bRes.data || bRes.Data || (Array.isArray(bRes) ? bRes : []);
-    if (rRes) roomsList.value = rRes.data || rRes.Data || (Array.isArray(rRes) ? rRes : []);
-    if (tRes) roomTypesList.value = tRes.data || tRes.Data || (Array.isArray(tRes) ? tRes : []);
-    if (hRes) hierarchyData.value = hRes.data || hRes.Data || (Array.isArray(hRes) ? hRes : []);
+    if (bRes) buildingsList.value = Array.isArray(bRes) ? bRes : ((bRes as any).data || (bRes as any).Data || []);
+    if (rRes) roomsList.value = Array.isArray(rRes) ? rRes : ((rRes as any).data || (rRes as any).Data || []);
+    if (tRes) roomTypesList.value = Array.isArray(tRes) ? tRes : ((tRes as any).data || (tRes as any).Data || []);
+    if (hRes) hierarchyData.value = Array.isArray(hRes) ? hRes : ((hRes as any).data || (hRes as any).Data || []);
   } catch (error) {
     console.error("Lỗi tải dữ liệu phòng:", error);
   }
@@ -223,8 +223,8 @@ const { paginatedItems: pIssues, currentPage: cpIssues, totalPages: tpIssues, ne
 const { paginatedItems: pNews, currentPage: cpNews, totalPages: tpNews, nextPage: npNews, prevPage: ppNews } = usePagination(computedNews, 4);
 
 const totalInvoicesPaidSum = computed(() => (props.invoices || []).filter(i => i.status === 'Paid').reduce((accum, i) => accum + i.amount, 14500000));
-const totalOccupiedSeats = computed(() => realTotalBeds.value > 0 ? realOccupiedBeds.value : (props.rooms || []).reduce((accum, r) => accum + (r.capacity - r.available), 14));
-const totalCapacitySeats = computed(() => realTotalBeds.value > 0 ? realTotalBeds.value : (props.rooms || []).reduce((accum, r) => accum + r.capacity, 28));
+const totalOccupiedSeats = computed(() => realTotalBeds.value > 0 ? realOccupiedBeds.value : (props.rooms || []).reduce((accum: number, r: any) => accum + ((r.capacity || 0) - (r.available || 0)), 14));
+const totalCapacitySeats = computed(() => realTotalBeds.value > 0 ? realTotalBeds.value : (props.rooms || []).reduce((accum: number, r: any) => accum + (r.capacity || 0), 28));
 
 const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
   toast.value = { message, type };
@@ -384,7 +384,7 @@ const groupedDebts = computed(() => {
 const filteredGroupedDebts = computed(() => {
   return groupedDebts.value.filter(group => {
     const term = debtSearch.value.toLowerCase();
-    return group.studentId.toLowerCase().includes(term) || group.roomNumber.toLowerCase().includes(term);
+    return String(group.studentId || '').toLowerCase().includes(term) || String(group.roomNumber || '').toLowerCase().includes(term);
   }).sort((a, b) => b.totalDebt - a.totalDebt); // Mặc định Nợ nhiều nhất
 });
 
@@ -716,15 +716,15 @@ const executeDelete = () => {
 // =============================================
 const showRoomModal = ref(false);
 const isEditingRoom = ref(false);
-const roomForm = ref({ id: null, buildingId: 1, roomNumber: '', floorNumber: 1, roomType: 'Standard', capacity: 4, monthlyPrice: 1500000, status: 'Còn chỗ' });
+const roomForm = ref<any>({ id: null, buildingId: 1, roomNumber: '', floorNumber: 1, roomType: 'Standard', capacity: 4, monthlyPrice: 1500000, status: 'Còn chỗ' });
 
 const openCreateRoomModal = () => {
   isEditingRoom.value = false;
-  roomForm.value = { id: null, buildingId: buildingsList.value[0]?.id || 1, roomNumber: '', floorNumber: 1, roomType: 'Standard', capacity: 4, monthlyPrice: 1500000, status: 'Còn chỗ' };
+  roomForm.value = { id: undefined, buildingId: buildingsList.value[0]?.id || 1, roomNumber: '', floorNumber: 1, roomType: 'Standard', capacity: 4, monthlyPrice: 1500000, status: 'Còn chỗ' };
   showRoomModal.value = true;
 };
 
-const openEditRoomModal = (room) => {
+const openEditRoomModal = (room: any) => {
   isEditingRoom.value = true;
   roomForm.value = { ...room };
   showRoomModal.value = true;
@@ -733,10 +733,10 @@ const openEditRoomModal = (room) => {
 const handleSaveRoom = async () => {
   try {
     const payload = { ...roomForm.value };
-    if (!payload.id) delete payload.id;
+    if (!payload.id) delete (payload as any).id;
 
     if (isEditingRoom.value) {
-      await roomBuildingApi.rooms.update(roomForm.value.id, payload);
+      await roomBuildingApi.rooms.update(roomForm.value.id ?? 0, payload);
       showToast('Cập nhật phòng thành công!', 'success');
     } else {
       await roomBuildingApi.rooms.create(payload);
@@ -751,16 +751,16 @@ const handleSaveRoom = async () => {
 };
 
 const showDeleteConfirmModal = ref(false);
-const roomToDeleteId = ref(null);
+const roomToDeleteId = ref<number | null>(null);
 
-const handleDeleteRoom = (id) => {
+const handleDeleteRoom = (id: number) => {
   roomToDeleteId.value = id;
   showDeleteConfirmModal.value = true;
 };
 
 const confirmDeleteRoom = async () => {
   try {
-    await roomBuildingApi.rooms.delete(roomToDeleteId.value);
+    await roomBuildingApi.rooms.delete(roomToDeleteId.value!);
     showToast('Xóa phòng thành công!', 'success');
     await loadFacilitiesData();
     await loadDashboardStats();
@@ -805,10 +805,10 @@ const handleSaveRoomType = async () => {
   }
   try {
     const payload = { ...roomTypeForm.value };
-    if (!payload.id) delete payload.id;
+    if (!payload.id) delete (payload as any).id;
 
     if (isEditingRoomType.value) {
-      await roomBuildingApi.roomTypes.update(roomTypeForm.value.id, payload);
+      await roomBuildingApi.roomTypes.update(roomTypeForm.value.id ?? 0, payload);
       showToast('Cập nhật loại phòng thành công!', 'success');
     } else {
       await roomBuildingApi.roomTypes.create(payload);
@@ -822,7 +822,7 @@ const handleSaveRoomType = async () => {
 };
 
 const showDeleteRoomTypeConfirmModal = ref(false);
-const roomTypeToDeleteId = ref(null);
+const roomTypeToDeleteId = ref<number | null>(null);
 
 const handleDeleteRoomType = (id: any) => {
   roomTypeToDeleteId.value = id;
@@ -831,7 +831,7 @@ const handleDeleteRoomType = (id: any) => {
 
 const confirmDeleteRoomType = async () => {
   try {
-    await roomBuildingApi.roomTypes.delete(roomTypeToDeleteId.value);
+    await roomBuildingApi.roomTypes.delete(roomTypeToDeleteId.value!);
     showToast('Xóa loại phòng thành công!', 'success');
     await loadFacilitiesData();
   } catch (err) {
@@ -1248,14 +1248,14 @@ const confirmDeleteRoomType = async () => {
                   <div class="w-full bg-border h-1.5 rounded-full overflow-hidden"><div class="bg-primary h-1.5 rounded-full" :style="{ width: (totalCapacitySeats ? (totalOccupiedSeats/totalCapacitySeats*100) : 0) + '%' }"></div></div>
                 </div>
                 <div class="bg-background border border-border p-6 rounded-[24px] flex flex-col justify-center relative hover:shadow-md transition-shadow">
-                  <div class="text-4xl font-mono font-bold text-text-main mb-2">{{ (rooms || []).filter(r => r.available === 0).length }}</div>
+                  <div class="text-4xl font-mono font-bold text-text-main mb-2">{{ (props.rooms || []).filter((r: any) => r.available === 0).length }}</div>
                   <div class="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-5">Đã lấp đầy</div>
                   <div class="w-full bg-border h-1.5 rounded-full overflow-hidden"><div class="bg-text-main h-1.5 rounded-full w-[100%]"></div></div>
                 </div>
                 <div class="bg-background border border-border p-6 rounded-[24px] flex flex-col justify-center relative hover:shadow-md transition-shadow">
                   <div class="text-4xl font-mono font-bold text-text-main mb-2">{{ activeIssues.length }}</div>
                   <div class="text-[11px] font-bold uppercase tracking-wider text-text-muted mb-5">Đang bảo trì</div>
-                  <div class="w-full bg-border h-1.5 rounded-full overflow-hidden"><div class="bg-rose-400 h-1.5 rounded-full" :style="{ width: (rooms && rooms.length ? (activeIssues.length/rooms.length*100) : 0) + '%' }"></div></div>
+                  <div class="w-full bg-border h-1.5 rounded-full overflow-hidden"><div class="bg-rose-400 h-1.5 rounded-full" :style="{ width: (props.rooms && props.rooms.length ? (activeIssues.length/props.rooms.length*100) : 0) + '%' }"></div></div>
                 </div>
               </div>
             </div>
@@ -1523,7 +1523,7 @@ const confirmDeleteRoomType = async () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="group in pGroupedDebts" :key="group.studentId" class="border-b border-border/50 hover:bg-background transition-colors text-xs text-text-main">
+                  <tr v-for="group in pGroupedDebts" :key="group.studentId + '-' + group.roomNumber" class="border-b border-border/50 hover:bg-background transition-colors text-xs text-text-main">
                     <td class="py-3 px-4 font-bold">{{ group.studentId }}</td>
                     <td class="py-3 px-4">{{ group.roomNumber }}</td>
                     <td class="py-3 px-4 text-right font-bold text-rose-600">{{ new Intl.NumberFormat('vi-VN').format(group.totalDebt) }} đ</td>
@@ -2164,7 +2164,7 @@ const confirmDeleteRoomType = async () => {
                 <label class="text-xs font-bold text-text-main">Chọn Phòng / Hợp Đồng <span class="text-secondary">*</span></label>
                 <select v-model="invoiceForm.roomId" class="w-full bg-white border border-border rounded-2xl px-4 py-2 text-xs outline-none focus:border-primary">
                   <option value="">-- Chọn hợp đồng Active --</option>
-                  <option v-for="r in rooms" :key="r.id" :value="r.roomNumber">Phòng {{ r.roomNumber }} - Tòa {{ r.building }}</option>
+                  <option v-for="r in props.rooms" :key="r.id" :value="r.roomNumber">Phòng {{ r.roomNumber }} - Tòa {{ r.building }}</option>
                 </select>
               </div>
             </div>

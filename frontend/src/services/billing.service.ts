@@ -79,8 +79,19 @@ export const invoicesApi = {
     apiClient.get(`/bills/due-soon?days=${days}`).then(res => extractData<any[]>(res).map(mapInvoice)),
 
   /** POST /bills — Tạo hóa đơn tháng mới (MONTHLY) */
-  create: (data: Omit<Invoice, 'id' | 'createdAt'>) =>
-    apiClient.post('/bills', data).then(res => mapInvoice(extractData<any>(res))),
+  create: (data: any) => {
+    const payload = {
+      roomId: parseInt(data.roomNumber as string) || 0,
+      studentId: parseInt(data.studentId as string) || 0,
+      targetMonth: data.month,
+      billType: 'MONTHLY',
+      electricityCost: data.electricityFee || data.electricityCost || 0,
+      waterCost: data.waterFee || data.waterCost || 0,
+      serviceFee: data.serviceFee || 0,
+      title: data.title || 'Hóa đơn tháng ' + data.month
+    };
+    return apiClient.post('/bills', payload).then(res => mapInvoice(extractData<any>(res)));
+  },
 
   /** POST /bills/extra-fee — Tạo hóa đơn phát sinh lẻ (phạt, đền bù...) */
   createExtraFee: (data: {
@@ -97,8 +108,8 @@ export const invoicesApi = {
     apiClient.put(`/bills/${id}/student-pay`).then(res => mapInvoice(extractData<any>(res))),
 
   /** PUT /bills/{id}/pay — Thanh toán hóa đơn (sinh mã biên lai tự động) */
-  markAsPaid: (id: string) =>
-    apiClient.put(`/bills/${id}/pay`, {}).then(res => mapInvoice(extractData<any>(res))),
+  markAsPaid: (id: string, method?: string) =>
+    apiClient.put(`/bills/${id}/pay`, { method }).then(res => mapInvoice(extractData<any>(res))),
 
   /** DELETE /bills/{id} — Xóa hóa đơn */
   delete: (id: string) =>

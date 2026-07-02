@@ -202,7 +202,6 @@ export const useAppData = () => {
   };
 };
 
-// ============ RE-EXPORT TYPES FOR EXTERNAL USE ============
-export type { AppData, AppActions };
+// Types AppData and AppActions are already exported via their interface declarations above
 
 export default useAppData;

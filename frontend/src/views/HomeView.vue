@@ -349,7 +349,7 @@ const heroSlides = [
               </p>
               <div class="flex items-center text-xs text-text-muted font-medium uppercase tracking-wider">
                 <Calendar class="w-3.5 h-3.5 mr-1.5" />
-                {{ new Date(news.createdAt).toLocaleDateString('vi-VN') }}
+                {{ new Date(news.createdAt || '').toLocaleDateString('vi-VN') }}
               </div>
             </div>
           </article>
