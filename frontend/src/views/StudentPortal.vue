@@ -350,23 +350,33 @@ const startBatchPayment = () => {
   isPayModalOpen.value = true;
 };
 
-const completeInvoicePayment = () => {
+const completeInvoicePayment = async () => {
   if (!payingInvoice.value) return;
   
-  if (payingInvoice.value.id.toString().startsWith('HD-GOP-')) {
-    selectedInvoiceIds.value.forEach(id => {
-      if (actions?.payInvoice) actions.payInvoice(id);
-    });
-    selectedInvoiceIds.value = [];
-  } else {
-    if (actions?.payInvoice) {
-      actions.payInvoice(payingInvoice.value.id);
+  try {
+    if (payingInvoice.value.id.toString().startsWith('HD-GOP-')) {
+      for (const id of selectedInvoiceIds.value) {
+        await billingApi.invoices.markAsPaid(id);
+        const inv = myInvoices.value.find(i => String(i.id) === String(id));
+        if (inv) inv.status = 'Paid';
+        if (actions?.payInvoice) actions.payInvoice(id); // Vẫn gọi để update mock nếu cần
+      }
+      selectedInvoiceIds.value = [];
+    } else {
+      const payId = payingInvoice.value.id;
+      await billingApi.invoices.markAsPaid(payId);
+      const inv = myInvoices.value.find(i => String(i.id) === String(payId));
+      if (inv) inv.status = 'Paid';
+      if (actions?.payInvoice) actions.payInvoice(payId);
     }
-  }
 
-  isPayModalOpen.value = false;
-  payingInvoice.value = null;
-  showToast('Giao dịch thanh toán hóa đơn đã được ghi nhận thành công!', 'success');
+    isPayModalOpen.value = false;
+    payingInvoice.value = null;
+    showToast('Giao dịch thanh toán hóa đơn đã được ghi nhận thành công!', 'success');
+  } catch (e) {
+    console.error(e);
+    showToast('Có lỗi xảy ra khi thanh toán hóa đơn!', 'error');
+  }
 };
 
 const handleProfileSave = () => {
