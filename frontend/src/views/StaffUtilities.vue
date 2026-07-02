@@ -45,13 +45,15 @@ const handleSaveUtility = async (room: any) => {
   }
 };
 
-watch(rooms, (newRooms) => {
-  newRooms.forEach(r => {
-    if (!utilitiesData.value[r.id]) {
-      utilitiesData.value[r.id] = { electricity: 0, water: 0, isSaved: false, isProcessed: false };
-    }
-  });
-}, { immediate: true });
+watch(() => rooms.value, (newRooms) => {
+  if (newRooms) {
+    newRooms.forEach(r => {
+      if (!utilitiesData.value[r.id]) {
+        utilitiesData.value[r.id] = { electricity: 0, water: 0, isSaved: false, isProcessed: false };
+      }
+    });
+  }
+}, { immediate: true, deep: true });
 
 onMounted(async () => {
 
