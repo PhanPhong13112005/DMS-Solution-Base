@@ -16,7 +16,7 @@ export const bookingApplicationsApi = {
   /**
    * GET: Lấy danh sách tất cả đơn đặt phòng
    */
-  getAll: () => apiRequest.get<BookingApplication[]>('/StudentContracts/Applications'),
+  getAll: () => apiRequest.get<any>('/StudentContracts/Applications').then(res => res.value || res),
 
   /**
    * GET: Lấy thông tin chi tiết một đơn
@@ -60,42 +60,42 @@ export const transferRequestsApi = {
   /**
    * GET: Lấy danh sách tất cả yêu cầu chuyển phòng
    */
-  getAll: () => apiRequest.get<TransferRequest[]>('/Transfers'),
+  getAll: () => apiRequest.get<any>('/StudentContracts/Transfers').then(res => res.value || res),
 
   /**
    * GET: Lấy thông tin chi tiết một yêu cầu
    * @param id - Transfer Request ID
    */
-  getById: (id: string) => apiRequest.get<TransferRequest>(`/Transfers/${id}`),
+  getById: (id: string) => apiRequest.get<TransferRequest>(`/StudentContracts/Transfers/${id}`),
 
   /**
    * POST: Tạo yêu cầu chuyển phòng mới
    * @param data - Transfer request data
    */
   create: (data: Omit<TransferRequest, 'id' | 'createdAt'>) =>
-    apiRequest.post<TransferRequest>('/Transfers', data),
+    apiRequest.post<TransferRequest>('/StudentContracts/Transfers', data),
 
   /**
-   * PUT: Cập nhật yêu cầu chuyển phòng
+   * PUT: Cập nhật trạng thái yêu cầu
    * @param id - Transfer Request ID
-   * @param data - Updated data (status, reason, etc.)
+   * @param status - New status
    */
-  update: (id: string, data: Partial<TransferRequest>) =>
-    apiRequest.put<void>(`/Transfers/${id}`, data),
+  updateStatus: (id: string, status: string) =>
+    apiRequest.put<void>(`/StudentContracts/Transfers/${id}/status`, { status }),
 
   /**
    * PUT: Phê duyệt yêu cầu chuyển phòng
    * @param id - Transfer Request ID
    */
   approve: (id: string) =>
-    apiRequest.put<void>(`/Transfers/${id}/approve`, { status: 'Approved' }),
+    apiRequest.put<void>(`/StudentContracts/Transfers/${id}/approve`, { status: 'Approved' }),
 
   /**
    * PUT: Từ chối yêu cầu chuyển phòng
    * @param id - Transfer Request ID
    */
   reject: (id: string) =>
-    apiRequest.put<void>(`/Transfers/${id}/reject`, { status: 'Rejected' }),
+    apiRequest.put<void>(`/StudentContracts/Transfers/${id}/reject`, { status: 'Rejected' }),
 };
 
 // ============ EXPORT GROUPED API ============
